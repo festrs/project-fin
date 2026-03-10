@@ -20,9 +20,10 @@ app.add_middleware(
 )
 
 
-from app.routers import asset_classes
+from app.routers import asset_classes, asset_weights
 
 app.include_router(asset_classes.router)
+app.include_router(asset_weights.router)
 
 
 @app.get("/api/health")
