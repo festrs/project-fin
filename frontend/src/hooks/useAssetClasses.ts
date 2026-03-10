@@ -1,0 +1,50 @@
+import { useState, useEffect, useCallback } from "react";
+import api from "../services/api";
+import { AssetClass } from "../types";
+
+export function useAssetClasses() {
+  const [assetClasses, setAssetClasses] = useState<AssetClass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchClasses = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get<AssetClass[]>("/asset-classes");
+      setAssetClasses(res.data);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch asset classes");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchClasses();
+  }, [fetchClasses]);
+
+  const createClass = useCallback(async (name: string, targetWeight: number) => {
+    const res = await api.post<AssetClass>("/asset-classes", {
+      name,
+      target_weight: targetWeight,
+    });
+    setAssetClasses((prev) => [...prev, res.data]);
+    return res.data;
+  }, []);
+
+  const updateClass = useCallback(async (id: string, data: Partial<AssetClass>) => {
+    const res = await api.put<AssetClass>(`/asset-classes/${id}`, data);
+    setAssetClasses((prev) =>
+      prev.map((c) => (c.id === id ? res.data : c))
+    );
+    return res.data;
+  }, []);
+
+  const deleteClass = useCallback(async (id: string) => {
+    await api.delete(`/asset-classes/${id}`);
+    setAssetClasses((prev) => prev.filter((c) => c.id !== id));
+  }, []);
+
+  return { assetClasses, loading, error, createClass, updateClass, deleteClass, refresh: fetchClasses };
+}
