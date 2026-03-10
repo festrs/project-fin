@@ -1,0 +1,134 @@
+import { useState } from "react";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { useMarketData, Quote } from "../hooks/useMarketData";
+
+function getDisplayName(quote: Quote): string {
+  if ("name" in quote) return quote.name;
+  if ("coin_id" in quote) return (quote as { coin_id: string }).coin_id;
+  return "";
+}
+
+function getMarketCap(quote: Quote): string {
+  const cap = quote.market_cap;
+  if (cap >= 1e12) return `${(cap / 1e12).toFixed(2)}T`;
+  if (cap >= 1e9) return `${(cap / 1e9).toFixed(2)}B`;
+  if (cap >= 1e6) return `${(cap / 1e6).toFixed(2)}M`;
+  return cap.toLocaleString();
+}
+
+export function MarketSearch() {
+  const [query, setQuery] = useState("");
+  const [type, setType] = useState<"stock" | "crypto">("stock");
+  const { quote, history, loading, error, searchStock, searchCrypto } =
+    useMarketData();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    if (type === "stock") {
+      searchStock(query.trim().toUpperCase());
+    } else {
+      searchCrypto(query.trim().toLowerCase());
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <form onSubmit={handleSubmit} className="flex gap-4 items-end">
+        <div className="flex-1">
+          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            Search
+          </label>
+          <input
+            id="search"
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={type === "stock" ? "e.g. AAPL" : "e.g. bitcoin"}
+            className="w-full border border-gray-300 rounded px-3 py-2"
+          />
+        </div>
+        <div className="flex gap-3 items-center pb-1">
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="radio"
+              name="marketType"
+              value="stock"
+              checked={type === "stock"}
+              onChange={() => setType("stock")}
+            />
+            Stock
+          </label>
+          <label className="flex items-center gap-1 text-sm">
+            <input
+              type="radio"
+              name="marketType"
+              value="crypto"
+              checked={type === "crypto"}
+              onChange={() => setType("crypto")}
+            />
+            Crypto
+          </label>
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          {loading ? "Searching..." : "Search"}
+        </button>
+      </form>
+
+      {error && <p className="text-red-600 text-sm">{error}</p>}
+
+      {quote && (
+        <div className="bg-white rounded-lg shadow p-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+            <div>
+              <p className="text-sm text-gray-500">Name</p>
+              <p className="font-semibold">{getDisplayName(quote)}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Price</p>
+              <p className="font-semibold">
+                {quote.currency} {quote.price.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Currency</p>
+              <p className="font-semibold">{quote.currency}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">Market Cap</p>
+              <p className="font-semibold">{getMarketCap(quote)}</p>
+            </div>
+          </div>
+
+          {history.length > 0 && (
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={history}>
+                <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} domain={["auto", "auto"]} />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="price"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
