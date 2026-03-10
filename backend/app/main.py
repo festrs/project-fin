@@ -35,6 +35,14 @@ app.include_router(recommendations.router)
 app.include_router(quarantine.router)
 
 
+@app.on_event("startup")
+def startup():
+    from app.database import Base, engine
+    Base.metadata.create_all(bind=engine)
+    from app.seed import seed_data
+    seed_data()
+
+
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
