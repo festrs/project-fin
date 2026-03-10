@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base, get_db
 from app.main import app
+from app.models.user import User
 
 from fastapi.testclient import TestClient
 
@@ -38,3 +39,11 @@ def client(db):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def default_user(db):
+    user = User(name="Default User", email="default@example.com")
+    db.add(user)
+    db.commit()
+    return user
