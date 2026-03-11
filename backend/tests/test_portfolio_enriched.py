@@ -91,3 +91,27 @@ def test_enrich_holdings_calculates_weights():
     # actual_weight = (current_value / total_portfolio_value) * 100 = (1000 / 2000) * 100 = 50
     assert result[0]["actual_weight"] == 50.0
     assert result[1]["actual_weight"] == 50.0
+
+
+from fastapi.testclient import TestClient
+from app.main import app
+
+client = TestClient(app)
+
+
+def test_portfolio_summary_returns_enriched_holdings():
+    """Integration test: summary endpoint returns current_price field."""
+    with patch("app.routers.portfolio.MarketDataService") as MockMDS:
+        mock_instance = MockMDS.return_value
+        mock_instance.get_quote_safe.return_value = 150.0
+
+        resp = client.get("/api/portfolio/summary", headers={"X-User-Id": "default-user-id"})
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "holdings" in data
+        for h in data["holdings"]:
+            assert "current_price" in h
+            assert "current_value" in h
+            assert "gain_loss" in h
+            assert "target_weight" in h
+            assert "actual_weight" in h
