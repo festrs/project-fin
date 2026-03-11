@@ -42,7 +42,7 @@ export function AllocationChart({ allocation }: AllocationChartProps) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="name" tick={{ fontSize: 12 }} />
           <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+          <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
           <Bar dataKey="Target" fill="#3B82F6" />
           <Bar dataKey="Actual" fill="#10B981" />

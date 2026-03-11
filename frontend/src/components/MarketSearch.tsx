@@ -7,7 +7,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useMarketData, Quote } from "../hooks/useMarketData";
+import { useMarketData, type Quote } from "../hooks/useMarketData";
 
 function getDisplayName(quote: Quote): string {
   if ("name" in quote) return quote.name;

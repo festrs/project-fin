@@ -22,7 +22,8 @@ interface DataTableProps<T> {
 
 type SortDirection = "asc" | "desc";
 
-export function DataTable<T extends Record<string, unknown>>({
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function DataTable<T extends Record<string, any>>({
   columns,
   data,
   filterPlaceholder,
@@ -121,7 +122,6 @@ export function DataTable<T extends Record<string, unknown>>({
         <tbody className="divide-y divide-gray-200">
           {processed.map((row) => {
             const rowId = getRowId(row);
-            const isExpanded = expandedRow === rowId;
             return (
               <tr key={rowId} className="even:bg-gray-50">
                 {columns.map((col) => {
