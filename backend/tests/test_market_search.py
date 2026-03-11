@@ -43,3 +43,9 @@ def test_crypto_quote_returns_price_and_name_fields():
         assert data["price"] == 95000.0
         assert data["name"] == "bitcoin"
         assert data["coin_id"] == "bitcoin"
+
+
+def test_crypto_class_names_includes_cryptos():
+    from app.services.recommendation import CRYPTO_CLASS_NAMES
+    assert "Cryptos" in CRYPTO_CLASS_NAMES
+    assert "Crypto" in CRYPTO_CLASS_NAMES

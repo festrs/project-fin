@@ -13,7 +13,7 @@ CRYPTO_COINGECKO_MAP = {
     "USDC": "usd-coin", "USDC-USD": "usd-coin",
     "DAI": "dai", "DAI-USD": "dai",
 }
-CRYPTO_CLASS_NAMES = {"Crypto", "Stablecoins"}
+CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
 
 
 class RecommendationService:
