@@ -1577,7 +1577,7 @@ Then add a new test after `test_quarantined_asset_excluded`:
         svc = RecommendationService(db, market_data_service=mock_market)
         recs = svc.get_recommendations(user.id, count=1)
 
-        mock_market.get_stock_quote.assert_called_with("PETR4.SA", country="BR")
+        mock_market.get_stock_quote.assert_called_with("PETR4.SA", country="BR", db=db)
 ```
 
 - [ ] **Step 4: Run recommendation tests**
