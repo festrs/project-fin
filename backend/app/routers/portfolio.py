@@ -5,7 +5,7 @@ from app.database import get_db
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
-from app.services.market_data import MarketDataService
+from app.services.market_data import get_market_data_service
 from app.services.portfolio import PortfolioService
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
@@ -31,7 +31,7 @@ def portfolio_summary(
         for aw in weights:
             weight_map[aw.symbol] = aw.target_weight
 
-    market_data = MarketDataService()
+    market_data = get_market_data_service()
     enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data)
     return {"holdings": enriched}
 

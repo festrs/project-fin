@@ -98,3 +98,13 @@ class MarketDataService:
         ]
         self._crypto_history_cache[cache_key] = result
         return result
+
+
+_instance: MarketDataService | None = None
+
+
+def get_market_data_service() -> MarketDataService:
+    global _instance
+    if _instance is None:
+        _instance = MarketDataService()
+    return _instance

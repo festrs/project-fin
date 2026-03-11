@@ -101,9 +101,10 @@ client = TestClient(app)
 
 def test_portfolio_summary_returns_enriched_holdings():
     """Integration test: summary endpoint returns current_price field."""
-    with patch("app.routers.portfolio.MarketDataService") as MockMDS:
-        mock_instance = MockMDS.return_value
+    with patch("app.routers.portfolio.get_market_data_service") as mock_get:
+        mock_instance = MagicMock()
         mock_instance.get_quote_safe.return_value = 150.0
+        mock_get.return_value = mock_instance
 
         resp = client.get("/api/portfolio/summary", headers={"X-User-Id": "default-user-id"})
         assert resp.status_code == 200
