@@ -1,9 +1,21 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.transaction import Transaction
+from app.services.market_data import MarketDataService
+
+CRYPTO_COINGECKO_MAP = {
+    "BTC": "bitcoin", "BTC-USD": "bitcoin",
+    "ETH": "ethereum", "ETH-USD": "ethereum",
+    "USDT": "tether", "USDT-USD": "tether",
+    "USDC": "usd-coin", "USDC-USD": "usd-coin",
+    "DAI": "dai", "DAI-USD": "dai",
+}
+CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
 
 
 class PortfolioService:
@@ -119,3 +131,66 @@ class PortfolioService:
             )
 
         return result
+
+    @staticmethod
+    def enrich_holdings(
+        holdings: list[dict],
+        class_map: dict[str, dict],
+        weight_map: dict[str, float],
+        market_data: MarketDataService,
+    ) -> list[dict]:
+        """Enrich holdings with current prices, values, gain/loss, and weights."""
+
+        def fetch_price(holding: dict) -> tuple[str, float | None]:
+            symbol = holding["symbol"]
+            class_info = class_map.get(holding["asset_class_id"], {})
+            class_name = class_info.get("name", "")
+            if class_name in CRYPTO_CLASS_NAMES:
+                coin_id = CRYPTO_COINGECKO_MAP.get(symbol)
+                if coin_id:
+                    return symbol, market_data.get_quote_safe(coin_id, is_crypto=True)
+            return symbol, market_data.get_quote_safe(symbol, is_crypto=False)
+
+        # Fetch prices in parallel
+        prices: dict[str, float | None] = {}
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            futures = {executor.submit(fetch_price, h): h for h in holdings}
+            for future in as_completed(futures):
+                symbol, price = future.result()
+                prices[symbol] = price
+
+        # Calculate total portfolio value
+        total_value = 0.0
+        for h in holdings:
+            price = prices.get(h["symbol"])
+            if price is not None:
+                total_value += h["quantity"] * price
+
+        # Enrich each holding
+        enriched = []
+        for h in holdings:
+            price = prices.get(h["symbol"])
+            class_info = class_map.get(h["asset_class_id"], {})
+            class_target = class_info.get("target_weight", 0.0)
+            asset_target = weight_map.get(h["symbol"], 0.0)
+            effective_target = class_target * asset_target / 100
+
+            if price is not None:
+                current_value = h["quantity"] * price
+                gain_loss = (price - h["avg_price"]) * h["quantity"]
+                actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
+            else:
+                current_value = None
+                gain_loss = None
+                actual_weight = None
+
+            enriched.append({
+                **h,
+                "current_price": price,
+                "current_value": current_value,
+                "gain_loss": gain_loss,
+                "target_weight": effective_target,
+                "actual_weight": actual_weight,
+            })
+
+        return enriched
