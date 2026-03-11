@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Request
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.middleware.rate_limit import limiter, MARKET_DATA_LIMIT
 from app.services.market_data import get_market_data_service
@@ -10,7 +10,10 @@ router = APIRouter(prefix="/api/crypto", tags=["crypto"])
 @limiter.limit(MARKET_DATA_LIMIT)
 def get_crypto_quote(request: Request, coin_id: str):
     market_data = get_market_data_service()
-    quote = market_data.get_crypto_quote(coin_id)
+    try:
+        quote = market_data.get_crypto_quote(coin_id)
+    except Exception:
+        raise HTTPException(status_code=502, detail=f"Failed to fetch quote for {coin_id}")
     return {
         "coin_id": quote["coin_id"],
         "name": coin_id,

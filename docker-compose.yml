@@ -4,10 +4,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=sqlite:///./project_fin.db
+      - DATABASE_URL=sqlite:///./data/project_fin.db
       - CORS_ORIGIN=http://localhost:3000
     volumes:
-      - db-data:/app
+      - db-data:/app/data
 
   frontend:
     build: ./frontend
