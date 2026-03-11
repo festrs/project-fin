@@ -11,7 +11,15 @@ market_data = MarketDataService()
 @router.get("/{coin_id}")
 @limiter.limit(MARKET_DATA_LIMIT)
 def get_crypto_quote(request: Request, coin_id: str):
-    return market_data.get_crypto_quote(coin_id)
+    quote = market_data.get_crypto_quote(coin_id)
+    return {
+        "coin_id": quote["coin_id"],
+        "name": coin_id,
+        "price": quote["current_price"],
+        "currency": quote["currency"],
+        "market_cap": quote["market_cap"],
+        "change_24h": quote.get("change_24h"),
+    }
 
 
 @router.get("/{coin_id}/history")
