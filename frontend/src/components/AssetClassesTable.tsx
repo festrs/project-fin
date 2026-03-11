@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { DataTable, Column } from "./DataTable";
-import { AssetClass } from "../types";
+import { DataTable, type Column } from "./DataTable";
+import type { AssetClass } from "../types";
 
 interface AllocationInfo {
   actual_weight: number;

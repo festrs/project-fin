@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { DataTable, Column } from "./DataTable";
+import { DataTable, type Column } from "./DataTable";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
-import { Holding, Transaction, QuarantineStatus } from "../types";
+import type { Holding, Transaction, QuarantineStatus } from "../types";
 
 interface HoldingsTableProps {
   holdings: Holding[];

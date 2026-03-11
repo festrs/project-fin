@@ -8,3 +8,4 @@ venv/
 *.db
 .pytest_cache/
 node_modules/
+.playwright-mcp/

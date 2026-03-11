@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { AssetClass } from "../types";
+import type { AssetClass } from "../types";
 
 export function useAssetClasses() {
   const [assetClasses, setAssetClasses] = useState<AssetClass[]>([]);

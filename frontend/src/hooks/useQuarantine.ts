@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { QuarantineConfig, QuarantineStatus } from "../types";
+import type { QuarantineConfig, QuarantineStatus } from "../types";
 
 export function useQuarantine() {
   const [config, setConfig] = useState<QuarantineConfig | null>(null);

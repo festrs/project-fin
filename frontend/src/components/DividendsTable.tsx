@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { DataTable, Column } from "./DataTable";
+import { DataTable, type Column } from "./DataTable";
 import { TransactionForm } from "./TransactionForm";
-import { Transaction } from "../types";
+import type { Transaction } from "../types";
 
 interface DividendsTableProps {
   dividends: Transaction[];

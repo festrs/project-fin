@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import api from "../services/api";
-import { Transaction } from "../types";
+import type { Transaction } from "../types";
 
 export function useTransactions(symbol?: string) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);

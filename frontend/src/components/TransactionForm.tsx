@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Transaction } from "../types";
+import type { Transaction } from "../types";
 
 type TransactionType = "buy" | "sell" | "dividend";
 

@@ -6,7 +6,7 @@ import { AssetClassesTable } from "../components/AssetClassesTable";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { DividendsTable } from "../components/DividendsTable";
 import { PortfolioCompositionChart } from "../components/PortfolioCompositionChart";
-import { QuarantineStatus, Transaction } from "../types";
+import type { QuarantineStatus, Transaction } from "../types";
 import api from "../services/api";
 
 export default function Portfolio() {
