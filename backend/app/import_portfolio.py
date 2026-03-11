@@ -11,20 +11,22 @@ BASE_URL = "http://localhost:8000"
 DATE = "2026-03-11"
 
 
+DEFAULT_USER_ID = "default-user-id"
+
+
 def get_default_user_id() -> str:
-    db = SessionLocal()
-    try:
-        user = db.query(User).filter(User.email == "default@projectfin.com").first()
-        if not user:
-            raise RuntimeError("Default user not found. Run seed first.")
-        return user.id
-    finally:
-        db.close()
+    return DEFAULT_USER_ID
 
 
 def api(method: str, path: str, user_id: str, **kwargs) -> httpx.Response:
     with httpx.Client(base_url=BASE_URL, timeout=30) as client:
-        resp = client.request(method, path, headers={"X-User-Id": user_id}, **kwargs)
+        for attempt in range(3):
+            resp = client.request(method, path, headers={"X-User-Id": user_id}, **kwargs)
+            if resp.status_code == 429:
+                time.sleep(2)
+                continue
+            resp.raise_for_status()
+            return resp
         resp.raise_for_status()
         return resp
 

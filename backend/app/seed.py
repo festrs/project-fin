@@ -11,7 +11,7 @@ def seed_data():
         if user_count > 0:
             return
 
-        user = User(name="Default User", email="default@projectfin.com")
+        user = User(id="default-user-id", name="Default User", email="default@projectfin.com")
         db.add(user)
         db.flush()
 
