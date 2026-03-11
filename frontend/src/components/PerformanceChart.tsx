@@ -22,8 +22,11 @@ export function PerformanceChart() {
 
   useEffect(() => {
     api
-      .get<PerformanceEntry[]>("/portfolio/performance")
-      .then((res) => setData(res.data))
+      .get<{ holdings: PerformanceEntry[] } | PerformanceEntry[]>("/portfolio/performance")
+      .then((res) => {
+        const raw = res.data;
+        setData(Array.isArray(raw) ? raw : []);
+      })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

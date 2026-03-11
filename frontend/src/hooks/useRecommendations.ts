@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { Recommendation } from "../types";
+import type { Recommendation } from "../types";
 
 export function useRecommendations(count: number = 2) {
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
@@ -10,10 +10,10 @@ export function useRecommendations(count: number = 2) {
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get<Recommendation[]>("/recommendations", {
+      const res = await api.get<{ recommendations: Recommendation[] }>("/recommendations", {
         params: { count },
       });
-      setRecommendations(res.data);
+      setRecommendations(res.data.recommendations);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch recommendations");

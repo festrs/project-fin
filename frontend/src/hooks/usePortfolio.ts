@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import { Holding } from "../types";
+import type { Holding } from "../types";
 
 interface AllocationEntry {
   asset_class_id: string;
@@ -19,11 +19,11 @@ export function usePortfolio() {
     try {
       setLoading(true);
       const [summaryRes, allocationRes] = await Promise.all([
-        api.get<Holding[]>("/portfolio/summary"),
-        api.get<AllocationEntry[]>("/portfolio/allocation"),
+        api.get<{ holdings: Holding[] }>("/portfolio/summary"),
+        api.get<{ allocation: AllocationEntry[] }>("/portfolio/allocation"),
       ]);
-      setHoldings(summaryRes.data);
-      setAllocation(allocationRes.data);
+      setHoldings(summaryRes.data.holdings);
+      setAllocation(allocationRes.data.allocation);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch portfolio");
