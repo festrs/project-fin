@@ -69,6 +69,17 @@ class MarketDataService:
         self._crypto_quote_cache[coin_id] = result
         return result
 
+    def get_quote_safe(self, symbol_or_coin_id: str, is_crypto: bool = False) -> float | None:
+        """Return current price or None if fetch fails."""
+        try:
+            if is_crypto:
+                quote = self.get_crypto_quote(symbol_or_coin_id)
+            else:
+                quote = self.get_stock_quote(symbol_or_coin_id)
+            return quote.get("current_price")
+        except Exception:
+            return None
+
     def get_crypto_history(self, coin_id: str, days: int = 30) -> list[dict]:
         cache_key = f"{coin_id}:{days}"
         if cache_key in self._crypto_history_cache:
