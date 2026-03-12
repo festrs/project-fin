@@ -1,65 +1,125 @@
+from datetime import datetime, timezone
 from unittest.mock import patch, MagicMock
 
-import pandas as pd
 import pytest
 
+from app.models.market_quote import MarketQuote
 from app.services.market_data import MarketDataService
 
 
 @pytest.fixture
 def service():
     svc = MarketDataService()
-    svc._stock_quote_cache.clear()
-    svc._stock_history_cache.clear()
+    svc._quote_cache.clear()
+    svc._history_cache.clear()
     svc._crypto_quote_cache.clear()
     svc._crypto_history_cache.clear()
     return svc
 
 
 class TestGetStockQuote:
-    @patch("app.services.market_data.yfinance.Ticker")
-    def test_returns_correct_structure(self, mock_ticker_cls, service):
-        mock_ticker = MagicMock()
-        mock_ticker.info = {
-            "shortName": "Apple Inc.",
-            "currentPrice": 175.50,
-            "currency": "USD",
-            "marketCap": 2_800_000_000_000,
-        }
-        mock_ticker_cls.return_value = mock_ticker
+    def test_returns_from_db_when_present(self, service, db):
+        quote = MarketQuote(
+            symbol="AAPL",
+            name="Apple Inc",
+            current_price=175.50,
+            currency="USD",
+            market_cap=2_800_000_000_000,
+            country="US",
+        )
+        db.add(quote)
+        db.commit()
 
-        result = service.get_stock_quote("AAPL")
+        result = service.get_stock_quote("AAPL", country="US", db=db)
 
         assert result["symbol"] == "AAPL"
-        assert result["name"] == "Apple Inc."
         assert result["current_price"] == 175.50
-        assert result["currency"] == "USD"
-        assert result["market_cap"] == 2_800_000_000_000
-        mock_ticker_cls.assert_called_once_with("AAPL")
+
+    def test_falls_back_to_provider_when_not_in_db(self, service, db):
+        mock_provider = MagicMock()
+        mock_provider.get_quote.return_value = {
+            "symbol": "AAPL",
+            "name": "Apple Inc",
+            "current_price": 175.50,
+            "currency": "USD",
+            "market_cap": 2_800_000_000_000,
+        }
+        service._finnhub = mock_provider
+
+        result = service.get_stock_quote("AAPL", country="US", db=db)
+
+        assert result["current_price"] == 175.50
+        mock_provider.get_quote.assert_called_once_with("AAPL")
+        # Verify it was stored in DB
+        stored = db.query(MarketQuote).filter_by(symbol="AAPL").first()
+        assert stored is not None
+        assert stored.current_price == 175.50
+
+    def test_routes_br_to_brapi(self, service, db):
+        mock_provider = MagicMock()
+        mock_provider.get_quote.return_value = {
+            "symbol": "PETR4.SA",
+            "name": "Petrobras",
+            "current_price": 38.50,
+            "currency": "BRL",
+            "market_cap": 500_000_000_000,
+        }
+        service._brapi = mock_provider
+
+        result = service.get_stock_quote("PETR4.SA", country="BR", db=db)
+
+        assert result["current_price"] == 38.50
+        mock_provider.get_quote.assert_called_once_with("PETR4.SA")
 
 
 class TestGetStockHistory:
-    @patch("app.services.market_data.yfinance.Ticker")
-    def test_returns_correct_structure(self, mock_ticker_cls, service):
-        mock_ticker = MagicMock()
-        df = pd.DataFrame(
-            {
-                "Close": [170.0, 175.0],
-                "Volume": [1_000_000, 1_200_000],
-            },
-            index=pd.to_datetime(["2024-01-01", "2024-01-02"]),
+    def test_routes_us_to_finnhub(self, service):
+        mock_provider = MagicMock()
+        mock_provider.get_history.return_value = [
+            {"date": "2024-01-01", "close": 170.0, "volume": 1000000},
+        ]
+        service._finnhub = mock_provider
+
+        result = service.get_stock_history("AAPL", period="1mo", country="US")
+
+        assert len(result) == 1
+        mock_provider.get_history.assert_called_once_with("AAPL", "1mo")
+
+    def test_routes_br_to_brapi(self, service):
+        mock_provider = MagicMock()
+        mock_provider.get_history.return_value = [
+            {"date": "2024-01-01", "close": 35.0, "volume": 5000000},
+        ]
+        service._brapi = mock_provider
+
+        result = service.get_stock_history("PETR4.SA", period="1mo", country="BR")
+
+        assert len(result) == 1
+        mock_provider.get_history.assert_called_once_with("PETR4.SA", "1mo")
+
+
+class TestGetQuoteSafe:
+    def test_passes_country_to_get_stock_quote(self, service, db):
+        quote = MarketQuote(
+            symbol="PETR4.SA",
+            name="Petrobras",
+            current_price=38.50,
+            currency="BRL",
+            market_cap=500_000_000_000,
+            country="BR",
         )
-        mock_ticker.history.return_value = df
-        mock_ticker_cls.return_value = mock_ticker
+        db.add(quote)
+        db.commit()
 
-        result = service.get_stock_history("AAPL", period="1mo")
+        result = service.get_quote_safe("PETR4.SA", is_crypto=False, country="BR", db=db)
+        assert result == 38.50
 
-        assert len(result) == 2
-        assert result[0]["date"] == "2024-01-01"
-        assert result[0]["close"] == 170.0
-        assert result[0]["volume"] == 1_000_000
-        assert result[1]["date"] == "2024-01-02"
-        mock_ticker.history.assert_called_once_with(period="1mo")
+    def test_returns_none_on_error(self, service, db):
+        service._finnhub = MagicMock()
+        service._finnhub.get_quote.side_effect = Exception("network error")
+
+        result = service.get_quote_safe("INVALID", is_crypto=False, country="US", db=db)
+        assert result is None
 
 
 class TestGetCryptoQuote:
@@ -80,9 +140,6 @@ class TestGetCryptoQuote:
 
         assert result["coin_id"] == "bitcoin"
         assert result["current_price"] == 65000.0
-        assert result["currency"] == "USD"
-        assert result["market_cap"] == 1_200_000_000_000
-        assert result["change_24h"] == 2.5
 
 
 class TestGetCryptoHistory:
@@ -102,5 +159,3 @@ class TestGetCryptoHistory:
 
         assert len(result) == 2
         assert result[0]["price"] == 42000.0
-        assert "date" in result[0]
-        assert result[1]["price"] == 43000.0

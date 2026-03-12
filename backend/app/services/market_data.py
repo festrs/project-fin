@@ -1,9 +1,16 @@
-from datetime import datetime
+import logging
+from datetime import datetime, timezone
 
 import httpx
-import yfinance
 from cachetools import TTLCache
+from sqlalchemy.orm import Session
 
+from app.config import settings
+from app.models.market_quote import MarketQuote
+from app.providers.finnhub import FinnhubProvider
+from app.providers.brapi import BrapiProvider
+
+logger = logging.getLogger(__name__)
 
 CRYPTO_COINGECKO_MAP = {
     "BTC": "bitcoin", "BTC-USD": "bitcoin",
@@ -17,44 +24,86 @@ CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
 
 class MarketDataService:
     def __init__(self):
-        self._stock_quote_cache: TTLCache = TTLCache(maxsize=256, ttl=300)
-        self._stock_history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
+        self._finnhub = FinnhubProvider(
+            api_key=settings.finnhub_api_key,
+            base_url=settings.finnhub_base_url,
+        )
+        self._brapi = BrapiProvider(
+            api_key=settings.brapi_api_key,
+            base_url=settings.brapi_base_url,
+        )
+        self._quote_cache: TTLCache = TTLCache(maxsize=256, ttl=300)
+        self._history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
         self._crypto_quote_cache: TTLCache = TTLCache(maxsize=256, ttl=120)
         self._crypto_history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
 
-    def get_stock_quote(self, symbol: str) -> dict:
-        if symbol in self._stock_quote_cache:
-            return self._stock_quote_cache[symbol]
+    def _get_provider(self, country: str):
+        return self._brapi if country == "BR" else self._finnhub
 
-        ticker = yfinance.Ticker(symbol)
-        info = ticker.info
-        result = {
-            "symbol": symbol,
-            "name": info.get("shortName", ""),
-            "current_price": info.get("currentPrice", 0.0),
-            "currency": info.get("currency", "USD"),
-            "market_cap": info.get("marketCap", 0),
-        }
-        self._stock_quote_cache[symbol] = result
+    def get_stock_quote(self, symbol: str, country: str = "US", db: Session | None = None) -> dict:
+        if symbol in self._quote_cache:
+            return self._quote_cache[symbol]
+
+        # Try DB first
+        if db is not None:
+            stored = db.query(MarketQuote).filter_by(symbol=symbol).first()
+            if stored is not None:
+                # Warn if data is stale (>24h)
+                age = datetime.now(timezone.utc) - stored.updated_at.replace(tzinfo=timezone.utc)
+                if age.total_seconds() > 86400:
+                    logger.warning(f"Stale quote for {symbol}: last updated {stored.updated_at}")
+                result = {
+                    "symbol": stored.symbol,
+                    "name": stored.name,
+                    "current_price": stored.current_price,
+                    "currency": stored.currency,
+                    "market_cap": stored.market_cap,
+                }
+                self._quote_cache[symbol] = result
+                return result
+
+        # Fallback to live provider
+        provider = self._get_provider(country)
+        result = provider.get_quote(symbol)
+        self._quote_cache[symbol] = result
+
+        # Store in DB for future reads
+        if db is not None:
+            quote = db.query(MarketQuote).filter_by(symbol=symbol).first()
+            if quote is None:
+                quote = MarketQuote(symbol=symbol, country=country)
+                db.add(quote)
+            quote.name = result["name"]
+            quote.current_price = result["current_price"]
+            quote.currency = result["currency"]
+            quote.market_cap = result["market_cap"]
+            quote.country = country
+            quote.updated_at = datetime.now(timezone.utc)
+            db.commit()
+
         return result
 
-    def get_stock_history(self, symbol: str, period: str = "1mo") -> list[dict]:
+    def get_stock_history(self, symbol: str, period: str = "1mo", country: str = "US") -> list[dict]:
         cache_key = f"{symbol}:{period}"
-        if cache_key in self._stock_history_cache:
-            return self._stock_history_cache[cache_key]
+        if cache_key in self._history_cache:
+            return self._history_cache[cache_key]
 
-        ticker = yfinance.Ticker(symbol)
-        df = ticker.history(period=period)
-        result = [
-            {
-                "date": idx.strftime("%Y-%m-%d"),
-                "close": row["Close"],
-                "volume": int(row["Volume"]),
-            }
-            for idx, row in df.iterrows()
-        ]
-        self._stock_history_cache[cache_key] = result
+        provider = self._get_provider(country)
+        result = provider.get_history(symbol, period)
+        self._history_cache[cache_key] = result
         return result
+
+    def get_quote_safe(
+        self, symbol_or_coin_id: str, is_crypto: bool = False, country: str = "US", db: Session | None = None
+    ) -> float | None:
+        try:
+            if is_crypto:
+                quote = self.get_crypto_quote(symbol_or_coin_id)
+            else:
+                quote = self.get_stock_quote(symbol_or_coin_id, country=country, db=db)
+            return quote.get("current_price")
+        except Exception:
+            return None
 
     def get_crypto_quote(self, coin_id: str) -> dict:
         if coin_id in self._crypto_quote_cache:
@@ -79,17 +128,6 @@ class MarketDataService:
         self._crypto_quote_cache[coin_id] = result
         return result
 
-    def get_quote_safe(self, symbol_or_coin_id: str, is_crypto: bool = False) -> float | None:
-        """Return current price or None if fetch fails."""
-        try:
-            if is_crypto:
-                quote = self.get_crypto_quote(symbol_or_coin_id)
-            else:
-                quote = self.get_stock_quote(symbol_or_coin_id)
-            return quote.get("current_price")
-        except Exception:
-            return None
-
     def get_crypto_history(self, coin_id: str, days: int = 30) -> list[dict]:
         cache_key = f"{coin_id}:{days}"
         if cache_key in self._crypto_history_cache:
@@ -101,7 +139,7 @@ class MarketDataService:
         data = resp.json()
         result = [
             {
-                "date": datetime.utcfromtimestamp(ts / 1000).strftime("%Y-%m-%d"),
+                "date": datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d"),
                 "price": price,
             }
             for ts, price in data["prices"]
