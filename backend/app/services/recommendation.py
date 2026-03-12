@@ -14,13 +14,13 @@ class RecommendationService:
         self.portfolio_service = PortfolioService(db)
         self.quarantine_service = QuarantineService(db)
 
-    def _get_current_price(self, symbol: str, class_name: str) -> float:
+    def _get_current_price(self, symbol: str, class_name: str, country: str = "US", db: Session | None = None) -> float:
         if class_name in CRYPTO_CLASS_NAMES:
             coin_id = CRYPTO_COINGECKO_MAP.get(symbol)
             if coin_id:
                 quote = self.market_data.get_crypto_quote(coin_id)
                 return quote["current_price"]
-        quote = self.market_data.get_stock_quote(symbol)
+        quote = self.market_data.get_stock_quote(symbol, country=country, db=db)
         return quote["current_price"]
 
     def get_recommendations(self, user_id: str, count: int = 2) -> list[dict]:
@@ -61,7 +61,8 @@ class RecommendationService:
         for h in holdings:
             ac = class_map.get(h["asset_class_id"])
             class_name = ac.name if ac else ""
-            price = self._get_current_price(h["symbol"], class_name)
+            country = ac.country if ac else "US"
+            price = self._get_current_price(h["symbol"], class_name, country=country, db=self.db)
             asset_values[h["symbol"]] = h["quantity"] * price
 
         total_value = sum(asset_values.values())

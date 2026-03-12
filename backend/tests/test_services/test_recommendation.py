@@ -55,8 +55,8 @@ def _mock_market_data():
     """Return a mock MarketDataService that returns predictable prices."""
     mock = MagicMock()
 
-    def stock_quote(symbol):
-        prices = {"AAPL": 150.0, "GOOG": 200.0}
+    def stock_quote(symbol, country="US", db=None):
+        prices = {"AAPL": 150.0, "GOOG": 200.0, "PETR4.SA": 40.0}
         return {"symbol": symbol, "current_price": prices.get(symbol, 100.0)}
 
     def crypto_quote(coin_id):
@@ -125,3 +125,22 @@ class TestRecommendationService:
 
         symbols = [r["symbol"] for r in recs]
         assert "BTC" not in symbols
+
+    def test_recommend_with_br_stocks(self, db):
+        """BR stock should route through brapi (country=BR)."""
+        user = _create_user(db)
+
+        ac_br = _create_asset_class(db, user.id, "BR Stocks", 100.0)
+        ac_br.country = "BR"
+        db.commit()
+
+        _create_asset_weight(db, ac_br.id, "PETR4.SA", 100.0)
+        _create_buy(db, user.id, ac_br.id, "PETR4.SA", 100, 38.0)
+
+        mock_market = MagicMock()
+        mock_market.get_stock_quote.return_value = {"current_price": 40.0}
+
+        svc = RecommendationService(db, market_data_service=mock_market)
+        recs = svc.get_recommendations(user.id, count=1)
+
+        mock_market.get_stock_quote.assert_called_with("PETR4.SA", country="BR", db=db)
