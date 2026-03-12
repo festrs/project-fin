@@ -1,3 +1,7 @@
+import logging
+import os
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
@@ -6,7 +10,58 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.middleware.rate_limit import limiter
 
-app = FastAPI(title="Project Fin", version="0.1.0")
+logger = logging.getLogger(__name__)
+
+
+def _run_scheduled_fetch():
+    from app.database import SessionLocal
+    from app.services.market_data import get_market_data_service
+
+    service = get_market_data_service()
+    from app.services.market_data_scheduler import MarketDataScheduler
+    scheduler = MarketDataScheduler(
+        finnhub_provider=service._finnhub,
+        brapi_provider=service._brapi,
+    )
+
+    db = SessionLocal()
+    try:
+        scheduler.fetch_all_quotes(db)
+    except Exception:
+        logger.exception("Scheduled market data fetch failed")
+    finally:
+        db.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.database import Base, engine
+    Base.metadata.create_all(bind=engine)
+    from app.seed import seed_data
+    seed_data()
+
+    bg_scheduler = None
+    if settings.enable_scheduler:
+        from apscheduler.schedulers.background import BackgroundScheduler
+        bg_scheduler = BackgroundScheduler()
+        bg_scheduler.add_job(
+            _run_scheduled_fetch, "cron",
+            hour=settings.scheduler_hours,
+            id="market_data_fetch",
+        )
+        bg_scheduler.start()
+        logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
+
+        _run_scheduled_fetch()
+
+    yield
+
+    if bg_scheduler is not None:
+        bg_scheduler.shutdown()
+        logger.info("Market data scheduler stopped")
+
+
+app = FastAPI(title="Project Fin", version="0.1.0", lifespan=lifespan)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
@@ -33,14 +88,6 @@ app.include_router(crypto.router)
 app.include_router(portfolio.router)
 app.include_router(recommendations.router)
 app.include_router(quarantine.router)
-
-
-@app.on_event("startup")
-def startup():
-    from app.database import Base, engine
-    Base.metadata.create_all(bind=engine)
-    from app.seed import seed_data
-    seed_data()
 
 
 @app.get("/api/health")

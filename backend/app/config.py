@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     brapi_api_key: str = ""
     finnhub_base_url: str = "https://finnhub.io/api/v1"
     brapi_base_url: str = "https://brapi.dev"
+    enable_scheduler: bool = True
+    scheduler_hours: str = "9,17"
 
     class Config:
         env_file = ".env"
