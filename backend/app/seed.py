@@ -15,9 +15,14 @@ def seed_data():
         db.add(user)
         db.flush()
 
-        class_names = ["US Stocks", "BR Stocks", "Crypto", "Stablecoins"]
-        for name in class_names:
-            ac = AssetClass(user_id=user.id, name=name, target_weight=25.0)
+        class_configs = [
+            ("US Stocks", "US"),
+            ("BR Stocks", "BR"),
+            ("Crypto", "US"),
+            ("Stablecoins", "US"),
+        ]
+        for name, country in class_configs:
+            ac = AssetClass(user_id=user.id, name=name, target_weight=25.0, country=country)
             db.add(ac)
 
         config = QuarantineConfig(user_id=user.id, threshold=2, period_days=180)
