@@ -1,4 +1,5 @@
 import logging
+import time
 from datetime import datetime, timezone
 
 from sqlalchemy.orm import Session
@@ -50,3 +51,7 @@ class MarketDataScheduler:
             except Exception:
                 logger.exception(f"Failed to fetch quote for {symbol}")
                 db.rollback()
+            finally:
+                # Finnhub free tier: 60 req/min, each US quote uses 2 calls → rate limit to ~25/min
+                if country != "BR":
+                    time.sleep(1.5)
