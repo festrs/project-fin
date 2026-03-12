@@ -2,18 +2,9 @@ from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
-from app.services.market_data import MarketDataService
+from app.services.market_data import MarketDataService, CRYPTO_COINGECKO_MAP, CRYPTO_CLASS_NAMES
 from app.services.portfolio import PortfolioService
 from app.services.quarantine import QuarantineService
-
-CRYPTO_COINGECKO_MAP = {
-    "BTC": "bitcoin", "BTC-USD": "bitcoin",
-    "ETH": "ethereum", "ETH-USD": "ethereum",
-    "USDT": "tether", "USDT-USD": "tether",
-    "USDC": "usd-coin", "USDC-USD": "usd-coin",
-    "DAI": "dai", "DAI-USD": "dai",
-}
-CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
 
 
 class RecommendationService:

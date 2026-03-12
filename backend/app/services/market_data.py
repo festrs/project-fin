@@ -5,6 +5,16 @@ import yfinance
 from cachetools import TTLCache
 
 
+CRYPTO_COINGECKO_MAP = {
+    "BTC": "bitcoin", "BTC-USD": "bitcoin",
+    "ETH": "ethereum", "ETH-USD": "ethereum",
+    "USDT": "tether", "USDT-USD": "tether",
+    "USDC": "usd-coin", "USDC-USD": "usd-coin",
+    "DAI": "dai", "DAI-USD": "dai",
+}
+CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
+
+
 class MarketDataService:
     def __init__(self):
         self._stock_quote_cache: TTLCache = TTLCache(maxsize=256, ttl=300)
