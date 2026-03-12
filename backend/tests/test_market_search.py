@@ -18,7 +18,7 @@ def test_stock_quote_returns_price_field():
         mock_mds = MagicMock()
         mock_mds.get_stock_quote.return_value = mock_quote
         mock_get.return_value = mock_mds
-        resp = client.get("/api/stocks/AAPL", headers={"X-User-Id": "test"})
+        resp = client.get("/api/stocks/us/AAPL", headers={"X-User-Id": "test"})
         assert resp.status_code == 200
         data = resp.json()
         assert "price" in data
