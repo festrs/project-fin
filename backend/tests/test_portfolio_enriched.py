@@ -38,7 +38,7 @@ def test_enrich_holdings_adds_current_price():
     }
     weight_map = {"AAPL": 50.0, "GOOG": 50.0}
 
-    def mock_safe(symbol, is_crypto=False):
+    def mock_safe(symbol, is_crypto=False, country="US", db=None):
         prices = {"AAPL": 150.0, "GOOG": 300.0}
         return prices.get(symbol)
 
@@ -78,7 +78,7 @@ def test_enrich_holdings_calculates_weights():
     class_map = {"cls-1": {"name": "Stocks US", "target_weight": 50.0}}
     weight_map = {"AAPL": 60.0, "GOOG": 40.0}
 
-    def mock_safe(symbol, is_crypto=False):
+    def mock_safe(symbol, is_crypto=False, country="US", db=None):
         return 100.0  # same price for both
 
     market_data = MarketDataService()

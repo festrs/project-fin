@@ -129,6 +129,7 @@ class PortfolioService:
         class_map: dict[str, dict],
         weight_map: dict[str, float],
         market_data: MarketDataService,
+        db: Session | None = None,
     ) -> list[dict]:
         """Enrich holdings with current prices, values, gain/loss, and weights."""
 
@@ -136,11 +137,12 @@ class PortfolioService:
             symbol = holding["symbol"]
             class_info = class_map.get(holding["asset_class_id"], {})
             class_name = class_info.get("name", "")
+            country = class_info.get("country", "US")
             if class_name in CRYPTO_CLASS_NAMES:
                 coin_id = CRYPTO_COINGECKO_MAP.get(symbol)
                 if coin_id:
                     return symbol, market_data.get_quote_safe(coin_id, is_crypto=True)
-            return symbol, market_data.get_quote_safe(symbol, is_crypto=False)
+            return symbol, market_data.get_quote_safe(symbol, is_crypto=False, country=country, db=db)
 
         # Fetch prices in parallel
         prices: dict[str, float | None] = {}

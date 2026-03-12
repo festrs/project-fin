@@ -26,13 +26,13 @@ def portfolio_summary(
     class_map = {}
     weight_map = {}
     for ac in asset_classes:
-        class_map[ac.id] = {"name": ac.name, "target_weight": ac.target_weight}
+        class_map[ac.id] = {"name": ac.name, "target_weight": ac.target_weight, "country": ac.country}
         weights = db.query(AssetWeight).filter(AssetWeight.asset_class_id == ac.id).all()
         for aw in weights:
             weight_map[aw.symbol] = aw.target_weight
 
     market_data = get_market_data_service()
-    enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data)
+    enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data, db=db)
     return {"holdings": enriched}
 
 
