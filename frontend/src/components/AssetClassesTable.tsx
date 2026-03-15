@@ -68,7 +68,7 @@ export function AssetClassesTable({
       header: "Diff",
       sortable: true,
       render: (row) => {
-        const color = row.diff > 0 ? "text-green-600" : row.diff < 0 ? "text-red-600" : "";
+        const color = row.diff > 0 ? "text-positive" : row.diff < 0 ? "text-negative" : "";
         return <span className={color}>{row.diff > 0 ? "+" : ""}{row.diff.toFixed(1)}%</span>;
       },
     },
@@ -77,7 +77,7 @@ export function AssetClassesTable({
       header: "",
       render: (row) => (
         <button
-          className="text-red-500 hover:text-red-700 text-sm"
+          className="bg-[var(--glass-negative-soft)] text-negative px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-[rgba(239,68,68,0.15)]"
           onClick={(e) => {
             e.stopPropagation();
             onDeleteClass(row.id);
@@ -103,11 +103,11 @@ export function AssetClassesTable({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Asset Classes</h2>
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Asset Classes</h2>
         <button
-          className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700"
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
           onClick={() => setShowForm(!showForm)}
         >
           Add Class
@@ -117,20 +117,20 @@ export function AssetClassesTable({
       {showForm && (
         <form onSubmit={handleSubmit} className="mb-4 flex gap-2 items-end">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Name</label>
+            <label className="block text-base text-text-muted mb-1">Name</label>
             <input
               type="text"
-              className="border rounded px-2 py-1 text-sm"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Class name"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Target Weight (%)</label>
+            <label className="block text-base text-text-muted mb-1">Target Weight (%)</label>
             <input
               type="number"
-              className="border rounded px-2 py-1 text-sm w-24"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-24"
               value={newWeight}
               onChange={(e) => setNewWeight(e.target.value)}
               placeholder="0"
@@ -138,13 +138,13 @@ export function AssetClassesTable({
           </div>
           <button
             type="submit"
-            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
           >
             Save
           </button>
           <button
             type="button"
-            className="text-gray-500 px-3 py-1 rounded text-sm hover:text-gray-700"
+            className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
             onClick={() => setShowForm(false)}
           >
             Cancel
