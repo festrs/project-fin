@@ -96,19 +96,19 @@ export function DataTable<T extends Record<string, any>>({
       {filterKey && (
         <input
           type="text"
-          className="mb-3 w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="mb-3 w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
           placeholder={filterPlaceholder ?? "Filter..."}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
       )}
-      <table className="w-full text-sm text-left">
-        <thead className="bg-gray-50 text-gray-600 uppercase text-xs">
+      <table className="w-full text-base text-left">
+        <thead className="text-text-muted uppercase text-base tracking-wide">
           <tr>
             {columns.map((col) => (
               <th
                 key={col.key}
-                className={`px-4 py-3 ${col.sortable ? "cursor-pointer select-none" : ""}`}
+                className={`px-4 pb-3 font-semibold ${col.sortable ? "cursor-pointer select-none" : ""}`}
                 onClick={col.sortable ? () => handleSort(col.key) : undefined}
               >
                 {col.header}
@@ -119,11 +119,11 @@ export function DataTable<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200">
+        <tbody className="">
           {processed.map((row) => {
             const rowId = getRowId(row);
             return (
-              <tr key={rowId} className="even:bg-gray-50">
+              <tr key={rowId} className="even:bg-[var(--glass-row-alt)] rounded-lg">
                 {columns.map((col) => {
                   const isEditing =
                     editingCell?.rowId === rowId &&
@@ -132,14 +132,14 @@ export function DataTable<T extends Record<string, any>>({
                   return (
                     <td
                       key={col.key}
-                      className={`px-4 py-3 ${onRowClick ? "cursor-pointer" : ""}`}
+                      className={`px-4 py-3.5 text-text-secondary ${onRowClick ? "cursor-pointer" : ""}`}
                       onClick={() => onRowClick?.(row)}
                       onDoubleClick={() => handleDoubleClick(row, col)}
                     >
                       {isEditing ? (
                         <input
                           type="text"
-                          className="border border-blue-400 rounded px-1 py-0.5 text-sm w-full"
+                          className="border border-primary rounded-[10px] px-2.5 py-1.5 text-base w-full focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)]"
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={() => commitEdit(row, col)}
@@ -168,7 +168,7 @@ export function DataTable<T extends Record<string, any>>({
         processed.map((row) => {
           if (getRowId(row) !== expandedRow) return null;
           return (
-            <div key={`expanded-${getRowId(row)}`} className="px-4 py-3 bg-gray-50 border-t">
+            <div key={`expanded-${getRowId(row)}`} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
               {renderExpanded(row)}
             </div>
           );
