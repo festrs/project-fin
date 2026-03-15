@@ -121,12 +121,12 @@ export function HoldingsTable({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Holdings</h2>
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Holdings</h2>
         {onAddAsset && (
           <button
-            className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700"
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
             onClick={() => setShowAddAsset(!showAddAsset)}
           >
             Add Asset
@@ -137,20 +137,20 @@ export function HoldingsTable({
       {showAddAsset && (
         <form onSubmit={handleAddAsset} className="mb-4 flex gap-2 items-end">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Symbol</label>
+            <label className="block text-base text-text-muted mb-1">Symbol</label>
             <input
               type="text"
-              className="border rounded px-2 py-1 text-sm"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
               value={newSymbol}
               onChange={(e) => setNewSymbol(e.target.value)}
               placeholder="AAPL"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Asset Class ID</label>
+            <label className="block text-base text-text-muted mb-1">Asset Class ID</label>
             <input
               type="text"
-              className="border rounded px-2 py-1 text-sm"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
               value={newAssetClassId}
               onChange={(e) => setNewAssetClassId(e.target.value)}
               placeholder="class-id"
@@ -158,7 +158,7 @@ export function HoldingsTable({
           </div>
           <button
             type="submit"
-            className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
           >
             Add
           </button>
@@ -183,7 +183,7 @@ export function HoldingsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-gray-50 text-gray-600 uppercase text-xs">
+            <tr className="text-text-muted uppercase text-base tracking-wide">
               <th className="text-left px-3 py-2">Symbol</th>
               <th className="text-right px-3 py-2">Qty</th>
               <th className="text-right px-3 py-2">Avg Price</th>
@@ -285,17 +285,17 @@ function GroupSection({
     <>
       {/* Group header row */}
       <tr
-        className="bg-blue-50 cursor-pointer hover:bg-blue-100"
+        className="bg-[var(--glass-primary-soft)] cursor-pointer hover:bg-[rgba(79,70,229,0.08)]"
         onClick={onToggleGroup}
       >
-        <td colSpan={4} className="px-3 py-2 font-semibold text-blue-700">
+        <td colSpan={4} className="px-3 py-2 font-semibold text-primary">
           <span className="mr-2 text-xs">{isCollapsed ? "▶" : "▼"}</span>
           {group.className}
-          <span className="ml-2 text-xs font-normal text-gray-500">
+          <span className="ml-2 text-xs font-normal text-text-muted">
             ({group.holdings.length} {group.holdings.length === 1 ? "asset" : "assets"})
           </span>
         </td>
-        <td className="px-3 py-2 text-right font-semibold text-blue-700">
+        <td className="px-3 py-2 text-right font-semibold text-primary">
           {formatCurrency(groupTotal, groupCurrency)}
         </td>
         <td colSpan={4} />
@@ -373,7 +373,7 @@ function HoldingRows({
 
   return (
     <>
-      <tr className="border-b hover:bg-gray-50 cursor-pointer" onClick={onRowClick}>
+      <tr className="even:bg-[var(--glass-row-alt)] hover:bg-[var(--glass-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
         <td className="px-3 py-2 pl-8">
           <span className="flex items-center gap-2">
             <span className="font-medium">{h.symbol}</span>
@@ -398,9 +398,9 @@ function HoldingRows({
             <span
               className={
                 h.gain_loss > 0
-                  ? "text-green-600"
+                  ? "text-positive"
                   : h.gain_loss < 0
-                  ? "text-red-600"
+                  ? "text-negative"
                   : ""
               }
             >
@@ -424,7 +424,7 @@ function HoldingRows({
           {isEditingWeight ? (
             <input
               type="text"
-              className="border border-blue-400 rounded px-1 py-0.5 text-sm w-16 text-right"
+              className="border border-primary rounded px-1 py-0.5 text-sm w-16 text-right"
               value={editWeightValue}
               onChange={(e) => onWeightChange(e.target.value)}
               onBlur={onCommitWeight}
@@ -445,7 +445,7 @@ function HoldingRows({
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center">
             <button
-              className="text-green-600 hover:text-green-800 text-xs px-1"
+              className="text-positive hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onBuy();
@@ -454,7 +454,7 @@ function HoldingRows({
               Buy
             </button>
             <button
-              className="text-red-600 hover:text-red-800 text-xs px-1"
+              className="text-negative hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onSell();
@@ -469,14 +469,14 @@ function HoldingRows({
       {/* Expanded transaction history */}
       {isExpanded && (
         <tr>
-          <td colSpan={9} className="px-4 py-3 bg-gray-50 border-t">
-            <h4 className="font-semibold text-sm mb-2">Transaction History</h4>
+          <td colSpan={9} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
+            <h4 className="font-semibold text-base text-text-primary mb-2">Transaction History</h4>
             {transactions.length === 0 ? (
-              <p className="text-gray-500 text-sm">No transactions found</p>
+              <p className="text-text-muted text-base">No transactions found</p>
             ) : (
               <table className="w-full text-xs">
                 <thead>
-                  <tr className="text-gray-500">
+                  <tr className="text-text-muted">
                     <th className="text-left py-1 px-2">Date</th>
                     <th className="text-left py-1 px-2">Type</th>
                     <th className="text-right py-1 px-2">Qty</th>
