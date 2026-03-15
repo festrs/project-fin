@@ -43,7 +43,7 @@ export function MarketSearch() {
     <div className="space-y-4">
       <form onSubmit={handleSubmit} className="flex gap-4 items-end">
         <div className="flex-1">
-          <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="search" className="block text-base font-medium text-text-secondary mb-1">
             Search
           </label>
           <input
@@ -52,11 +52,11 @@ export function MarketSearch() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder={type === "stock" ? "e.g. AAPL" : "e.g. bitcoin"}
-            className="w-full border border-gray-300 rounded px-3 py-2"
+            className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
           />
         </div>
         <div className="flex gap-3 items-center pb-1">
-          <label className="flex items-center gap-1 text-sm">
+          <label className="flex items-center gap-1 text-base">
             <input
               type="radio"
               name="marketType"
@@ -66,7 +66,7 @@ export function MarketSearch() {
             />
             Stock
           </label>
-          <label className="flex items-center gap-1 text-sm">
+          <label className="flex items-center gap-1 text-base">
             <input
               type="radio"
               name="marketType"
@@ -80,33 +80,33 @@ export function MarketSearch() {
         <button
           type="submit"
           disabled={loading}
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
         >
           {loading ? "Searching..." : "Search"}
         </button>
       </form>
 
-      {error && <p className="text-red-600 text-sm">{error}</p>}
+      {error && <p className="text-negative text-base bg-[var(--glass-negative-soft)] rounded-[10px] px-4 py-3">{error}</p>}
 
       {quote && (
-        <div className="bg-white rounded-lg shadow p-4">
+        <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
             <div>
-              <p className="text-sm text-gray-500">Name</p>
+              <p className="text-base text-text-muted">Name</p>
               <p className="font-semibold">{getDisplayName(quote)}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Price</p>
+              <p className="text-base text-text-muted">Price</p>
               <p className="font-semibold">
                 {quote.currency} {quote.price.toLocaleString()}
               </p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Currency</p>
+              <p className="text-base text-text-muted">Currency</p>
               <p className="font-semibold">{quote.currency}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Market Cap</p>
+              <p className="text-base text-text-muted">Market Cap</p>
               <p className="font-semibold">{getMarketCap(quote)}</p>
             </div>
           </div>
@@ -120,7 +120,7 @@ export function MarketSearch() {
                 <Line
                   type="monotone"
                   dataKey="price"
-                  stroke="#3B82F6"
+                  stroke="#4f46e5"
                   strokeWidth={2}
                   dot={false}
                 />
