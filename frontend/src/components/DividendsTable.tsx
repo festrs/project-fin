@@ -79,11 +79,11 @@ export function DividendsTable({
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold">Dividends</h2>
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Dividends</h2>
         <button
-          className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-700"
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
           onClick={() => setShowForm(!showForm)}
         >
           Add Dividend
@@ -92,29 +92,29 @@ export function DividendsTable({
 
       <div className="flex gap-3 mb-4 items-end flex-wrap">
         <div>
-          <label className="block text-xs text-gray-600 mb-1">Filter by Symbol</label>
+          <label className="block text-base text-text-muted mb-1">Filter by Symbol</label>
           <input
             type="text"
-            className="border rounded px-2 py-1 text-sm"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={symbolFilter}
             onChange={(e) => setSymbolFilter(e.target.value)}
             placeholder="Symbol..."
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">From</label>
+          <label className="block text-base text-text-muted mb-1">From</label>
           <input
             type="date"
-            className="border rounded px-2 py-1 text-sm"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={dateFrom}
             onChange={(e) => setDateFrom(e.target.value)}
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">To</label>
+          <label className="block text-base text-text-muted mb-1">To</label>
           <input
             type="date"
-            className="border rounded px-2 py-1 text-sm"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={dateTo}
             onChange={(e) => setDateTo(e.target.value)}
           />
@@ -124,10 +124,10 @@ export function DividendsTable({
       {showForm && (
         <div className="mb-4">
           <div className="mb-2">
-            <label className="block text-xs text-gray-600 mb-1">Symbol</label>
+            <label className="block text-base text-text-muted mb-1">Symbol</label>
             <input
               type="text"
-              className="border rounded px-2 py-1 text-sm"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
               value={formSymbol}
               onChange={(e) => setFormSymbol(e.target.value)}
               placeholder="AAPL"
