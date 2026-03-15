@@ -2,7 +2,11 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import { HoldingsTable } from "../HoldingsTable";
-import { Holding, QuarantineStatus, Transaction } from "../../types";
+import { AssetClass, Holding, QuarantineStatus, Transaction } from "../../types";
+
+const mockAssetClasses: AssetClass[] = [
+  { id: "c1", user_id: "u1", name: "Stocks", target_weight: 60, country: "us", created_at: "2024-01-01", updated_at: "2024-01-01" },
+];
 
 const mockHoldings: Holding[] = [
   {
@@ -64,6 +68,7 @@ describe("HoldingsTable", () => {
     render(
       <HoldingsTable
         holdings={mockHoldings}
+        assetClasses={mockAssetClasses}
         loading={false}
         quarantineStatuses={mockQuarantineStatuses}
         transactions={[]}
@@ -83,6 +88,7 @@ describe("HoldingsTable", () => {
     render(
       <HoldingsTable
         holdings={mockHoldings}
+        assetClasses={mockAssetClasses}
         loading={false}
         quarantineStatuses={mockQuarantineStatuses}
         transactions={[]}
@@ -102,6 +108,7 @@ describe("HoldingsTable", () => {
     const { rerender } = render(
       <HoldingsTable
         holdings={mockHoldings}
+        assetClasses={mockAssetClasses}
         loading={false}
         transactions={[]}
         onFetchTransactions={fetchTransactions}
@@ -117,6 +124,7 @@ describe("HoldingsTable", () => {
     rerender(
       <HoldingsTable
         holdings={mockHoldings}
+        assetClasses={mockAssetClasses}
         loading={false}
         transactions={mockTransactions}
         onFetchTransactions={fetchTransactions}
