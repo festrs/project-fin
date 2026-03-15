@@ -34,9 +34,9 @@ export function PerformanceChart() {
   return (
     <ChartCard title="Portfolio Performance">
       {loading ? (
-        <p className="text-gray-500 text-sm">Loading...</p>
+        <p className="text-text-muted text-base">Loading...</p>
       ) : data.length === 0 ? (
-        <p className="text-gray-500 text-sm">No performance data available</p>
+        <p className="text-text-muted text-base">No performance data available</p>
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={data}>
@@ -47,7 +47,7 @@ export function PerformanceChart() {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#3B82F6"
+              stroke="#4f46e5"
               strokeWidth={2}
               dot={false}
             />
