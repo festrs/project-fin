@@ -57,16 +57,16 @@ export function TransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 p-4 bg-gray-50 rounded border">
-      <h3 className="font-semibold text-sm">
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px]">
+      <h3 className="font-semibold text-base text-text-primary">
         New Transaction - {symbol}
       </h3>
 
       <div className="flex gap-2">
-        <label className="text-sm">
+        <label className="text-base text-text-muted">
           Type:
           <select
-            className="ml-1 border rounded px-2 py-1 text-sm"
+            className="ml-1 bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={type}
             onChange={(e) => setType(e.target.value as TransactionType)}
           >
@@ -80,32 +80,32 @@ export function TransactionForm({
       {!isDividend && (
         <div className="flex gap-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Quantity</label>
+            <label className="block text-base text-text-muted mb-1">Quantity</label>
             <input
               type="number"
               step="any"
-              className="border rounded px-2 py-1 text-sm w-28"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Unit Price</label>
+            <label className="block text-base text-text-muted mb-1">Unit Price</label>
             <input
               type="number"
               step="any"
-              className="border rounded px-2 py-1 text-sm w-28"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
               value={unitPrice}
               onChange={(e) => setUnitPrice(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Total</label>
+            <label className="block text-base text-text-muted mb-1">Total</label>
             <input
               type="text"
-              className="border rounded px-2 py-1 text-sm w-28 bg-gray-100"
+              className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] rounded-[10px] px-3.5 py-2.5 text-base w-28 text-text-muted"
               value={computedTotal}
               readOnly
             />
@@ -115,11 +115,11 @@ export function TransactionForm({
 
       {isDividend && (
         <div>
-          <label className="block text-xs text-gray-600 mb-1">Total Value</label>
+          <label className="block text-base text-text-muted mb-1">Total Value</label>
           <input
             type="number"
             step="any"
-            className="border rounded px-2 py-1 text-sm w-28"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
             value={totalValue}
             onChange={(e) => setTotalValue(e.target.value)}
             required
@@ -129,9 +129,9 @@ export function TransactionForm({
 
       <div className="flex gap-3">
         <div>
-          <label className="block text-xs text-gray-600 mb-1">Currency</label>
+          <label className="block text-base text-text-muted mb-1">Currency</label>
           <select
-            className="border rounded px-2 py-1 text-sm"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={currency}
             onChange={(e) => setCurrency(e.target.value as "BRL" | "USD")}
           >
@@ -140,20 +140,20 @@ export function TransactionForm({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">Tax Amount</label>
+          <label className="block text-base text-text-muted mb-1">Tax Amount</label>
           <input
             type="number"
             step="any"
-            className="border rounded px-2 py-1 text-sm w-28"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
             value={taxAmount}
             onChange={(e) => setTaxAmount(e.target.value)}
           />
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">Date</label>
+          <label className="block text-base text-text-muted mb-1">Date</label>
           <input
             type="date"
-            className="border rounded px-2 py-1 text-sm"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
@@ -162,10 +162,10 @@ export function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-xs text-gray-600 mb-1">Notes</label>
+        <label className="block text-base text-text-muted mb-1">Notes</label>
         <input
           type="text"
-          className="border rounded px-2 py-1 text-sm w-full"
+          className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional notes"
@@ -176,14 +176,14 @@ export function TransactionForm({
         <button
           type="submit"
           disabled={submitting}
-          className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
         >
           {submitting ? "Saving..." : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="text-gray-500 px-3 py-1 rounded text-sm hover:text-gray-700"
+          className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
         >
           Cancel
         </button>
