@@ -251,7 +251,7 @@ export function ClassSummaryTable({
         </div>
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead>
             <tr className="text-text-muted uppercase text-base tracking-wide">
               <th className="text-left py-2 px-2">Class</th>
@@ -366,7 +366,7 @@ export function ClassSummaryTable({
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-gray-200 rounded overflow-hidden">
+                        <div className="flex-1 h-2 bg-[rgba(0,0,0,0.06)] rounded overflow-hidden">
                           <div
                             className={`h-full rounded transition-all ${
                               Math.abs(totalTargetWeight - 100) < 0.5 ? "bg-positive" : "bg-warning"

@@ -181,7 +181,7 @@ export function HoldingsTable({
       )}
 
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-base">
           <thead>
             <tr className="text-text-muted uppercase text-base tracking-wide">
               <th className="text-left px-3 py-2">Symbol</th>
@@ -424,7 +424,7 @@ function HoldingRows({
           {isEditingWeight ? (
             <input
               type="text"
-              className="border border-primary rounded px-1 py-0.5 text-sm w-16 text-right"
+              className="border border-[var(--glass-border-input)] rounded-[10px] px-2 py-1 text-base w-16 text-right focus:border-primary focus:ring-2 focus:ring-[var(--glass-primary-ring)] outline-none"
               value={editWeightValue}
               onChange={(e) => onWeightChange(e.target.value)}
               onBlur={onCommitWeight}
@@ -474,7 +474,7 @@ function HoldingRows({
             {transactions.length === 0 ? (
               <p className="text-text-muted text-base">No transactions found</p>
             ) : (
-              <table className="w-full text-xs">
+              <table className="w-full text-base">
                 <thead>
                   <tr className="text-text-muted">
                     <th className="text-left py-1 px-2">Date</th>
