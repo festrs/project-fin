@@ -13,8 +13,8 @@ interface PortfolioCompositionChartProps {
 }
 
 const COLORS = [
-  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
-  "#EC4899", "#14B8A6", "#F97316", "#6366F1", "#84CC16",
+  "#4f46e5", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
+  "#ec4899", "#14b8a6", "#f97316", "#6366f1", "#84cc16",
 ];
 
 export function PortfolioCompositionChart({ allocation, classSummaries }: PortfolioCompositionChartProps) {
@@ -37,7 +37,7 @@ export function PortfolioCompositionChart({ allocation, classSummaries }: Portfo
   if (actualData.length === 0) {
     return (
       <ChartCard title="Position vs Target">
-        <p className="text-gray-500 text-sm">No allocation data available</p>
+        <p className="text-text-muted text-base">No allocation data available</p>
       </ChartCard>
     );
   }
@@ -85,11 +85,11 @@ export function PortfolioCompositionChart({ allocation, classSummaries }: Portfo
           )}
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend
-            formatter={(value) => <span className="text-xs">{value}</span>}
+            formatter={(value) => <span className="text-base text-text-tertiary">{value}</span>}
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="text-center text-xs text-gray-500 -mt-2">
+      <div className="text-center text-base text-text-muted -mt-2">
         Outer: Actual &middot; Inner: Target
       </div>
     </ChartCard>
