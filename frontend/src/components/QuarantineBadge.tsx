@@ -12,7 +12,7 @@ export function QuarantineBadge({ isQuarantined, endsAt }: QuarantineBadgeProps)
 
   return (
     <span
-      className="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full text-xs font-medium"
+      className="bg-[rgba(245,158,11,0.1)] text-amber-700 px-2.5 py-1 rounded-md text-base font-semibold"
       title={title}
     >
       Quarantined
