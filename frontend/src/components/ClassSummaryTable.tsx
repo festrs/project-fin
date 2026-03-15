@@ -143,8 +143,8 @@ export function ClassSummaryTable({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <p className="text-gray-500 text-sm">Loading summary...</p>
+      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <p className="text-text-muted text-base">Loading summary...</p>
       </div>
     );
   }
@@ -225,25 +225,25 @@ export function ClassSummaryTable({
 
   if (summaries.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-lg font-semibold mb-3">Consolidated Portfolio</h2>
-        <p className="text-gray-500 text-sm">No holdings data available</p>
+      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px] mb-3">Consolidated Portfolio</h2>
+        <p className="text-text-muted text-base">No holdings data available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow p-4">
+    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-3">
         <div>
-          <h2 className="text-lg font-semibold">Consolidated Portfolio</h2>
-          <span className="text-xs text-gray-400">USD/BRL: {usdToBrl.toFixed(2)}</span>
+          <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Consolidated Portfolio</h2>
+          <span className="text-base text-text-muted">USD/BRL: {usdToBrl.toFixed(2)}</span>
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-gray-500">Invest (R$):</label>
+          <label className="text-base text-text-muted">Invest (R$):</label>
           <input
             type="number"
-            className="border rounded px-2 py-1 text-sm w-28"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base w-28 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             placeholder="Amount"
             value={investAmount}
             onChange={(e) => setInvestAmount(e.target.value)}
@@ -253,7 +253,7 @@ export function ClassSummaryTable({
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-gray-500 border-b">
+            <tr className="text-text-muted uppercase text-base tracking-wide">
               <th className="text-left py-2 px-2">Class</th>
               <th className="text-right py-2 px-2">Total Value</th>
               <th className="text-right py-2 px-2">Total R$</th>
@@ -264,7 +264,7 @@ export function ClassSummaryTable({
                   {onUpdateTargetWeight && !isEditing && (
                     <button
                       onClick={handleStartEditing}
-                      className="text-blue-500 hover:text-blue-700 ml-1"
+                      className="text-primary hover:text-primary-hover ml-1"
                       title="Edit targets"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -297,7 +297,7 @@ export function ClassSummaryTable({
                 divDisplay = (
                   <span title="Estimated annual dividends (Finnhub)">
                     {formatValue(estimatedDiv.annual_income, estimatedDiv.currency)}
-                    <span className="text-gray-400 text-xs ml-0.5">~</span>
+                    <span className="text-text-muted text-base ml-0.5">~</span>
                   </span>
                 );
               }
@@ -310,10 +310,10 @@ export function ClassSummaryTable({
               }
 
               return (
-                <tr key={s.classId} className="border-b hover:bg-gray-50">
-                  <td className="py-2 px-2 font-medium text-blue-600">{s.className}</td>
+                <tr key={s.classId} className="even:bg-[var(--glass-row-alt)] rounded-lg">
+                  <td className="py-2 px-2 font-medium text-primary">{s.className}</td>
                   <td className="py-2 px-2 text-right">{formatValue(s.totalValue, s.currency)}</td>
-                  <td className="py-2 px-2 text-right text-gray-500">
+                  <td className="py-2 px-2 text-right text-text-muted">
                     {s.currency === "USD"
                       ? formatValue(s.totalValueBRL, "BRL")
                       : ""}
@@ -326,7 +326,7 @@ export function ClassSummaryTable({
                         step="0.5"
                         min="0"
                         max="100"
-                        className="border rounded px-1.5 py-0.5 text-sm w-16 text-right"
+                        className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-2.5 py-1.5 text-base w-20 text-right focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
                         value={editedWeight ?? ""}
                         onChange={(e) => handleWeightChange(s.classId, e.target.value)}
                       />
@@ -338,21 +338,21 @@ export function ClassSummaryTable({
                     <div className="flex items-center justify-center gap-1.5">
                       {parsedInvest > 0 && investSuggestion > 0 ? (
                         <>
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-100 text-green-700 text-xs font-bold">+</span>
-                          <span className="text-green-700 text-xs font-medium">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--glass-positive-soft)] text-positive text-xs font-bold">+</span>
+                          <span className="text-positive text-base font-medium">
                             {formatValue(investSuggestion, "BRL")}
                           </span>
                         </>
                       ) : isUnder ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-green-100 text-green-700 text-xs font-bold">+</span>
+                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--glass-positive-soft)] text-positive text-xs font-bold">+</span>
                       ) : isOver ? (
-                        <div className="w-12 h-4 bg-red-400 rounded" title={`Overweight by ${Math.abs(displayDiff).toFixed(1)}%`} />
+                        <div className="w-12 h-4 bg-negative rounded" title={`Overweight by ${Math.abs(displayDiff).toFixed(1)}%`} />
                       ) : (
-                        <span className="text-gray-400 text-xs">-</span>
+                        <span className="text-text-muted text-base">-</span>
                       )}
                     </div>
                   </td>
-                  <td className="py-2 px-2 text-right text-gray-600">
+                  <td className="py-2 px-2 text-right text-text-muted">
                     {divDisplay}
                   </td>
                 </tr>
@@ -369,13 +369,13 @@ export function ClassSummaryTable({
                         <div className="flex-1 h-2 bg-gray-200 rounded overflow-hidden">
                           <div
                             className={`h-full rounded transition-all ${
-                              Math.abs(totalTargetWeight - 100) < 0.5 ? "bg-green-500" : "bg-yellow-500"
+                              Math.abs(totalTargetWeight - 100) < 0.5 ? "bg-positive" : "bg-warning"
                             }`}
                             style={{ width: `${Math.min(totalTargetWeight, 100)}%` }}
                           />
                         </div>
-                        <span className={`text-xs font-medium ${
-                          Math.abs(totalTargetWeight - 100) < 0.5 ? "text-green-600" : "text-yellow-600"
+                        <span className={`text-base font-medium ${
+                          Math.abs(totalTargetWeight - 100) < 0.5 ? "text-positive" : "text-warning"
                         }`}>
                           {totalTargetWeight.toFixed(0)}%
                         </span>
@@ -384,13 +384,13 @@ export function ClassSummaryTable({
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                      className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
                     >
                       {saving ? "Saving..." : "Save"}
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="text-gray-500 hover:text-gray-700 px-2 py-1 text-xs"
+                      className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
                     >
                       Cancel
                     </button>
@@ -398,7 +398,7 @@ export function ClassSummaryTable({
                 </td>
               </tr>
             )}
-            <tr className="font-semibold bg-blue-50">
+            <tr className="font-semibold bg-[var(--glass-primary-soft)]">
               <td className="py-2 px-2">Total</td>
               <td className="py-2 px-2" />
               <td className="py-2 px-2 text-right">
@@ -408,7 +408,7 @@ export function ClassSummaryTable({
               <td className="py-2 px-2 text-right">
                 {(isEditing ? totalTargetWeight : summaries.reduce((sum, s) => sum + s.targetWeight, 0)).toFixed(0)}%
               </td>
-              <td className="py-2 px-2 text-center text-green-700 text-xs font-medium">
+              <td className="py-2 px-2 text-center text-positive text-base font-medium">
                 {parsedInvest > 0 ? formatValue(parsedInvest, "BRL") : ""}
               </td>
               <td className="py-2 px-2 text-right">
