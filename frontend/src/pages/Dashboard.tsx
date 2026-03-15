@@ -81,11 +81,11 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+    <div className="space-y-4">
+      <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">Dashboard</h1>
 
       {/* Top row: Summary table + Donut chart side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
           <ClassSummaryTable
             holdings={holdings}
@@ -112,7 +112,7 @@ export default function Dashboard() {
 
       {/* Recommendations */}
       {recsLoading ? (
-        <p className="text-gray-500 text-sm">Loading recommendations...</p>
+        <p className="text-text-muted text-base">Loading recommendations...</p>
       ) : (
         <RecommendationCard recommendations={recommendations} />
       )}

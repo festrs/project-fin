@@ -40,23 +40,23 @@ export default function Settings() {
   };
 
   if (loading) {
-    return <p className="text-gray-500 text-sm">Loading settings...</p>;
+    return <p className="text-text-muted text-base">Loading settings...</p>;
   }
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Settings</h1>
+      <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">Settings</h1>
 
       {saved && (
-        <p className="text-green-600 text-sm">Settings saved successfully</p>
+        <p className="text-positive text-base">Settings saved successfully</p>
       )}
 
       {/* Quarantine Settings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Quarantine Settings</h2>
+      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px] mb-4">Quarantine Settings</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="threshold" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="threshold" className="block text-base font-medium text-text-secondary mb-1">
               Threshold
             </label>
             <input
@@ -65,11 +65,11 @@ export default function Settings() {
               min={1}
               value={threshold}
               onChange={(e) => setThreshold(parseInt(e.target.value, 10) || 0)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             />
           </div>
           <div>
-            <label htmlFor="periodDays" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="periodDays" className="block text-base font-medium text-text-secondary mb-1">
               Period (days)
             </label>
             <input
@@ -78,13 +78,13 @@ export default function Settings() {
               min={1}
               value={periodDays}
               onChange={(e) => setPeriodDays(parseInt(e.target.value, 10) || 0)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             />
           </div>
           <button
             onClick={handleSaveQuarantine}
             disabled={saving}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
           >
             {saving ? "Saving..." : "Save Quarantine Settings"}
           </button>
@@ -92,11 +92,11 @@ export default function Settings() {
       </div>
 
       {/* Recommendation Settings */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Recommendation Settings</h2>
+      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px] mb-4">Recommendation Settings</h2>
         <div className="space-y-4">
           <div>
-            <label htmlFor="recCount" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="recCount" className="block text-base font-medium text-text-secondary mb-1">
               Recommendation Count
             </label>
             <input
@@ -105,12 +105,12 @@ export default function Settings() {
               min={1}
               value={recCount}
               onChange={(e) => setRecCount(parseInt(e.target.value, 10) || 0)}
-              className="w-full border border-gray-300 rounded px-3 py-2"
+              className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             />
           </div>
           <button
             onClick={handleSaveRecommendations}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
           >
             Save Recommendation Settings
           </button>
