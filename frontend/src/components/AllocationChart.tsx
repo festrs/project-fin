@@ -24,7 +24,7 @@ export function AllocationChart({ allocation }: AllocationChartProps) {
   if (allocation.length === 0) {
     return (
       <ChartCard title="Target vs Actual Allocation">
-        <p className="text-gray-500 text-sm">No allocation data available</p>
+        <p className="text-text-muted text-base">No allocation data available</p>
       </ChartCard>
     );
   }
@@ -44,7 +44,7 @@ export function AllocationChart({ allocation }: AllocationChartProps) {
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey="Target" fill="#3B82F6" />
+          <Bar dataKey="Target" fill="#4f46e5" />
           <Bar dataKey="Actual" fill="#10B981" />
         </BarChart>
       </ResponsiveContainer>
