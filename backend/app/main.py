@@ -52,7 +52,8 @@ async def lifespan(app: FastAPI):
         bg_scheduler.start()
         logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
 
-        _run_scheduled_fetch()
+        import threading
+        threading.Thread(target=_run_scheduled_fetch, daemon=True).start()
 
     yield
 

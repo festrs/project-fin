@@ -90,12 +90,19 @@ export default function Portfolio() {
           />
         </div>
         <div>
-          <PortfolioCompositionChart allocation={allocation} />
+          <PortfolioCompositionChart
+            allocation={allocation.map((a) => ({
+              class_name: a.class_name,
+              actual_weight: a.actual_weight,
+              target_weight: a.target_weight,
+            }))}
+          />
         </div>
       </div>
 
       <HoldingsTable
         holdings={holdings}
+        assetClasses={assetClasses}
         loading={portfolioLoading}
         quarantineStatuses={quarantineStatuses}
         transactions={transactions}

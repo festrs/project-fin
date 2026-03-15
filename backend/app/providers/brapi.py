@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -27,6 +27,50 @@ class BrapiProvider:
             "current_price": data.get("regularMarketPrice", 0.0),
             "currency": data.get("currency", "BRL"),
             "market_cap": data.get("marketCap", 0),
+        }
+
+    def get_dividend_data(self, symbol: str) -> dict:
+        """Get annual dividend info from brapi fundamentals.
+
+        Sums cashDividends rate for payments in the last 12 months.
+        """
+        ticker = _strip_sa(symbol)
+        resp = httpx.get(
+            f"{self._base_url}/api/quote/{ticker}",
+            params={
+                "token": self._api_key,
+                "fundamental": "true",
+                "dividends": "true",
+            },
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()["results"][0]
+
+        price = data.get("regularMarketPrice", 0)
+        dividends_data = data.get("dividendsData", {})
+        cash_dividends = dividends_data.get("cashDividends", [])
+
+        # Sum dividends paid in the last 12 months
+        cutoff = datetime.now(timezone.utc) - timedelta(days=365)
+        annual_dps = 0.0
+        for d in cash_dividends:
+            payment_date_str = d.get("paymentDate", "")
+            if not payment_date_str:
+                continue
+            try:
+                payment_date = datetime.fromisoformat(payment_date_str.replace("Z", "+00:00"))
+                if payment_date >= cutoff:
+                    annual_dps += d.get("rate", 0)
+            except (ValueError, TypeError):
+                continue
+
+        dividend_yield = (annual_dps / price * 100) if price > 0 and annual_dps > 0 else 0
+
+        return {
+            "symbol": symbol,
+            "dividend_per_share_annual": round(annual_dps, 6),
+            "dividend_yield_annual": round(dividend_yield, 4),
         }
 
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:

@@ -3,6 +3,7 @@ export interface AssetClass {
   user_id: string;
   name: string;
   target_weight: number;
+  country: string;
   created_at: string;
   updated_at: string;
 }
@@ -44,6 +45,7 @@ export interface Holding {
   gain_loss?: number;
   target_weight?: number;
   actual_weight?: number;
+  currency?: "BRL" | "USD";
 }
 
 export interface Recommendation {

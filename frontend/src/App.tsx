@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar";
+import Sidebar from "./components/Sidebar";
 import Dashboard from "./pages/Dashboard";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
@@ -8,9 +8,9 @@ import Market from "./pages/Market";
 function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <main className="container mx-auto px-4 py-8">
+      <div className="min-h-screen bg-bg-page flex">
+        <Sidebar />
+        <main className="ml-[220px] w-[calc(100%-220px)] px-10 py-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/portfolio" element={<Portfolio />} />

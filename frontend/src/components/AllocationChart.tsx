@@ -12,7 +12,7 @@ import { ChartCard } from "./ChartCard";
 
 interface AllocationEntry {
   class_name: string;
-  actual_weight: number;
+  actual_weight?: number;
   target_weight: number;
 }
 
@@ -32,7 +32,7 @@ export function AllocationChart({ allocation }: AllocationChartProps) {
   const data = allocation.map((a) => ({
     name: a.class_name,
     Target: a.target_weight,
-    Actual: a.actual_weight,
+    Actual: a.actual_weight ?? 0,
   }));
 
   return (

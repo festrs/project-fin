@@ -27,7 +27,7 @@ def create_asset_class(
     x_user_id: str = Header(),
     db: Session = Depends(get_db),
 ):
-    ac = AssetClass(user_id=x_user_id, name=body.name, target_weight=body.target_weight)
+    ac = AssetClass(user_id=x_user_id, name=body.name, target_weight=body.target_weight, country=body.country)
     db.add(ac)
     db.commit()
     db.refresh(ac)
@@ -54,6 +54,8 @@ def update_asset_class(
         ac.name = body.name
     if body.target_weight is not None:
         ac.target_weight = body.target_weight
+    if body.country is not None:
+        ac.country = body.country
     db.commit()
     db.refresh(ac)
     return ac

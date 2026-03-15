@@ -3,6 +3,8 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    env_file:
+      - ./backend/.env
     environment:
       - DATABASE_URL=sqlite:///./data/project_fin.db
       - CORS_ORIGIN=http://localhost:3000

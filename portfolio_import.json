@@ -1,0 +1,435 @@
+{
+  "_note": "Prices are snapshots from spreadsheet (2026-03-12). Adjust price to actual purchase price per transaction if needed. USDC was labeled 'UDSC' in the spreadsheet.",
+  "class_target_weights": {
+    "BR Stocks": 25.0,
+    "US Stocks": 30.0,
+    "FIIs": 10.0,
+    "REITs": 10.0,
+    "Crypto": 15.0,
+    "Stablecoins": 0.0
+  },
+  "asset_classes_needed": [
+    "BR Stocks",
+    "US Stocks",
+    "FIIs",
+    "REITs",
+    "Crypto",
+    "Stablecoins"
+  ],
+  "transactions": [
+    {
+      "symbol": "AGRO3.SA",
+      "quantity": 400,
+      "price": 21.82,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "AZZA3.SA",
+      "quantity": 552,
+      "price": 27.52,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "B3SA3.SA",
+      "quantity": 2333,
+      "price": 18.11,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "EGIE3.SA",
+      "quantity": 1000,
+      "price": 32.6,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "FLRY3.SA",
+      "quantity": 2601,
+      "price": 16.27,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "HYPE3.SA",
+      "quantity": 360,
+      "price": 22.02,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "ITUB3.SA",
+      "quantity": 1688,
+      "price": 41.68,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "KLBN11.SA",
+      "quantity": 396,
+      "price": 19.72,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "LREN3.SA",
+      "quantity": 1683,
+      "price": 15.22,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "PSSA3.SA",
+      "quantity": 860,
+      "price": 50.0,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "RADL3.SA",
+      "quantity": 1956,
+      "price": 23.74,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "TAEE11.SA",
+      "quantity": 799,
+      "price": 42.76,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "WEGE3.SA",
+      "quantity": 1400,
+      "price": 47.19,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "ODPV3.SA",
+      "quantity": 2692,
+      "price": 13.87,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "XPBR31.SA",
+      "quantity": 12,
+      "price": 103.31,
+      "asset_class": "BR Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "AAPL",
+      "quantity": 62,
+      "price": 260.83,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "BLK",
+      "quantity": 7,
+      "price": 967.36,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "CVX",
+      "quantity": 11,
+      "price": 186.29,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 3.0
+    },
+    {
+      "symbol": "DIS",
+      "quantity": 48,
+      "price": 101.32,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 3.0
+    },
+    {
+      "symbol": "FAST",
+      "quantity": 116,
+      "price": 46.3,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "GOOG",
+      "quantity": 40,
+      "price": 306.93,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "MA",
+      "quantity": 9,
+      "price": 514.72,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "NOW",
+      "quantity": 5,
+      "price": 116.61,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "NVDA",
+      "quantity": 350,
+      "price": 184.77,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "TSLA",
+      "quantity": 12,
+      "price": 399.235,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "TXN",
+      "quantity": 28,
+      "price": 197.46,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "WST",
+      "quantity": 12,
+      "price": 233.83,
+      "asset_class": "US Stocks",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "BCRI11.SA",
+      "quantity": 300,
+      "price": 62.94,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "KNRI11.SA",
+      "quantity": 550,
+      "price": 165.68,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "VRTA11.SA",
+      "quantity": 27,
+      "price": 77.25,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "BTLG11.SA",
+      "quantity": 256,
+      "price": 103.27,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "HGLG11.SA",
+      "quantity": 200,
+      "price": 158.0,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "RBRF11.SA",
+      "quantity": 4410,
+      "price": 6.65,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "MXRF11.SA",
+      "quantity": 2402,
+      "price": 9.7,
+      "asset_class": "FIIs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "AMT",
+      "quantity": 30,
+      "price": 186.12,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "DLR",
+      "quantity": 44,
+      "price": 180.86,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "NLOP",
+      "quantity": 4,
+      "price": 14.15,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "O",
+      "quantity": 97,
+      "price": 64.88,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "PSA",
+      "quantity": 20,
+      "price": 305.99,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "STAG",
+      "quantity": 120,
+      "price": 38.37,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "WPC",
+      "quantity": 90,
+      "price": 72.26,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "REXR",
+      "quantity": 122,
+      "price": 35.72,
+      "asset_class": "REITs",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "BTC",
+      "quantity": 0.35963512,
+      "price": 69578.35,
+      "asset_class": "Crypto",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 95.0
+    },
+    {
+      "symbol": "USDC",
+      "quantity": 7492.0,
+      "price": 1.0244187,
+      "asset_class": "Stablecoins",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    },
+    {
+      "symbol": "DAI",
+      "quantity": 361.7517,
+      "price": 0.16083245,
+      "asset_class": "Stablecoins",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 0.0
+    },
+    {
+      "symbol": "USDT",
+      "quantity": 2863.0,
+      "price": 1.0001915,
+      "asset_class": "Stablecoins",
+      "type": "buy",
+      "date": "2026-03-12",
+      "target_weight": 5.0
+    }
+  ]
+}

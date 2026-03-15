@@ -177,6 +177,9 @@ class PortfolioService:
                 gain_loss = None
                 actual_weight = None
 
+            country = class_info.get("country", "US")
+            currency = "BRL" if country == "BR" else "USD"
+
             enriched.append({
                 **h,
                 "current_price": price,
@@ -184,6 +187,7 @@ class PortfolioService:
                 "gain_loss": gain_loss,
                 "target_weight": effective_target,
                 "actual_weight": actual_weight,
+                "currency": currency,
             })
 
         return enriched

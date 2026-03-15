@@ -20,6 +20,8 @@ def seed_data():
             ("BR Stocks", "BR"),
             ("Crypto", "US"),
             ("Stablecoins", "US"),
+            ("FIIs", "BR"),
+            ("REITs", "US"),
         ]
         for name, country in class_configs:
             ac = AssetClass(user_id=user.id, name=name, target_weight=25.0, country=country)
