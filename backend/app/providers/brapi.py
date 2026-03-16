@@ -73,6 +73,25 @@ class BrapiProvider:
             "dividend_yield_annual": round(dividend_yield, 4),
         }
 
+    def get_fundamentals(self, symbol: str) -> dict:
+        ticker = _strip_sa(symbol)
+        resp = httpx.get(
+            f"{self._base_url}/api/quote/{ticker}",
+            params={"token": self._api_key, "fundamental": "true"},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        resp.json()["results"][0]
+        # Minimal stub — real Brapi may not have multi-year data
+        return {
+            "ipo_years": None,
+            "eps_history": [],
+            "net_income_history": [],
+            "debt_history": [],
+            "current_net_debt_ebitda": None,
+            "raw_data": [],
+        }
+
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         ticker = _strip_sa(symbol)
         resp = httpx.get(
