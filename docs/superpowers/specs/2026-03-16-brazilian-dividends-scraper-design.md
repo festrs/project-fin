@@ -16,28 +16,41 @@ Location: `backend/app/models/dividend_history.py`
 
 | Column | Type | Notes |
 |--------|------|-------|
-| id | UUID | Primary key |
+| id | String(36) | Primary key, `default=lambda: str(uuid4())` (matches existing models) |
 | symbol | str | Indexed, e.g. `AGRO3.SA` |
 | dividend_type | str | "Dividendo", "JCP" |
 | value | float | BRL per share |
 | record_date | date | |
 | ex_date | date | |
-| payment_date | date | |
-| created_at | datetime | Auto-set |
-| updated_at | datetime | Auto-set on update |
+| payment_date | date | Nullable — may be unknown at announcement time |
+| created_at | datetime | Auto-set via `datetime.now(timezone.utc)` |
+| updated_at | datetime | Auto-set on update via `datetime.now(timezone.utc)` |
 
-Unique constraint: `(symbol, record_date, dividend_type, value)` — prevents duplicate inserts.
+Unique constraint: `(symbol, record_date, dividend_type, value)` — prevents duplicate inserts. No migration needed — project uses `Base.metadata.create_all()`.
 
 ### 2. New Provider: `DadosDeMercadoProvider`
 
 Location: `backend/app/providers/dados_de_mercado.py`
 
 - Uses `httpx` for HTTP requests (consistent with existing providers)
-- Uses `beautifulsoup4` for HTML parsing
+- Uses `beautifulsoup4` with `html.parser` (stdlib, no extra dependency needed)
+- Sets a polite `User-Agent` header
 - URL pattern: `https://www.dadosdemercado.com.br/acoes/{ticker}/dividendos`
 - Strips `.SA` suffix from symbol for URL construction
 - Method: `scrape_dividends(symbol: str) -> list[DividendRecord]`
 - Polite delay between requests (configurable, default 2s)
+- Does NOT implement the `MarketDataProvider` protocol — serves a distinct scraping role
+
+**`DividendRecord` type** (dataclass):
+```python
+@dataclass
+class DividendRecord:
+    dividend_type: str      # "Dividendo", "JCP"
+    value: float            # BRL per share
+    record_date: date
+    ex_date: date
+    payment_date: date | None
+```
 
 ### 3. New Scheduler: `DividendScraperScheduler`
 
@@ -85,10 +98,14 @@ APScheduler (tue,fri @ 6 UTC)
 
 ## Error Handling
 
-- Individual symbol failures: logged, continue to next symbol
+- Individual symbol failures: logged, `db.rollback()` called, continue to next symbol (matches existing scheduler pattern)
 - HTTP errors (timeouts, 4xx/5xx): caught and logged per symbol
 - HTML parse errors: caught and logged per symbol
 - No retries — next scheduled run catches up
+
+## Upsert Strategy
+
+Use SQLAlchemy `SELECT` by unique constraint fields, then `INSERT` only if no match. The unique constraint `(symbol, record_date, dividend_type, value)` acts as a safety net via `IntegrityError` catch.
 
 ## Files to Create/Modify
 
