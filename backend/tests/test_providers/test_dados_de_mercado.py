@@ -7,10 +7,10 @@ from app.providers.dados_de_mercado import DadosDeMercadoProvider, DividendRecor
 SAMPLE_HTML = """
 <html><body>
 <table>
-<thead><tr><th>Tipo</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th><th>Valor</th></tr></thead>
+<thead><tr><th>Tipo</th><th>Valor</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th></tr></thead>
 <tbody>
-<tr><td>Dividendo</td><td>22/10/2025</td><td>23/10/2025</td><td>28/11/2025</td><td>0,752895</td></tr>
-<tr><td>JCP</td><td>15/06/2025</td><td>16/06/2025</td><td>—</td><td>1,234567</td></tr>
+<tr><td>Dividendo</td><td>0,752895</td><td>22/10/2025</td><td>23/10/2025</td><td>28/11/2025</td></tr>
+<tr><td>JCP</td><td>1,234567</td><td>15/06/2025</td><td>16/06/2025</td><td>—</td></tr>
 </tbody>
 </table>
 </body></html>
@@ -44,7 +44,7 @@ class TestDadosDeMercadoProvider:
         provider = DadosDeMercadoProvider()
 
         mock_resp = MagicMock()
-        mock_resp.text = "<html><body><table><thead><tr><th>Tipo</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th><th>Valor</th></tr></thead><tbody></tbody></table></body></html>"
+        mock_resp.text = "<html><body><table><thead><tr><th>Tipo</th><th>Valor</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th></tr></thead><tbody></tbody></table></body></html>"
         mock_resp.raise_for_status = MagicMock()
 
         with patch("app.providers.dados_de_mercado.httpx.get", return_value=mock_resp) as mock_get:
@@ -70,7 +70,7 @@ class TestDadosDeMercadoProvider:
         provider = DadosDeMercadoProvider()
 
         mock_resp = MagicMock()
-        mock_resp.text = "<html><body><table><thead><tr><th>Tipo</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th><th>Valor</th></tr></thead><tbody></tbody></table></body></html>"
+        mock_resp.text = "<html><body><table><thead><tr><th>Tipo</th><th>Valor</th><th>Data Com</th><th>Data Ex</th><th>Pagamento</th></tr></thead><tbody></tbody></table></body></html>"
         mock_resp.raise_for_status = MagicMock()
 
         with patch("app.providers.dados_de_mercado.httpx.get", return_value=mock_resp):
