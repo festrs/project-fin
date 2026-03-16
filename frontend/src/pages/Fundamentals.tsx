@@ -40,8 +40,8 @@ function RatingDot({ rating }: { rating: Rating }) {
 }
 
 function compositeColor(score: number): string {
-  if (score >= 3) return RATING_COLORS.green;
-  if (score >= 2) return RATING_COLORS.yellow;
+  if (score >= 90) return RATING_COLORS.green;
+  if (score >= 60) return RATING_COLORS.yellow;
   return RATING_COLORS.red;
 }
 
@@ -79,7 +79,7 @@ function ScoreBreakdownCard({ detail }: { detail: FundamentalsScore }) {
           className="text-2xl font-bold"
           style={{ color: compositeColor(detail.composite_score) }}
         >
-          {detail.composite_score.toFixed(1)} / 4
+          {detail.composite_score}%
         </span>
       </div>
       <ul className="space-y-3">

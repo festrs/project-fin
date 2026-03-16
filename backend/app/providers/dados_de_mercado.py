@@ -170,9 +170,20 @@ class DadosDeMercadoProvider:
         ebitda_row = resultado.get("EBITDA", {})
         net_debt_row = balanco.get("Dívida Líquida", {})
 
-        eps_history = [{"year": y, "value": eps_row[y]} for y in years if y in eps_row and eps_row[y] is not None]
-        net_income_history = [{"year": y, "value": net_income_row[y]} for y in years if y in net_income_row and net_income_row[y] is not None]
-        debt_history = [{"year": y, "value": net_debt_row[y]} for y in years if y in net_debt_row and net_debt_row[y] is not None]
+        eps_history = [eps_row[y] for y in years if y in eps_row and eps_row[y] is not None]
+        net_income_history = [net_income_row[y] for y in years if y in net_income_row and net_income_row[y] is not None]
+        debt_history = [net_debt_row[y] for y in years if y in net_debt_row and net_debt_row[y] is not None]
+
+        # Build raw_data for charts (year-keyed records)
+        raw_data = []
+        for y in years:
+            eps = eps_row.get(y)
+            ni = net_income_row.get(y)
+            nd = net_debt_row.get(y)
+            ebitda = ebitda_row.get(y)
+            nde = round(nd / ebitda, 4) if nd is not None and ebitda is not None and ebitda != 0 else None
+            if eps is not None or ni is not None:
+                raw_data.append({"year": y, "eps": eps or 0, "net_income": ni or 0, "net_debt_ebitda": nde or 0})
 
         # Compute most recent net_debt / ebitda
         current_net_debt_ebitda = None
@@ -189,7 +200,7 @@ class DadosDeMercadoProvider:
             "net_income_history": net_income_history,
             "debt_history": debt_history,
             "current_net_debt_ebitda": current_net_debt_ebitda,
-            "raw_data": [],
+            "raw_data": raw_data,
         }
 
     def _parse_html(self, html: str) -> list[DividendRecord]:

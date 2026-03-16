@@ -205,10 +205,9 @@ class TestScrapeFundamentals:
 
         result = provider.scrape_fundamentals("PETR4.SA")
 
-        # eps_history should be list of {year, value} dicts sorted by year descending
-        eps_values = {item["year"]: item["value"] for item in result["eps_history"]}
-        assert eps_values[2025] == pytest.approx(5.0)
-        assert eps_values[2021] == pytest.approx(3.0)
+        # eps_history should be a flat list of floats (most recent first)
+        assert result["eps_history"][0] == pytest.approx(5.0)
+        assert result["eps_history"][-1] == pytest.approx(3.0)
 
     def test_strips_sa_suffix_in_url(self, provider, monkeypatch):
         urls_called = []
