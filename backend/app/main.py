@@ -50,6 +50,28 @@ def _run_dividend_scrape():
         db.close()
 
 
+def _run_fundamentals_score():
+    from app.database import SessionLocal
+    from app.providers.brapi import BrapiProvider
+    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.providers.finnhub import FinnhubProvider
+    from app.services.fundamentals_scheduler import FundamentalsScoreScheduler
+
+    scheduler = FundamentalsScoreScheduler(
+        finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key, base_url=settings.finnhub_base_url),
+        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
+        dados_provider=DadosDeMercadoProvider(),
+    )
+
+    db = SessionLocal()
+    try:
+        scheduler.score_all(db)
+    except Exception:
+        logger.exception("Scheduled fundamentals scoring failed")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.database import Base, engine
@@ -75,6 +97,16 @@ async def lifespan(app: FastAPI):
             )
             logger.info(
                 f"Dividend scraper scheduled ({settings.dividend_scraper_days} at {settings.dividend_scraper_hour}:00 UTC)"
+            )
+        if settings.enable_fundamentals_scorer:
+            bg_scheduler.add_job(
+                _run_fundamentals_score, "cron",
+                day_of_week=settings.fundamentals_scorer_day,
+                hour=settings.fundamentals_scorer_hour,
+                id="fundamentals_score",
+            )
+            logger.info(
+                f"Fundamentals scorer scheduled ({settings.fundamentals_scorer_day} at {settings.fundamentals_scorer_hour}:00 UTC)"
             )
         bg_scheduler.start()
         logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
