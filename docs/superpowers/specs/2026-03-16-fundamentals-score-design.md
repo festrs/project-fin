@@ -7,16 +7,22 @@ A per-stock scoring system that evaluates 4 fundamental criteria and produces a 
 - US stocks (via Finnhub) and BR stocks (via Brapi, fallback to DadosDeMercado scraping)
 - Excludes crypto, FIIs, REITs
 
+## Data Requirements
+
+- **Lookback window:** Use all available annual data, up to 20 years. Minimum 5 years required.
+- **Insufficient data:** If fewer than 5 years of data are available for a criterion, assign it `red` (0 points) and store null for the computed fields.
+- **Missing API fields:** If a provider returns no data for a field (e.g., no IPO date), assign `red` for that criterion.
+
 ## Scoring Criteria
 
-Each criterion is rated green, yellow, or red.
+Each criterion is rated green, yellow, or red. Historical criteria (EPS Growth, Net Debt/EBITDA, Profitability) are evaluated over all available years of data (up to 20 years, minimum 5).
 
 | Criterion | Green (25%) | Yellow (15%) | Red (0%) |
 |-----------|-------------|--------------|----------|
 | IPO (Company Age) | +10 years as public company | 5-10 years | 0-5 years |
-| EPS Growth | YoY EPS growth in >50% of years | 40-50% of years | <40% of years |
-| Net Debt/EBITDA | Current ratio <3 AND ratio >3 in ≤30% of years | Only one condition met | Neither condition met |
-| Profitability | Profit in all years or profit in past 15 consecutive years | Profit in ≥80% of years | Profit in <80% of years |
+| EPS Growth | YoY EPS growth in >50% of available years | 40-50% of available years | <40% of available years |
+| Net Debt/EBITDA | Current ratio <3 AND ratio >3 in ≤30% of available years | Only one condition met | Neither condition met |
+| Profitability | Profit in all available years or profit in past 15 consecutive years | Profit in ≥80% of available years | Profit in <80% of available years |
 
 ### Composite Score
 
@@ -35,13 +41,17 @@ Score ≥90% indicates excellent fundamentals.
 
 **US stocks — Finnhub:**
 - IPO date: `/stock/profile2` endpoint (already called in `get_quote`, `ipo` field not currently extracted)
-- EPS, net income, net debt/EBITDA: `/stock/metric?metric=all` (already called in `get_dividend_metric`, only dividend fields extracted) + `/stock/financials-reported` for annual financial statements
+- Pre-computed metrics: `/stock/metric?metric=all` (already called in `get_dividend_metric`). Provides fields like `epsGrowth5Y`, `netDebtAnnual`, `ebitdaAnnual` — use these as a fast path when available.
+- Full annual financial statements: `/stock/financials-reported` for detailed yearly EPS, net income, total debt, EBITDA. Free tier provides ~5 years of annual data. This limits YoY analysis but is sufficient for scoring (minimum 5 years required).
 
 **BR stocks — Brapi (primary):**
-- `fundamental=true` parameter on `/api/quote/{ticker}` (already used for dividends, may contain more data)
+- `fundamental=true` parameter on `/api/quote/{ticker}` (already used for dividends). During implementation, inspect the actual response to determine which fundamental fields are available (EPS, net income, debt ratios). If Brapi provides multi-year financial data, use it.
 
 **BR stocks — DadosDeMercado (fallback):**
-- Scrape financial data pages if Brapi does not provide sufficient EPS/debt/profit history
+- If Brapi does not provide sufficient historical data, scrape dadosdemercado.com.br financial pages:
+  - Balance sheet: `/acoes/{ticker}/balanco` (for net debt)
+  - Income statement: `/acoes/{ticker}/resultado` (for EPS, net income, EBITDA)
+- URL patterns and HTML structure need validation during implementation (spike task).
 
 ### New Provider Methods
 
@@ -54,6 +64,7 @@ Score ≥90% indicates excellent fundamentals.
 | Column | Type | Description |
 |--------|------|-------------|
 | `symbol` | String (PK) | Stock ticker |
+| `created_at` | DateTime | First computation timestamp |
 | `ipo_years` | Integer | Years since IPO |
 | `ipo_rating` | String | green/yellow/red |
 | `eps_growth_pct` | Float | % of years with YoY EPS growth |
@@ -80,7 +91,7 @@ The scorer orchestrates all evaluators, sums points, and returns the full score 
 **`FundamentalsScoreScheduler`** — a new APScheduler job, separate from existing market data and dividend scraper jobs.
 
 - Schedule: weekly (fundamentals change slowly)
-- Iterates all US and BR stock symbols in the user's portfolio
+- Discovers symbols: query distinct `asset_symbol` from transactions, joined with `asset_classes` filtering `country IN ('US', 'BR')`. Processes all symbols across all users (same pattern as `DividendScraperScheduler` and `MarketDataScheduler`).
 - Fetches fundamentals from providers → runs scorer → upserts `FundamentalsScore` in DB
 - Respects API rate limits (Finnhub: 60 calls/min)
 
@@ -91,6 +102,8 @@ The scorer orchestrates all evaluators, sums points, and returns the full score 
 | `GET` | `/api/fundamentals/scores` | All scores for portfolio stocks (HoldingsTable) |
 | `GET` | `/api/fundamentals/{symbol}` | Score + raw historical data (analysis page) |
 | `POST` | `/api/fundamentals/{symbol}/refresh` | Manual recalculation trigger |
+
+All endpoints require `x_user_id` header and use `CRUD_LIMIT` rate limiting, consistent with existing routers. Country detection uses `.SA` suffix (same as `_detect_country` pattern in stocks router).
 
 ## Frontend
 
@@ -103,7 +116,7 @@ New column: composite score percentage with color coding.
 
 Clicking the score navigates to the analysis page for that stock.
 
-### New Analysis Page (`/fundamentals`)
+### New Analysis Page (`/fundamentals/:symbol`)
 
 **Score breakdown card:**
 - 4 criteria with traffic-light dots (green/yellow/red circles)
