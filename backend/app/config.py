@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     brapi_base_url: str = "https://brapi.dev"
     enable_scheduler: bool = True
     scheduler_hours: str = "9,17"
+    enable_dividend_scraper: bool = True
+    dividend_scraper_days: str = "tue,fri"
+    dividend_scraper_hour: int = 6
+    dividend_scraper_delay: float = 2.0
 
     class Config:
         env_file = ".env"
