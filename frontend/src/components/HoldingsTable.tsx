@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
-import type { Holding, Transaction, QuarantineStatus, AssetClass } from "../types";
+import type { Holding, Transaction, QuarantineStatus, AssetClass, FundamentalsScore } from "../types";
 
 interface HoldingsTableProps {
   holdings: Holding[];
@@ -9,6 +10,8 @@ interface HoldingsTableProps {
   loading: boolean;
   quarantineStatuses?: QuarantineStatus[];
   transactions: Transaction[];
+  dividendsBySymbol?: Map<string, { income: number; currency: string }>;
+  fundamentalsScores?: FundamentalsScore[];
   onFetchTransactions: (symbol: string) => Promise<void>;
   onCreateTransaction: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
   onUpdateWeight?: (symbol: string, targetWeight: number) => Promise<unknown>;
@@ -55,11 +58,15 @@ export function HoldingsTable({
   loading,
   quarantineStatuses = [],
   transactions,
+  dividendsBySymbol = new Map(),
+  fundamentalsScores,
   onFetchTransactions,
   onCreateTransaction,
   onUpdateWeight,
   onAddAsset,
 }: HoldingsTableProps) {
+  const navigate = useNavigate();
+  const scoreMap = new Map((fundamentalsScores ?? []).map((s) => [s.symbol, s]));
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [transactionForm, setTransactionForm] = useState<{
@@ -192,6 +199,8 @@ export function HoldingsTable({
               <th className="text-right px-3 py-2">Gain/Loss</th>
               <th className="text-right px-3 py-2">Target %</th>
               <th className="text-right px-3 py-2">Actual %</th>
+              <th className="text-right px-3 py-2">Div ({new Date().getFullYear()})</th>
+              <th className="text-right px-3 py-2">Score</th>
               <th className="text-center px-3 py-2"></th>
             </tr>
           </thead>
@@ -215,6 +224,9 @@ export function HoldingsTable({
                   expandedRow={expandedRow}
                   transactions={transactions}
                   editingWeight={editingWeight}
+                  dividendsBySymbol={dividendsBySymbol}
+                  scoreMap={scoreMap}
+                  onNavigateScore={(symbol) => navigate(`/fundamentals/${symbol}`)}
                   onToggleGroup={() => toggleGroup(group.classId)}
                   onRowClick={handleRowClick}
                   onBuy={(symbol, classId) =>
@@ -253,6 +265,9 @@ interface GroupSectionProps {
   expandedRow: string | null;
   transactions: Transaction[];
   editingWeight: { symbol: string; value: string } | null;
+  dividendsBySymbol: Map<string, { income: number; currency: string }>;
+  scoreMap: Map<string, FundamentalsScore>;
+  onNavigateScore: (symbol: string) => void;
   onToggleGroup: () => void;
   onRowClick: (symbol: string) => void;
   onBuy: (symbol: string, classId: string) => void;
@@ -272,6 +287,9 @@ function GroupSection({
   expandedRow,
   transactions,
   editingWeight,
+  dividendsBySymbol,
+  scoreMap,
+  onNavigateScore,
   onToggleGroup,
   onRowClick,
   onBuy,
@@ -281,6 +299,12 @@ function GroupSection({
   onCommitWeight,
   onCancelWeight,
 }: GroupSectionProps) {
+  const groupDivTotal = group.holdings.reduce((sum, h) => {
+    const div = dividendsBySymbol.get(h.symbol);
+    return sum + (div?.income ?? 0);
+  }, 0);
+  const groupDivCurrency = group.holdings[0]?.currency ?? "USD";
+
   return (
     <>
       {/* Group header row */}
@@ -298,7 +322,12 @@ function GroupSection({
         <td className="px-3 py-2 text-right font-semibold text-primary">
           {formatCurrency(groupTotal, groupCurrency)}
         </td>
-        <td colSpan={4} />
+        <td colSpan={3} />
+        <td className="px-3 py-2 text-right font-semibold text-text-muted">
+          {groupDivTotal > 0 ? formatCurrency(groupDivTotal, groupDivCurrency) : ""}
+        </td>
+        <td />
+        <td />
       </tr>
 
       {/* Holdings rows */}
@@ -318,6 +347,9 @@ function GroupSection({
               classId={group.classId}
               isEditingWeight={isEditingThis}
               editWeightValue={isEditingThis ? editingWeight!.value : undefined}
+              dividendData={dividendsBySymbol.get(h.symbol)}
+              score={scoreMap.get(h.symbol)}
+              onNavigateScore={() => onNavigateScore(h.symbol)}
               onRowClick={() => onRowClick(h.symbol)}
               onBuy={() => onBuy(h.symbol, group.classId)}
               onSell={() => onSell(h.symbol, group.classId)}
@@ -344,6 +376,9 @@ interface HoldingRowsProps {
   classId: string;
   isEditingWeight: boolean;
   editWeightValue?: string;
+  dividendData?: { income: number; currency: string };
+  score?: FundamentalsScore;
+  onNavigateScore: () => void;
   onRowClick: () => void;
   onBuy: () => void;
   onSell: () => void;
@@ -360,6 +395,9 @@ function HoldingRows({
   transactions,
   isEditingWeight,
   editWeightValue,
+  dividendData,
+  score,
+  onNavigateScore,
   onRowClick,
   onBuy,
   onSell,
@@ -370,6 +408,12 @@ function HoldingRows({
 }: HoldingRowsProps) {
   const cur = h.currency as string;
   const sym = cur === "BRL" ? "R$" : "$";
+  const scoreColor = (v: number) =>
+    v >= 90
+      ? "var(--color-positive)"
+      : v >= 60
+      ? "var(--color-warning)"
+      : "var(--color-negative)";
 
   return (
     <>
@@ -442,6 +486,24 @@ function HoldingRows({
         <td className="px-3 py-2 text-right">
           {h.actual_weight != null ? `${h.actual_weight.toFixed(1)}%` : "-"}
         </td>
+        <td className="px-3 py-2 text-right text-text-muted">
+          {dividendData && dividendData.income > 0
+            ? formatCurrency(dividendData.income, dividendData.currency)
+            : "-"}
+        </td>
+        <td className="px-3 py-2 text-right">
+          {score ? (
+            <span
+              style={{ color: scoreColor(score.composite_score), cursor: "pointer", fontWeight: 600 }}
+              onClick={(e) => { e.stopPropagation(); onNavigateScore(); }}
+              title={`IPO: ${score.ipo_rating} | EPS: ${score.eps_rating} | Debt: ${score.debt_rating} | Profit: ${score.profit_rating}`}
+            >
+              {score.composite_score}%
+            </span>
+          ) : (
+            <span className="text-text-muted">—</span>
+          )}
+        </td>
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center">
             <button
@@ -469,7 +531,7 @@ function HoldingRows({
       {/* Expanded transaction history */}
       {isExpanded && (
         <tr>
-          <td colSpan={9} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
+          <td colSpan={11} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
             <h4 className="font-semibold text-base text-text-primary mb-2">Transaction History</h4>
             {transactions.length === 0 ? (
               <p className="text-text-muted text-base">No transactions found</p>

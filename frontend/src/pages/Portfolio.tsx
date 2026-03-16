@@ -2,12 +2,27 @@ import { useState, useEffect, useCallback } from "react";
 import { useAssetClasses } from "../hooks/useAssetClasses";
 import { usePortfolio } from "../hooks/usePortfolio";
 import { useTransactions } from "../hooks/useTransactions";
+import { useFundamentals } from "../hooks/useFundamentals";
 import { AssetClassesTable } from "../components/AssetClassesTable";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { DividendsTable } from "../components/DividendsTable";
 import { PortfolioCompositionChart } from "../components/PortfolioCompositionChart";
 import type { QuarantineStatus, Transaction } from "../types";
 import api from "../services/api";
+
+interface DividendAsset {
+  symbol: string;
+  annual_income: number;
+  currency: string;
+}
+
+interface DividendClassData {
+  assets: DividendAsset[];
+}
+
+interface DividendsResponse {
+  dividends: DividendClassData[];
+}
 
 export default function Portfolio() {
   const { assetClasses, loading: classesLoading, createClass, updateClass, deleteClass } = useAssetClasses();
@@ -17,9 +32,11 @@ export default function Portfolio() {
     fetchTransactions,
     createTransaction,
   } = useTransactions();
+  const { scores: fundamentalsScores } = useFundamentals();
 
   const [quarantineStatuses, setQuarantineStatuses] = useState<QuarantineStatus[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+  const [dividendsBySymbol, setDividendsBySymbol] = useState<Map<string, { income: number; currency: string }>>(new Map());
 
   const fetchQuarantineStatuses = useCallback(async () => {
     try {
@@ -39,10 +56,26 @@ export default function Portfolio() {
     }
   }, []);
 
+  const fetchDividends = useCallback(async () => {
+    try {
+      const res = await api.get<DividendsResponse>("/portfolio/dividends");
+      const map = new Map<string, { income: number; currency: string }>();
+      for (const cls of res.data.dividends) {
+        for (const asset of cls.assets) {
+          map.set(asset.symbol, { income: asset.annual_income, currency: asset.currency });
+        }
+      }
+      setDividendsBySymbol(map);
+    } catch {
+      // silently fail
+    }
+  }, []);
+
   useEffect(() => {
     fetchQuarantineStatuses();
     fetchAllTransactions();
-  }, [fetchQuarantineStatuses, fetchAllTransactions]);
+    fetchDividends();
+  }, [fetchQuarantineStatuses, fetchAllTransactions, fetchDividends]);
 
   const allocationMap = allocation.reduce<Record<string, { actual_weight: number; diff: number }>>((acc, a) => {
     const cls = assetClasses.find((c) => c.id === a.asset_class_id);
@@ -106,6 +139,8 @@ export default function Portfolio() {
         loading={portfolioLoading}
         quarantineStatuses={quarantineStatuses}
         transactions={transactions}
+        dividendsBySymbol={dividendsBySymbol}
+        fundamentalsScores={fundamentalsScores}
         onFetchTransactions={handleFetchTransactions}
         onCreateTransaction={handleCreateTransaction}
       />
