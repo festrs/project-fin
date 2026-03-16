@@ -33,6 +33,23 @@ def _run_scheduled_fetch():
         db.close()
 
 
+def _run_dividend_scrape():
+    from app.database import SessionLocal
+    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.services.dividend_scraper_scheduler import DividendScraperScheduler
+
+    provider = DadosDeMercadoProvider()
+    scheduler = DividendScraperScheduler(provider=provider, delay=settings.dividend_scraper_delay)
+
+    db = SessionLocal()
+    try:
+        scheduler.scrape_all(db)
+    except Exception:
+        logger.exception("Scheduled dividend scrape failed")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.database import Base, engine
@@ -49,6 +66,16 @@ async def lifespan(app: FastAPI):
             hour=settings.scheduler_hours,
             id="market_data_fetch",
         )
+        if settings.enable_dividend_scraper:
+            bg_scheduler.add_job(
+                _run_dividend_scrape, "cron",
+                day_of_week=settings.dividend_scraper_days,
+                hour=settings.dividend_scraper_hour,
+                id="dividend_scrape",
+            )
+            logger.info(
+                f"Dividend scraper scheduled ({settings.dividend_scraper_days} at {settings.dividend_scraper_hour}:00 UTC)"
+            )
         bg_scheduler.start()
         logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
 
