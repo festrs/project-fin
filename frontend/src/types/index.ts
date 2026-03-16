@@ -69,3 +69,27 @@ export interface QuarantineConfig {
   threshold: number;
   period_days: number;
 }
+
+export interface FundamentalsScore {
+  symbol: string;
+  ipo_years: number | null;
+  ipo_rating: "green" | "yellow" | "red";
+  eps_growth_pct: number | null;
+  eps_rating: "green" | "yellow" | "red";
+  current_net_debt_ebitda: number | null;
+  high_debt_years_pct: number | null;
+  debt_rating: "green" | "yellow" | "red";
+  profitable_years_pct: number | null;
+  profit_rating: "green" | "yellow" | "red";
+  composite_score: number;
+  updated_at: string | null;
+}
+
+export interface FundamentalsDetail extends FundamentalsScore {
+  raw_data: Array<{
+    year: number;
+    eps: number;
+    net_income: number;
+    net_debt_ebitda: number;
+  }> | null;
+}
