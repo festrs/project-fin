@@ -110,16 +110,27 @@ class FinnhubProvider:
         debt_history = []
         raw_data = []
 
+        def _find_value(items: list, *concepts: str) -> float:
+            """Find first matching concept value from a list of report items."""
+            for item in items:
+                label = (item.get("label") or "").lower()
+                concept = (item.get("concept") or "").lower()
+                for c in concepts:
+                    cl = c.lower()
+                    if cl in concept or cl in label:
+                        return float(item.get("value", 0) or 0)
+            return 0.0
+
         for entry in reports:
             year = entry.get("year")
             report = entry.get("report", {})
-            ic = report.get("ic", {})
-            bs = report.get("bs", {})
+            ic = report.get("ic") or []
+            bs = report.get("bs") or []
 
-            eps = (ic.get("dilutedEPS") or {}).get("value", 0) or 0
-            net_income = (ic.get("netIncome") or {}).get("value", 0) or 0
-            ebitda = (ic.get("ebitda") or {}).get("value", 0) or 0
-            total_debt = (bs.get("totalDebt") or {}).get("value", 0) or 0
+            eps = _find_value(ic, "EarningsPerShareDiluted", "dilutedEPS")
+            net_income = _find_value(ic, "NetIncomeLoss", "netIncome", "ProfitLoss")
+            ebitda = _find_value(ic, "ebitda", "OperatingIncomeLoss")
+            total_debt = _find_value(bs, "LongTermDebt", "totalDebt", "DebtCurrent")
 
             net_debt_ebitda = (total_debt / ebitda) if ebitda != 0 else 0
 

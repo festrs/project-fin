@@ -14,14 +14,14 @@ def _make_report(year, eps, net_income, ebitda, total_debt):
     return {
         "year": year,
         "report": {
-            "ic": {
-                "dilutedEPS": {"value": eps},
-                "netIncome": {"value": net_income},
-                "ebitda": {"value": ebitda},
-            },
-            "bs": {
-                "totalDebt": {"value": total_debt},
-            },
+            "ic": [
+                {"concept": "us-gaap_EarningsPerShareDiluted", "label": "Diluted EPS", "value": eps},
+                {"concept": "us-gaap_NetIncomeLoss", "label": "Net Income", "value": net_income},
+                {"concept": "us-gaap_OperatingIncomeLoss", "label": "Operating Income", "value": ebitda},
+            ],
+            "bs": [
+                {"concept": "us-gaap_LongTermDebt", "label": "Long Term Debt", "value": total_debt},
+            ],
         },
     }
 
@@ -96,11 +96,11 @@ class TestGetFundamentals:
         # Reports with empty ic/bs dicts
         financials_data = {
             "data": [
-                {"year": 2021, "report": {"ic": {}, "bs": {}}},
-                {"year": 2022, "report": {"ic": {}, "bs": {}}},
-                {"year": 2023, "report": {"ic": {}, "bs": {}}},
-                {"year": 2024, "report": {"ic": {}, "bs": {}}},
-                {"year": 2025, "report": {"ic": {}, "bs": {}}},
+                {"year": 2021, "report": {"ic": [], "bs": []}},
+                {"year": 2022, "report": {"ic": [], "bs": []}},
+                {"year": 2023, "report": {"ic": [], "bs": []}},
+                {"year": 2024, "report": {"ic": [], "bs": []}},
+                {"year": 2025, "report": {"ic": [], "bs": []}},
             ]
         }
 
