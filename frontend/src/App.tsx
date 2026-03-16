@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import Market from "./pages/Market";
+import Fundamentals from "./pages/Fundamentals";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/portfolio" element={<Portfolio />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/market" element={<Market />} />
+            <Route path="/fundamentals/:symbol" element={<Fundamentals />} />
           </Routes>
         </main>
       </div>
