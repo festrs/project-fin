@@ -29,8 +29,15 @@ class DividendScraperScheduler:
             try:
                 records = self._provider.scrape_dividends(symbol)
                 new_count = 0
+                seen = set()
 
                 for rec in records:
+                    # Deduplicate within the scraped batch
+                    key = (symbol, rec.record_date, rec.dividend_type, rec.value)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+
                     exists = (
                         db.query(DividendHistory)
                         .filter_by(
