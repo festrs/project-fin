@@ -110,19 +110,19 @@ def score_fundamentals(data: dict) -> dict:
     Expected keys in data:
         ipo_years: int | None
         eps_history: list[float]
-        current_ratio: float | None
+        current_net_debt_ebitda: float | None
         debt_history: list[float]
         net_income_history: list[float]
     """
     ipo_years: int | None = data.get("ipo_years")
     eps_history: list[float] = data.get("eps_history") or []
-    current_ratio: float | None = data.get("current_ratio")
+    current_net_debt_ebitda: float | None = data.get("current_net_debt_ebitda")
     debt_history: list[float] = data.get("debt_history") or []
     net_income_history: list[float] = data.get("net_income_history") or []
 
     ipo_rating, ipo_score = evaluate_ipo(ipo_years)
     eps_rating, eps_score = evaluate_eps_growth(eps_history)
-    debt_rating, debt_score = evaluate_debt(current_ratio, debt_history)
+    debt_rating, debt_score = evaluate_debt(current_net_debt_ebitda, debt_history)
     profit_rating, profit_score = evaluate_profitability(net_income_history)
 
     composite = compute_composite_score([
@@ -156,7 +156,7 @@ def score_fundamentals(data: dict) -> dict:
         "ipo_rating": ipo_rating,
         "eps_growth_pct": eps_growth_pct,
         "eps_rating": eps_rating,
-        "current_net_debt_ebitda": current_ratio,
+        "current_net_debt_ebitda": current_net_debt_ebitda,
         "high_debt_years_pct": high_debt_years_pct,
         "debt_rating": debt_rating,
         "profitable_years_pct": profitable_years_pct,

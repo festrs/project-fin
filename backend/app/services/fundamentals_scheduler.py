@@ -36,13 +36,7 @@ class FundamentalsScoreScheduler:
         for symbol, country in rows:
             try:
                 raw = self._fetch_fundamentals(symbol, country)
-                # Normalize key: providers may return current_net_debt_ebitda;
-                # score_fundamentals expects current_ratio
-                scorer_input = dict(raw)
-                if "current_ratio" not in scorer_input and "current_net_debt_ebitda" in scorer_input:
-                    scorer_input["current_ratio"] = scorer_input["current_net_debt_ebitda"]
-
-                result = score_fundamentals(scorer_input)
+                result = score_fundamentals(raw)
                 raw_data = raw.get("raw_data")
                 self._upsert_score(db, symbol, result, raw_data)
                 db.commit()

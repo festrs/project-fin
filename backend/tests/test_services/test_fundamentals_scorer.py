@@ -153,7 +153,7 @@ class TestScoreFundamentals:
         data = {
             "ipo_years": 15,
             "eps_history": [1, 2, 3, 4, 5, 6],
-            "current_ratio": 1.5,
+            "current_net_debt_ebitda": 1.5,
             "debt_history": [1, 2, 1.5, 2.5, 1],
             "net_income_history": [10, 20, 15, 25, 30],
         }
@@ -168,7 +168,7 @@ class TestScoreFundamentals:
         data = {
             "ipo_years": None,
             "eps_history": [],
-            "current_ratio": None,
+            "current_net_debt_ebitda": None,
             "debt_history": [],
             "net_income_history": [],
         }
