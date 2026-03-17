@@ -10,7 +10,11 @@ Make `quantity`, `unit_price`, and `tax_amount` nullable across the stack. Fixed
 
 ## Identifying Fixed Income
 
-Use the asset class name to detect fixed income. The frontend `TransactionForm` and `AddAssetForm` check if the selected asset class name matches a known set (e.g. "Renda Fixa", "Fixed Income"). This keeps the data model unchanged — no new columns on `AssetClass`.
+Use the asset class name to detect fixed income. Check with case-insensitive `includes`/`in` matching against known terms: `"renda fixa"`, `"fixed income"`. This handles names like "Renda Fixa BR" or "Fixed Income - CDB". The frontend `TransactionForm` and `AddAssetForm` perform this check on the asset class name. No new columns on `AssetClass`.
+
+## Database Migration
+
+The project uses `Base.metadata.create_all()` which only creates tables that don't exist — it won't alter existing columns. Since this is a dev/personal project using SQLite, the migration approach is: delete the existing `portfolio.db` file and let it be recreated on next startup. Seed data will repopulate. If preserving data is needed, use a one-off script to recreate the table with the new schema and copy data.
 
 ## Backend: Model Changes
 
@@ -22,7 +26,7 @@ unit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
 tax_amount: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
 ```
 
-All three fields become nullable. Existing transactions retain their values. New fixed income transactions store `None`.
+All three fields become nullable. Existing transactions retain their values. New fixed income transactions store `None`. `total_value` remains required (NOT NULL) — it is the single source of truth for fixed income.
 
 ## Backend: Schema Changes
 
@@ -33,31 +37,98 @@ All three fields become nullable. Existing transactions retain their values. New
 - `unit_price: Optional[float] = None`
 - `tax_amount: Optional[float] = None`
 
+Add a `model_validator` to enforce consistency: either all three of `quantity`, `unit_price`, `tax_amount` are provided (stock/crypto), or all three are `None` (fixed income). Reject mixed states.
+
+```python
+@model_validator(mode="after")
+def validate_field_consistency(self):
+    fields = [self.quantity, self.unit_price]
+    all_set = all(f is not None for f in fields)
+    none_set = all(f is None for f in fields)
+    if not (all_set or none_set):
+        raise ValueError("quantity and unit_price must be all provided or all None")
+    return self
+```
+
 `TransactionResponse`:
 - `quantity: float | None`
 - `unit_price: float | None`
 - `tax_amount: float | None`
 
-`TransactionUpdate` — these fields are already `Optional`, no change needed.
+`TransactionUpdate` — already `Optional`, no structural change. Note: cross-type updates (setting quantity on a fixed income tx) are allowed — validation is on create only.
 
 ## Backend: Portfolio Service Changes
 
 **`backend/app/services/portfolio.py` — `get_holdings()`**
 
-After computing buy/sell aggregates for a symbol, check if `buy_qty` is `None` (all transactions have `quantity=None`):
+The current code does `buy_qty = buy_agg.total_qty or 0` which masks `None` as `0`. This must change to branch before the fallback:
 
-- **Quantity-based (stocks/crypto):** Current logic unchanged — `net_qty = buy_qty - sell_qty`, `avg_price = buy_value / buy_qty`.
-- **Value-based (fixed income):** `net_value = buy_total_value - sell_total_value`. Return holding with `quantity: None`, `avg_price: None`, `total_cost: net_value`.
+```python
+buy_qty = buy_agg.total_qty  # Do NOT default to 0
 
-The SQL aggregates (`func.sum(Transaction.quantity)`) naturally return `None` when all quantity values are `None`, so the branch condition is simply `if buy_qty is None`.
+if buy_qty is None:
+    # Value-based (fixed income): sum total_value only
+    buy_value = buy_agg.total_value or 0
+    sell_value_agg = (
+        self.db.query(func.sum(Transaction.total_value))
+        .filter(..., Transaction.type == "sell")
+        .scalar()
+    ) or 0
+    net_value = buy_value - sell_value_agg
+    if net_value <= 0:
+        continue
+    holdings.append({
+        "symbol": symbol,
+        "asset_class_id": asset_class_id,
+        "quantity": None,
+        "avg_price": None,
+        "total_cost": net_value,
+    })
+else:
+    # Quantity-based (existing logic, unchanged)
+    buy_qty = buy_qty or 0
+    buy_value = buy_agg.total_value or 0
+    # ... rest of existing logic
+```
 
 **`enrich_holdings()`**
 
-When `quantity is None` on a holding:
-- Skip market price lookup — fixed income has no ticker price
-- `current_value = total_cost` (the invested amount)
-- `gain_loss = 0` (no market-based gain/loss)
-- Weight calculations use `total_cost` as the current value
+Guard all arithmetic on `quantity` and `avg_price`:
+
+```python
+if h["quantity"] is None:
+    # Fixed income — no market price lookup
+    current_value = h["total_cost"]
+    gain_loss = 0
+    price = None
+else:
+    # Existing logic: fetch price, compute current_value = quantity * price
+    ...
+```
+
+Total portfolio value calculation must also handle this:
+```python
+for h in holdings:
+    if h["quantity"] is None:
+        total_value += h["total_cost"]
+    else:
+        price = prices.get(h["symbol"])
+        if price is not None:
+            total_value += h["quantity"] * price
+```
+
+## Backend: Dividends Endpoint
+
+**`backend/app/routers/portfolio.py` — `fetch_dividend()`**
+
+Add early return for fixed income holdings at the top of `fetch_dividend`:
+
+```python
+if holding["quantity"] is None:
+    return None  # Fixed income — no dividend calculation
+```
+
+This prevents `TypeError` from `dps * holding["quantity"]` when quantity is `None`.
 
 ## Frontend: Type Changes
 
@@ -71,7 +142,16 @@ export interface Transaction {
   tax_amount: number | null;
   // ...
 }
+
+export interface Holding {
+  // ...
+  quantity: number | null;
+  avg_price: number | null;
+  // ...
+}
 ```
+
+Both interfaces must allow null for these fields.
 
 ## Frontend: TransactionForm Changes
 
@@ -97,10 +177,20 @@ Holdings with `quantity: null` display differently:
 - Hide "Avg Price" and "Quantity" columns for these rows (or show "—")
 - Gain/loss shows as "—" or 0 since there's no market price
 
+Transaction history rows in the expanded view must also handle null fields:
+- `t.unit_price?.toFixed(2) ?? "—"` instead of `t.unit_price.toFixed(2)`
+- `(t.tax_amount ?? 0) > 0` instead of `t.tax_amount > 0`
+
+## Frontend: ClassSummaryTable
+
+**`frontend/src/components/ClassSummaryTable.tsx`**
+
+Already uses `h.current_value ?? h.total_cost` which handles value-based holdings correctly. No changes needed, but confirm during implementation that null quantities don't cause issues in any aggregation logic.
+
 ## What Stays the Same
 
 - `AssetClass` model — no changes
 - `AssetWeight` model — no changes
 - Transaction router (`POST /api/transactions`) — no logic changes, just passes through nullable fields
-- Dividend calculations — fixed income holdings are skipped (no dividend_per_share concept)
+- Dividend calculations — fixed income holdings are skipped via early `quantity is None` check
 - Quarantine rules — only apply to quantity-based buy transactions
