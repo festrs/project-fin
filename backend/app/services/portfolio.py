@@ -38,40 +38,67 @@ class PortfolioService:
                 .first()
             )
 
-            buy_qty = buy_agg.total_qty or 0
-            buy_value = buy_agg.total_value or 0
+            buy_qty = buy_agg.total_qty  # Do NOT default to 0
 
-            # Sum sells
-            sell_agg = (
-                self.db.query(
-                    func.sum(Transaction.quantity).label("total_qty"),
+            if buy_qty is None:
+                # Value-based (fixed income): no quantity, just total_value
+                buy_value = buy_agg.total_value or 0
+                sell_value = (
+                    self.db.query(func.sum(Transaction.total_value))
+                    .filter(
+                        Transaction.user_id == user_id,
+                        Transaction.asset_symbol == symbol,
+                        Transaction.type == "sell",
+                    )
+                    .scalar()
+                ) or 0
+                net_value = buy_value - sell_value
+                if net_value <= 0:
+                    continue
+                holdings.append(
+                    {
+                        "symbol": symbol,
+                        "asset_class_id": asset_class_id,
+                        "quantity": None,
+                        "avg_price": None,
+                        "total_cost": net_value,
+                    }
                 )
-                .filter(
-                    Transaction.user_id == user_id,
-                    Transaction.asset_symbol == symbol,
-                    Transaction.type == "sell",
+            else:
+                # Quantity-based (stocks/crypto): existing logic
+                buy_qty = buy_qty or 0
+                buy_value = buy_agg.total_value or 0
+
+                sell_agg = (
+                    self.db.query(
+                        func.sum(Transaction.quantity).label("total_qty"),
+                    )
+                    .filter(
+                        Transaction.user_id == user_id,
+                        Transaction.asset_symbol == symbol,
+                        Transaction.type == "sell",
+                    )
+                    .first()
                 )
-                .first()
-            )
 
-            sell_qty = sell_agg.total_qty or 0
-            net_qty = buy_qty - sell_qty
+                sell_qty = sell_agg.total_qty or 0
+                net_qty = buy_qty - sell_qty
 
-            if net_qty <= 0:
-                continue
+                if net_qty <= 0:
+                    continue
 
-            avg_price = buy_value / buy_qty if buy_qty > 0 else 0
-            total_cost = avg_price * net_qty
+                avg_price = buy_value / buy_qty if buy_qty > 0 else 0
+                total_cost = avg_price * net_qty
 
-            holdings.append(
-                {
-                    "symbol": symbol,
-                    "asset_class_id": asset_class_id,
-                    "quantity": net_qty,
-                    "avg_price": avg_price,
-                    "total_cost": total_cost,
-                }
-            )
+                holdings.append(
+                    {
+                        "symbol": symbol,
+                        "asset_class_id": asset_class_id,
+                        "quantity": net_qty,
+                        "avg_price": avg_price,
+                        "total_cost": total_cost,
+                    }
+                )
 
         return holdings
 

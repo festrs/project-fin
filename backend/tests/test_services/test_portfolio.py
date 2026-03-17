@@ -50,6 +50,26 @@ def _create_tx(db, user_id, asset_class_id, symbol, tx_type, quantity, unit_pric
     return tx
 
 
+def _create_fixed_income_tx(db, user_id, asset_class_id, symbol, tx_type, total_value, tx_date=None):
+    if tx_date is None:
+        tx_date = date.today()
+    tx = Transaction(
+        user_id=user_id,
+        asset_class_id=asset_class_id,
+        asset_symbol=symbol,
+        type=tx_type,
+        quantity=None,
+        unit_price=None,
+        total_value=total_value,
+        currency="BRL",
+        date=tx_date,
+    )
+    db.add(tx)
+    db.commit()
+    db.refresh(tx)
+    return tx
+
+
 class TestGetHoldings:
     def test_get_holdings_two_assets(self, db):
         user = _create_user(db)
@@ -88,6 +108,68 @@ class TestGetHoldings:
         assert round(aapl["avg_price"], 2) == 153.33
         # total_cost = avg_price (unrounded) * quantity = (2300/15) * 12 = 1840.0
         assert round(aapl["total_cost"], 2) == 1840.0
+
+
+    def test_get_holdings_fixed_income(self, db):
+        user = _create_user(db)
+        ac = _create_asset_class(db, user.id, "Renda Fixa", 20.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "buy", 10000.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "buy", 5000.0)
+
+        svc = PortfolioService(db)
+        holdings = svc.get_holdings(user.id)
+
+        assert len(holdings) == 1
+        cdb = holdings[0]
+        assert cdb["symbol"] == "CDB Banco X"
+        assert cdb["quantity"] is None
+        assert cdb["avg_price"] is None
+        assert cdb["total_cost"] == 15000.0
+
+    def test_get_holdings_mixed_stock_and_fixed_income(self, db):
+        user = _create_user(db)
+        ac_stocks = _create_asset_class(db, user.id, "Stocks", 60.0)
+        ac_fi = _create_asset_class(db, user.id, "Renda Fixa", 20.0)
+        _create_tx(db, user.id, ac_stocks.id, "AAPL", "buy", 10, 150.0)
+        _create_fixed_income_tx(db, user.id, ac_fi.id, "CDB Banco X", "buy", 10000.0)
+
+        svc = PortfolioService(db)
+        holdings = svc.get_holdings(user.id)
+
+        assert len(holdings) == 2
+        symbols = {h["symbol"] for h in holdings}
+        assert symbols == {"AAPL", "CDB Banco X"}
+
+        aapl = next(h for h in holdings if h["symbol"] == "AAPL")
+        assert aapl["quantity"] == 10
+
+        cdb = next(h for h in holdings if h["symbol"] == "CDB Banco X")
+        assert cdb["quantity"] is None
+        assert cdb["total_cost"] == 10000.0
+
+    def test_get_holdings_fixed_income_with_sell(self, db):
+        user = _create_user(db)
+        ac = _create_asset_class(db, user.id, "Renda Fixa", 20.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "buy", 10000.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "sell", 3000.0)
+
+        svc = PortfolioService(db)
+        holdings = svc.get_holdings(user.id)
+
+        assert len(holdings) == 1
+        cdb = holdings[0]
+        assert cdb["total_cost"] == 7000.0
+
+    def test_get_holdings_fixed_income_fully_sold(self, db):
+        user = _create_user(db)
+        ac = _create_asset_class(db, user.id, "Renda Fixa", 20.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "buy", 10000.0)
+        _create_fixed_income_tx(db, user.id, ac.id, "CDB Banco X", "sell", 10000.0)
+
+        svc = PortfolioService(db)
+        holdings = svc.get_holdings(user.id)
+
+        assert len(holdings) == 0
 
 
 class TestGetAllocation:
