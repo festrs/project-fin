@@ -1,8 +1,10 @@
+import threading
+
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.middleware.rate_limit import CRUD_LIMIT, limiter
 from app.models.fundamentals_score import FundamentalsScore
 
@@ -54,6 +56,35 @@ def _refresh_score(symbol: str, db: Session) -> None:
     raw_data = raw.get("raw_data")
     scheduler._upsert_score(db, symbol, result, raw_data)
     db.commit()
+
+
+@router.post("/refresh-all")
+@limiter.limit(CRUD_LIMIT)
+def refresh_all_scores(
+    request: Request,
+    x_user_id: str = Header(),
+):
+    from app.providers.brapi import BrapiProvider
+    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.providers.finnhub import FinnhubProvider
+    from app.services.fundamentals_scheduler import FundamentalsScoreScheduler
+
+    scheduler = FundamentalsScoreScheduler(
+        finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key, base_url=settings.finnhub_base_url),
+        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
+        dados_provider=DadosDeMercadoProvider(),
+        delay=1.0,
+    )
+
+    def run():
+        db = SessionLocal()
+        try:
+            scheduler.score_all(db)
+        finally:
+            db.close()
+
+    threading.Thread(target=run, daemon=True).start()
+    return {"status": "started"}
 
 
 @router.get("/scores")

@@ -15,6 +15,23 @@ def _detect_country(symbol: str) -> tuple[str, str]:
     return symbol, "US"
 
 
+@router.get("/search")
+@limiter.limit(MARKET_DATA_LIMIT)
+def search_stocks(request: Request, q: str = Query(min_length=1)):
+    """Search for stocks across US (Finnhub) and BR (Brapi) markets."""
+    market_data = get_market_data_service()
+    results = []
+    try:
+        results.extend(market_data._finnhub.search(q))
+    except Exception:
+        pass
+    try:
+        results.extend(market_data._brapi.search(q))
+    except Exception:
+        pass
+    return results
+
+
 # Specific country routes first (before catch-all /{symbol})
 
 @router.get("/us/{symbol}")

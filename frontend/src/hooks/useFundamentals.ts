@@ -24,7 +24,18 @@ export function useFundamentals() {
     fetchScores();
   }, [fetchScores]);
 
-  return { scores, loading, error, refresh: fetchScores };
+  const refreshAll = useCallback(async () => {
+    try {
+      setLoading(true);
+      await api.post("/fundamentals/refresh-all");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to start refresh");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  return { scores, loading, error, refresh: fetchScores, refreshAll };
 }
 
 export function useFundamentalsDetail(symbol: string) {

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
 import { isFixedIncomeClass } from "../utils/assetClass";
+import { AddAssetForm } from "./AddAssetForm";
 import type { Holding, Transaction, QuarantineStatus, AssetClass, FundamentalsScore } from "../types";
 
 interface HoldingsTableProps {
@@ -13,15 +14,31 @@ interface HoldingsTableProps {
   transactions: Transaction[];
   dividendsBySymbol?: Map<string, { income: number; currency: string }>;
   fundamentalsScores?: FundamentalsScore[];
+  onRefreshAllScores?: () => Promise<void>;
   onFetchTransactions: (symbol: string) => Promise<void>;
   onCreateTransaction: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
+  onUpdateTransaction?: (id: string, data: Partial<Transaction>) => Promise<unknown>;
+  onDeleteTransaction?: (id: string) => Promise<unknown>;
+  onDeleteHolding?: (symbol: string) => Promise<unknown>;
+  onChangeAssetClass?: (symbol: string, assetClassId: string) => Promise<unknown>;
   onUpdateWeight?: (symbol: string, targetWeight: number) => Promise<unknown>;
-  onAddAsset?: (symbol: string, assetClassId: string) => Promise<unknown>;
+  showAddAsset?: boolean;
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  BRL: "R$",
+  USD: "$",
+  EUR: "\u20AC",
+  GBP: "\u00A3",
+  CHF: "CHF ",
+  JPY: "\u00A5",
+  CAD: "CA$",
+  AUD: "A$",
+};
+
 function formatCurrency(value: number, currency?: string): string {
-  if (currency === "BRL") return `R$${value.toFixed(2)}`;
-  return `$${value.toFixed(2)}`;
+  const sym = CURRENCY_SYMBOLS[currency ?? "USD"] ?? `${currency ?? ""} `;
+  return `${sym}${value.toFixed(2)}`;
 }
 
 interface GroupedHoldings {
@@ -61,10 +78,15 @@ export function HoldingsTable({
   transactions,
   dividendsBySymbol = new Map(),
   fundamentalsScores,
+  onRefreshAllScores,
   onFetchTransactions,
   onCreateTransaction,
+  onUpdateTransaction,
+  onDeleteTransaction,
+  onDeleteHolding,
+  onChangeAssetClass,
   onUpdateWeight,
-  onAddAsset,
+  showAddAsset: enableAddAsset,
 }: HoldingsTableProps) {
   const navigate = useNavigate();
   const scoreMap = new Map((fundamentalsScores ?? []).map((s) => [s.symbol, s]));
@@ -76,8 +98,6 @@ export function HoldingsTable({
     type: "buy" | "sell" | "dividend";
   } | null>(null);
   const [showAddAsset, setShowAddAsset] = useState(false);
-  const [newSymbol, setNewSymbol] = useState("");
-  const [newAssetClassId, setNewAssetClassId] = useState("");
   const [editingWeight, setEditingWeight] = useState<{ symbol: string; value: string } | null>(null);
 
   const quarantineMap = new Map(
@@ -104,16 +124,6 @@ export function HoldingsTable({
     }
   };
 
-  const handleAddAsset = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (onAddAsset && newSymbol.trim() && newAssetClassId.trim()) {
-      await onAddAsset(newSymbol.trim(), newAssetClassId.trim());
-      setNewSymbol("");
-      setNewAssetClassId("");
-      setShowAddAsset(false);
-    }
-  };
-
   const commitWeightEdit = () => {
     if (editingWeight && onUpdateWeight) {
       const parsed = parseFloat(editingWeight.value);
@@ -132,7 +142,7 @@ export function HoldingsTable({
     <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Holdings</h2>
-        {onAddAsset && (
+        {enableAddAsset && (
           <button
             className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
             onClick={() => setShowAddAsset(!showAddAsset)}
@@ -143,34 +153,14 @@ export function HoldingsTable({
       </div>
 
       {showAddAsset && (
-        <form onSubmit={handleAddAsset} className="mb-4 flex gap-2 items-end">
-          <div>
-            <label className="block text-base text-text-muted mb-1">Symbol</label>
-            <input
-              type="text"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
-              value={newSymbol}
-              onChange={(e) => setNewSymbol(e.target.value)}
-              placeholder="AAPL"
-            />
-          </div>
-          <div>
-            <label className="block text-base text-text-muted mb-1">Asset Class ID</label>
-            <input
-              type="text"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
-              value={newAssetClassId}
-              onChange={(e) => setNewAssetClassId(e.target.value)}
-              placeholder="class-id"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
-          >
-            Add
-          </button>
-        </form>
+        <AddAssetForm
+          assetClasses={assetClasses}
+          onSubmit={async (data) => {
+            await onCreateTransaction(data);
+            setShowAddAsset(false);
+          }}
+          onCancel={() => setShowAddAsset(false)}
+        />
       )}
 
       {transactionForm && (
@@ -204,7 +194,20 @@ export function HoldingsTable({
               <th className="text-right px-3 py-2">Target %</th>
               <th className="text-right px-3 py-2">Actual %</th>
               <th className="text-right px-3 py-2">Div ({new Date().getFullYear()})</th>
-              <th className="text-right px-3 py-2">Score</th>
+              <th className="text-right px-3 py-2">
+                <span className="flex items-center justify-end gap-1">
+                  Score
+                  {onRefreshAllScores && (
+                    <button
+                      className="text-[10px] text-text-muted hover:text-primary ml-1"
+                      title="Fetch scores for all stocks"
+                      onClick={onRefreshAllScores}
+                    >
+                      ↻
+                    </button>
+                  )}
+                </span>
+              </th>
               <th className="text-center px-3 py-2"></th>
             </tr>
           </thead>
@@ -233,6 +236,12 @@ export function HoldingsTable({
                   onNavigateScore={(symbol) => navigate(`/fundamentals/${symbol}`)}
                   onToggleGroup={() => toggleGroup(group.classId)}
                   onRowClick={handleRowClick}
+                  assetClasses={assetClasses}
+                  onUpdateTransaction={onUpdateTransaction}
+                  onDeleteTransaction={onDeleteTransaction}
+                  onDeleteHolding={onDeleteHolding}
+                  onChangeAssetClass={onChangeAssetClass}
+                  onFetchTransactions={onFetchTransactions}
                   onBuy={(symbol, classId) =>
                     setTransactionForm({ symbol, assetClassId: classId, type: "buy" })
                   }
@@ -271,6 +280,12 @@ interface GroupSectionProps {
   editingWeight: { symbol: string; value: string } | null;
   dividendsBySymbol: Map<string, { income: number; currency: string }>;
   scoreMap: Map<string, FundamentalsScore>;
+  assetClasses: AssetClass[];
+  onUpdateTransaction?: (id: string, data: Partial<Transaction>) => Promise<unknown>;
+  onDeleteTransaction?: (id: string) => Promise<unknown>;
+  onDeleteHolding?: (symbol: string) => Promise<unknown>;
+  onChangeAssetClass?: (symbol: string, assetClassId: string) => Promise<unknown>;
+  onFetchTransactions: (symbol: string) => Promise<void>;
   onNavigateScore: (symbol: string) => void;
   onToggleGroup: () => void;
   onRowClick: (symbol: string) => void;
@@ -293,6 +308,12 @@ function GroupSection({
   editingWeight,
   dividendsBySymbol,
   scoreMap,
+  assetClasses,
+  onUpdateTransaction,
+  onDeleteTransaction,
+  onDeleteHolding,
+  onChangeAssetClass,
+  onFetchTransactions,
   onNavigateScore,
   onToggleGroup,
   onRowClick,
@@ -353,6 +374,12 @@ function GroupSection({
               editWeightValue={isEditingThis ? editingWeight!.value : undefined}
               dividendData={dividendsBySymbol.get(h.symbol)}
               score={scoreMap.get(h.symbol)}
+              assetClasses={assetClasses}
+              onUpdateTransaction={onUpdateTransaction}
+              onDeleteTransaction={onDeleteTransaction}
+              onDeleteHolding={onDeleteHolding}
+              onChangeAssetClass={onChangeAssetClass}
+              onFetchTransactions={onFetchTransactions}
               onNavigateScore={() => onNavigateScore(h.symbol)}
               onRowClick={() => onRowClick(h.symbol)}
               onBuy={() => onBuy(h.symbol, group.classId)}
@@ -382,6 +409,12 @@ interface HoldingRowsProps {
   editWeightValue?: string;
   dividendData?: { income: number; currency: string };
   score?: FundamentalsScore;
+  assetClasses: AssetClass[];
+  onUpdateTransaction?: (id: string, data: Partial<Transaction>) => Promise<unknown>;
+  onDeleteTransaction?: (id: string) => Promise<unknown>;
+  onDeleteHolding?: (symbol: string) => Promise<unknown>;
+  onChangeAssetClass?: (symbol: string, assetClassId: string) => Promise<unknown>;
+  onFetchTransactions: (symbol: string) => Promise<void>;
   onNavigateScore: () => void;
   onRowClick: () => void;
   onBuy: () => void;
@@ -397,10 +430,17 @@ function HoldingRows({
   quarantine: q,
   isExpanded,
   transactions,
+  classId,
   isEditingWeight,
   editWeightValue,
   dividendData,
   score,
+  assetClasses,
+  onUpdateTransaction,
+  onDeleteTransaction,
+  onDeleteHolding,
+  onChangeAssetClass,
+  onFetchTransactions,
   onNavigateScore,
   onRowClick,
   onBuy,
@@ -410,14 +450,65 @@ function HoldingRows({
   onCommitWeight,
   onCancelWeight,
 }: HoldingRowsProps) {
+  const [editingTx, setEditingTx] = useState<string | null>(null);
+  const [editTxData, setEditTxData] = useState<{
+    quantity: string;
+    unit_price: string;
+    total_value: string;
+    tax_amount: string;
+    date: string;
+    notes: string;
+  }>({ quantity: "", unit_price: "", total_value: "", date: "", notes: "", tax_amount: "" });
+  const [showHoldingMenu, setShowHoldingMenu] = useState(false);
+  const [changingAssetClass, setChangingAssetClass] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
   const cur = h.currency as string;
-  const sym = cur === "BRL" ? "R$" : "$";
+  const sym = CURRENCY_SYMBOLS[cur] ?? `${cur} `;
   const scoreColor = (v: number) =>
     v >= 90
       ? "var(--color-positive)"
       : v >= 60
       ? "var(--color-warning)"
       : "var(--color-negative)";
+
+  const startEditTx = (t: Transaction) => {
+    setEditingTx(t.id);
+    setEditTxData({
+      quantity: t.quantity != null ? String(t.quantity) : "",
+      unit_price: t.unit_price != null ? String(t.unit_price) : "",
+      total_value: String(t.total_value),
+      tax_amount: t.tax_amount != null ? String(t.tax_amount) : "",
+      date: t.date,
+      notes: t.notes ?? "",
+    });
+  };
+
+  const saveEditTx = async (t: Transaction) => {
+    if (!onUpdateTransaction) return;
+    const isValueBased = t.quantity == null;
+    const qty = isValueBased ? null : (parseFloat(editTxData.quantity) || 0);
+    const price = isValueBased ? null : (parseFloat(editTxData.unit_price) || 0);
+    const total = isValueBased || t.type === "dividend"
+      ? parseFloat(editTxData.total_value) || 0
+      : (qty ?? 0) * (price ?? 0);
+    await onUpdateTransaction(t.id, {
+      quantity: qty,
+      unit_price: price,
+      total_value: total,
+      tax_amount: isValueBased ? null : (parseFloat(editTxData.tax_amount) || 0),
+      date: editTxData.date,
+      notes: editTxData.notes || null,
+    });
+    setEditingTx(null);
+    await onFetchTransactions(h.symbol);
+  };
+
+  const handleDeleteTx = async (id: string) => {
+    if (!onDeleteTransaction) return;
+    await onDeleteTransaction(id);
+    await onFetchTransactions(h.symbol);
+  };
 
   return (
     <>
@@ -509,7 +600,7 @@ function HoldingRows({
           )}
         </td>
         <td className="px-3 py-2 text-center">
-          <span className="flex gap-1 justify-center">
+          <span className="flex gap-1 justify-center items-center relative">
             <button
               className="text-positive hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
@@ -528,6 +619,85 @@ function HoldingRows({
             >
               Sell
             </button>
+            {(onDeleteHolding || onChangeAssetClass) && (
+              <div className="relative">
+                <button
+                  className="text-text-muted hover:text-text-primary text-base px-1"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowHoldingMenu(!showHoldingMenu);
+                    setConfirmDelete(false);
+                    setChangingAssetClass(false);
+                  }}
+                  title="More actions"
+                >
+                  ···
+                </button>
+                {showHoldingMenu && (
+                  <div
+                    className="absolute right-0 top-8 z-20 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[10px] shadow-lg py-1 min-w-[180px]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {onChangeAssetClass && !changingAssetClass && (
+                      <button
+                        className="w-full text-left px-3 py-2 text-base text-text-primary hover:bg-[var(--glass-hover)]"
+                        onClick={() => setChangingAssetClass(true)}
+                      >
+                        Change Asset Class
+                      </button>
+                    )}
+                    {changingAssetClass && (
+                      <div className="px-3 py-2">
+                        <label className="block text-xs text-text-muted mb-1">Move to:</label>
+                        <select
+                          className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base"
+                          defaultValue={classId}
+                          onChange={async (e) => {
+                            await onChangeAssetClass!(h.symbol, e.target.value);
+                            setShowHoldingMenu(false);
+                            setChangingAssetClass(false);
+                          }}
+                        >
+                          {assetClasses.map((ac) => (
+                            <option key={ac.id} value={ac.id}>{ac.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {onDeleteHolding && !confirmDelete && (
+                      <button
+                        className="w-full text-left px-3 py-2 text-base text-negative hover:bg-[var(--glass-hover)]"
+                        onClick={() => setConfirmDelete(true)}
+                      >
+                        Delete Holding
+                      </button>
+                    )}
+                    {confirmDelete && (
+                      <div className="px-3 py-2 space-y-1">
+                        <p className="text-xs text-negative">Delete all transactions for {h.symbol}?</p>
+                        <div className="flex gap-2">
+                          <button
+                            className="bg-negative text-white px-3 py-1 rounded-[8px] text-xs font-semibold"
+                            onClick={async () => {
+                              await onDeleteHolding!(h.symbol);
+                              setShowHoldingMenu(false);
+                            }}
+                          >
+                            Confirm
+                          </button>
+                          <button
+                            className="text-text-muted text-xs"
+                            onClick={() => setConfirmDelete(false)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </span>
         </td>
       </tr>
@@ -548,24 +718,147 @@ function HoldingRows({
                     <th className="text-right py-1 px-2">Qty</th>
                     <th className="text-right py-1 px-2">Price</th>
                     <th className="text-right py-1 px-2">Total</th>
+                    <th className="text-right py-1 px-2">Tax</th>
+                    <th className="text-left py-1 px-2">Notes</th>
+                    {(onUpdateTransaction || onDeleteTransaction) && (
+                      <th className="text-center py-1 px-2"></th>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {transactions.map((t) => (
-                    <tr key={t.id} className="border-t">
-                      <td className="py-1 px-2">{t.date}</td>
-                      <td className="py-1 px-2 capitalize">{t.type}</td>
-                      <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "—"}</td>
-                      <td className="py-1 px-2 text-right">
-                        {t.unit_price != null
-                          ? `${t.currency === "BRL" ? "R$" : "$"}${t.unit_price.toFixed(2)}`
-                          : "—"}
-                      </td>
-                      <td className="py-1 px-2 text-right">
-                        {t.currency === "BRL" ? "R$" : "$"}
-                        {t.total_value.toFixed(2)}
-                      </td>
-                    </tr>
+                    editingTx === t.id ? (
+                      <tr key={t.id} className="border-t bg-[var(--glass-primary-soft)]">
+                        <td className="py-1 px-2">
+                          <input
+                            type="date"
+                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-32"
+                            value={editTxData.date}
+                            onChange={(e) => setEditTxData({ ...editTxData, date: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1 px-2 capitalize">{t.type}</td>
+                        <td className="py-1 px-2 text-right">
+                          {t.type === "dividend" || t.quantity == null ? (
+                            <span>{t.quantity ?? "—"}</span>
+                          ) : (
+                            <input
+                              type="number"
+                              step="any"
+                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-20 text-right"
+                              value={editTxData.quantity}
+                              onChange={(e) => setEditTxData({ ...editTxData, quantity: e.target.value })}
+                            />
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          {t.type === "dividend" || t.quantity == null ? (
+                            <span>{t.unit_price != null ? t.unit_price.toFixed(2) : "—"}</span>
+                          ) : (
+                            <input
+                              type="number"
+                              step="any"
+                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-24 text-right"
+                              value={editTxData.unit_price}
+                              onChange={(e) => setEditTxData({ ...editTxData, unit_price: e.target.value })}
+                            />
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          {t.type === "dividend" || t.quantity == null ? (
+                            <input
+                              type="number"
+                              step="any"
+                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-24 text-right"
+                              value={editTxData.total_value}
+                              onChange={(e) => setEditTxData({ ...editTxData, total_value: e.target.value })}
+                            />
+                          ) : (
+                            <span className="text-text-muted">
+                              {CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}
+                              {((parseFloat(editTxData.quantity) || 0) * (parseFloat(editTxData.unit_price) || 0)).toFixed(2)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          <input
+                            type="number"
+                            step="any"
+                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-20 text-right"
+                            value={editTxData.tax_amount}
+                            onChange={(e) => setEditTxData({ ...editTxData, tax_amount: e.target.value })}
+                          />
+                        </td>
+                        <td className="py-1 px-2">
+                          <input
+                            type="text"
+                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-32"
+                            value={editTxData.notes}
+                            onChange={(e) => setEditTxData({ ...editTxData, notes: e.target.value })}
+                            placeholder="Notes"
+                          />
+                        </td>
+                        <td className="py-1 px-2 text-center">
+                          <span className="flex gap-1 justify-center">
+                            <button
+                              className="text-primary hover:opacity-80 text-xs font-medium"
+                              onClick={() => saveEditTx(t)}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="text-text-muted hover:opacity-80 text-xs"
+                              onClick={() => setEditingTx(null)}
+                            >
+                              Cancel
+                            </button>
+                          </span>
+                        </td>
+                      </tr>
+                    ) : (
+                      <tr key={t.id} className="border-t hover:bg-[var(--glass-hover)]">
+                        <td className="py-1 px-2">{t.date}</td>
+                        <td className="py-1 px-2 capitalize">{t.type}</td>
+                        <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "—"}</td>
+                        <td className="py-1 px-2 text-right">
+                          {t.unit_price != null
+                            ? `${CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}${t.unit_price.toFixed(2)}`
+                            : "—"}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          {CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}
+                          {t.total_value.toFixed(2)}
+                        </td>
+                        <td className="py-1 px-2 text-right text-text-muted">
+                          {t.tax_amount != null && t.tax_amount > 0 ? formatCurrency(t.tax_amount, t.currency) : "-"}
+                        </td>
+                        <td className="py-1 px-2 text-text-muted truncate max-w-[150px]">
+                          {t.notes || "-"}
+                        </td>
+                        {(onUpdateTransaction || onDeleteTransaction) && (
+                          <td className="py-1 px-2 text-center">
+                            <span className="flex gap-1 justify-center">
+                              {onUpdateTransaction && (
+                                <button
+                                  className="text-primary hover:opacity-80 text-xs font-medium"
+                                  onClick={() => startEditTx(t)}
+                                >
+                                  Edit
+                                </button>
+                              )}
+                              {onDeleteTransaction && (
+                                <button
+                                  className="text-negative hover:opacity-80 text-xs font-medium"
+                                  onClick={() => handleDeleteTx(t.id)}
+                                >
+                                  Del
+                                </button>
+                              )}
+                            </span>
+                          </td>
+                        )}
+                      </tr>
+                    )
                   ))}
                 </tbody>
               </table>

@@ -95,9 +95,15 @@ function computeManualDividendsByClass(dividends: Transaction[]): Map<string, { 
   return result;
 }
 
+function getRecommendationCount(): number {
+  const saved = localStorage.getItem("recommendationCount");
+  return saved ? parseInt(saved, 10) : 2;
+}
+
 function computeWhereToInvest(
   summaries: ClassSummary[],
-  investAmount: number
+  investAmount: number,
+  maxClasses: number
 ): Map<string, number> {
   const result = new Map<string, number>();
   if (investAmount <= 0) return result;
@@ -115,10 +121,14 @@ function computeWhereToInvest(
     }
   }
 
-  const totalNeeded = needs.reduce((sum, n) => sum + n.needed, 0);
+  // Limit to top N most underweight classes
+  needs.sort((a, b) => b.needed - a.needed);
+  const topNeeds = needs.slice(0, maxClasses);
+
+  const totalNeeded = topNeeds.reduce((sum, n) => sum + n.needed, 0);
   if (totalNeeded <= 0) return result;
 
-  for (const n of needs) {
+  for (const n of topNeeds) {
     const share = totalNeeded > investAmount
       ? (n.needed / totalNeeded) * investAmount
       : n.needed;
@@ -126,6 +136,17 @@ function computeWhereToInvest(
   }
 
   return result;
+}
+
+function computeTopUnderweightClasses(
+  summaries: ClassSummary[],
+  maxClasses: number
+): Set<string> {
+  const underweight = summaries
+    .filter((s) => s.targetWeight > 0 && s.diff < -1)
+    .sort((a, b) => a.diff - b.diff) // most underweight first
+    .slice(0, maxClasses);
+  return new Set(underweight.map((s) => s.classId));
 }
 
 export function ClassSummaryTable({
@@ -178,7 +199,9 @@ export function ClassSummaryTable({
   }
 
   const parsedInvest = parseFloat(investAmount) || 0;
-  const whereToInvest = computeWhereToInvest(summaries, parsedInvest);
+  const recCount = getRecommendationCount();
+  const whereToInvest = computeWhereToInvest(summaries, parsedInvest, recCount);
+  const topUnderweight = computeTopUnderweightClasses(summaries, recCount);
 
   const isEditing = editingWeights.size > 0;
   const totalTargetWeight = summaries.reduce((sum, s) => {
@@ -275,7 +298,7 @@ export function ClassSummaryTable({
                 </div>
               </th>
               <th className="text-center py-2 px-2">Where to Invest</th>
-              <th className="text-right py-2 px-2">Dividends/yr</th>
+              <th className="text-right py-2 px-2">Dividends ({new Date().getFullYear()})</th>
             </tr>
           </thead>
           <tbody>
@@ -289,7 +312,6 @@ export function ClassSummaryTable({
               const displayDiff = s.percentage - displayWeight;
 
               const isOver = displayDiff > 1;
-              const isUnder = displayDiff < -1;
 
               // Dividend display: show estimated if available, manual if available, or both
               let divDisplay: React.ReactNode = "-";
@@ -343,7 +365,7 @@ export function ClassSummaryTable({
                             {formatValue(investSuggestion, "BRL")}
                           </span>
                         </>
-                      ) : isUnder ? (
+                      ) : topUnderweight.has(s.classId) ? (
                         <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--glass-positive-soft)] text-positive text-xs font-bold">+</span>
                       ) : isOver ? (
                         <div className="w-12 h-4 bg-negative rounded" title={`Overweight by ${Math.abs(displayDiff).toFixed(1)}%`} />

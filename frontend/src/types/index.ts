@@ -26,7 +26,7 @@ export interface Transaction {
   quantity: number | null;
   unit_price: number | null;
   total_value: number;
-  currency: "BRL" | "USD";
+  currency: string;
   tax_amount: number | null;
   date: string;
   notes: string | null;
@@ -45,7 +45,7 @@ export interface Holding {
   gain_loss?: number;
   target_weight?: number;
   actual_weight?: number;
-  currency?: "BRL" | "USD";
+  currency?: string;
 }
 
 export interface Recommendation {

@@ -24,7 +24,7 @@ export function TransactionForm({
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [totalValue, setTotalValue] = useState("");
-  const [currency, setCurrency] = useState<"BRL" | "USD">("BRL");
+  const [currency, setCurrency] = useState("BRL");
   const [taxAmount, setTaxAmount] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
@@ -136,10 +136,11 @@ export function TransactionForm({
           <select
             className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
             value={currency}
-            onChange={(e) => setCurrency(e.target.value as "BRL" | "USD")}
+            onChange={(e) => setCurrency(e.target.value)}
           >
-            <option value="BRL">BRL</option>
-            <option value="USD">USD</option>
+            {["BRL", "USD", "EUR", "GBP", "CHF", "JPY", "CAD", "AUD"].map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
         </div>
         {!isFixedIncome && (

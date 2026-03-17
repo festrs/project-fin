@@ -14,6 +14,24 @@ class FinnhubProvider:
         self._api_key = api_key
         self._base_url = base_url
 
+    def search(self, query: str) -> list[dict]:
+        resp = httpx.get(
+            f"{self._base_url}/search",
+            params={"q": query, "token": self._api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        results = resp.json().get("result", [])
+        return [
+            {
+                "symbol": r["symbol"],
+                "name": r.get("description", ""),
+                "type": r.get("type", ""),
+            }
+            for r in results
+            if "." not in r.get("symbol", "")  # filter out foreign exchanges
+        ][:10]
+
     def get_quote(self, symbol: str) -> dict:
         quote_resp = httpx.get(
             f"{self._base_url}/quote",

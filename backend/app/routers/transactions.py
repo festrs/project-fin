@@ -93,3 +93,45 @@ def delete_transaction(
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.delete(tx)
     db.commit()
+
+
+@router.delete("/by-symbol/{symbol}", status_code=204)
+@limiter.limit(CRUD_LIMIT)
+def delete_transactions_by_symbol(
+    request: Request,
+    symbol: str,
+    x_user_id: str = Header(),
+    db: Session = Depends(get_db),
+):
+    """Delete all transactions for a symbol (removes the holding)."""
+    count = (
+        db.query(Transaction)
+        .filter(Transaction.user_id == x_user_id, Transaction.asset_symbol == symbol)
+        .delete()
+    )
+    if count == 0:
+        raise HTTPException(status_code=404, detail="No transactions found for symbol")
+    db.commit()
+
+
+@router.put("/by-symbol/{symbol}/asset-class")
+@limiter.limit(CRUD_LIMIT)
+def update_asset_class_for_symbol(
+    request: Request,
+    symbol: str,
+    asset_class_id: str = Query(...),
+    x_user_id: str = Header(),
+    db: Session = Depends(get_db),
+):
+    """Move all transactions for a symbol to a different asset class."""
+    txs = (
+        db.query(Transaction)
+        .filter(Transaction.user_id == x_user_id, Transaction.asset_symbol == symbol)
+        .all()
+    )
+    if not txs:
+        raise HTTPException(status_code=404, detail="No transactions found for symbol")
+    for tx in txs:
+        tx.asset_class_id = asset_class_id
+    db.commit()
+    return {"updated": len(txs)}

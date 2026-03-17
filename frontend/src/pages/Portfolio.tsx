@@ -31,8 +31,10 @@ export default function Portfolio() {
     transactions,
     fetchTransactions,
     createTransaction,
+    updateTransaction,
+    deleteTransaction,
   } = useTransactions();
-  const { scores: fundamentalsScores } = useFundamentals();
+  const { scores: fundamentalsScores, refreshAll: refreshAllScores, refresh: refreshScores } = useFundamentals();
 
   const [quarantineStatuses, setQuarantineStatuses] = useState<QuarantineStatus[]>([]);
   const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
@@ -95,6 +97,34 @@ export default function Portfolio() {
     fetchQuarantineStatuses();
   };
 
+  const handleUpdateTransaction = async (id: string, data: Partial<Transaction>) => {
+    await updateTransaction(id, data);
+    refreshPortfolio();
+    fetchAllTransactions();
+  };
+
+  const handleDeleteTransaction = async (id: string) => {
+    await deleteTransaction(id);
+    refreshPortfolio();
+    fetchAllTransactions();
+    fetchQuarantineStatuses();
+  };
+
+  const handleDeleteHolding = async (symbol: string) => {
+    await api.delete(`/transactions/by-symbol/${symbol}`);
+    refreshPortfolio();
+    fetchAllTransactions();
+    fetchQuarantineStatuses();
+  };
+
+  const handleChangeAssetClass = async (symbol: string, assetClassId: string) => {
+    await api.put(`/transactions/by-symbol/${symbol}/asset-class`, null, {
+      params: { asset_class_id: assetClassId },
+    });
+    refreshPortfolio();
+    fetchAllTransactions();
+  };
+
   const handleFetchTransactions = async (symbol: string) => {
     await fetchTransactions(symbol);
   };
@@ -141,8 +171,20 @@ export default function Portfolio() {
         transactions={transactions}
         dividendsBySymbol={dividendsBySymbol}
         fundamentalsScores={fundamentalsScores}
+        showAddAsset
+        onRefreshAllScores={async () => {
+          await refreshAllScores();
+          // Poll for results since scoring runs in background
+          setTimeout(() => refreshScores(), 5000);
+          setTimeout(() => refreshScores(), 15000);
+          setTimeout(() => refreshScores(), 30000);
+        }}
         onFetchTransactions={handleFetchTransactions}
         onCreateTransaction={handleCreateTransaction}
+        onUpdateTransaction={handleUpdateTransaction}
+        onDeleteTransaction={handleDeleteTransaction}
+        onDeleteHolding={handleDeleteHolding}
+        onChangeAssetClass={handleChangeAssetClass}
       />
 
       <DividendsTable

@@ -18,7 +18,7 @@ class Transaction(Base):
     quantity: Mapped[float | None] = mapped_column(Float, nullable=True)
     unit_price: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_value: Mapped[float] = mapped_column(Float, nullable=False)
-    currency: Mapped[str] = mapped_column(Enum("BRL", "USD", name="currency_type"), nullable=False)
+    currency: Mapped[str] = mapped_column(String(10), nullable=False)
     tax_amount: Mapped[float | None] = mapped_column(Float, nullable=True, default=None)
     date: Mapped[date] = mapped_column(Date, nullable=False)
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)

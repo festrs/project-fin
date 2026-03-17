@@ -12,6 +12,19 @@ class BrapiProvider:
         self._api_key = api_key
         self._base_url = base_url
 
+    def search(self, query: str) -> list[dict]:
+        resp = httpx.get(
+            f"{self._base_url}/api/available",
+            params={"search": query, "token": self._api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        stocks = resp.json().get("stocks", [])
+        return [
+            {"symbol": f"{s}.SA", "name": s, "type": "Common Stock"}
+            for s in stocks
+        ][:10]
+
     def get_quote(self, symbol: str) -> dict:
         ticker = _strip_sa(symbol)
         resp = httpx.get(

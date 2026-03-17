@@ -1,4 +1,4 @@
-from datetime import datetime, date
+import datetime as dt
 from typing import Literal, Optional
 
 from pydantic import BaseModel, model_validator
@@ -11,9 +11,9 @@ class TransactionCreate(BaseModel):
     quantity: Optional[float] = None
     unit_price: Optional[float] = None
     total_value: float
-    currency: Literal["BRL", "USD"]
+    currency: str
     tax_amount: Optional[float] = 0.0
-    date: date
+    date: dt.date
     notes: Optional[str] = None
 
     @model_validator(mode="after")
@@ -31,7 +31,7 @@ class TransactionUpdate(BaseModel):
     unit_price: Optional[float] = None
     total_value: Optional[float] = None
     tax_amount: Optional[float] = None
-    date: Optional[date] = None
+    date: Optional[dt.date] = None
     notes: Optional[str] = None
 
 
@@ -46,9 +46,9 @@ class TransactionResponse(BaseModel):
     total_value: float
     currency: str
     tax_amount: float | None
-    date: date
+    date: dt.date
     notes: Optional[str]
-    created_at: datetime
-    updated_at: datetime
+    created_at: dt.datetime
+    updated_at: dt.datetime
 
     model_config = {"from_attributes": True}
