@@ -160,6 +160,10 @@ class PortfolioService:
     ) -> list[dict]:
         """Enrich holdings with current prices, values, gain/loss, and weights."""
 
+        # Separate quantity-based and value-based holdings
+        qty_holdings = [h for h in holdings if h["quantity"] is not None]
+        val_holdings = [h for h in holdings if h["quantity"] is None]
+
         def fetch_price(holding: dict) -> tuple[str, float | None]:
             symbol = holding["symbol"]
             class_info = class_map.get(holding["asset_class_id"], {})
@@ -171,50 +175,65 @@ class PortfolioService:
                     return symbol, market_data.get_quote_safe(coin_id, is_crypto=True)
             return symbol, market_data.get_quote_safe(symbol, is_crypto=False, country=country, db=db)
 
-        # Fetch prices in parallel
+        # Fetch prices in parallel (only for quantity-based holdings)
         prices: dict[str, float | None] = {}
         with ThreadPoolExecutor(max_workers=10) as executor:
-            futures = {executor.submit(fetch_price, h): h for h in holdings}
+            futures = {executor.submit(fetch_price, h): h for h in qty_holdings}
             for future in as_completed(futures):
                 symbol, price = future.result()
                 prices[symbol] = price
 
         # Calculate total portfolio value
         total_value = 0.0
-        for h in holdings:
+        for h in qty_holdings:
             price = prices.get(h["symbol"])
             if price is not None:
                 total_value += h["quantity"] * price
+        for h in val_holdings:
+            total_value += h["total_cost"]
 
         # Enrich each holding
         enriched = []
         for h in holdings:
-            price = prices.get(h["symbol"])
             class_info = class_map.get(h["asset_class_id"], {})
             class_target = class_info.get("target_weight", 0.0)
             asset_target = weight_map.get(h["symbol"], 0.0)
             effective_target = class_target * asset_target / 100
-
-            if price is not None:
-                current_value = h["quantity"] * price
-                gain_loss = (price - h["avg_price"]) * h["quantity"]
-                actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
-            else:
-                current_value = None
-                gain_loss = None
-                actual_weight = None
-
             country = class_info.get("country", "US")
             currency = "BRL" if country == "BR" else "USD"
 
-            enriched.append({
-                **h,
-                "current_price": price,
-                "current_value": current_value,
-                "gain_loss": gain_loss,
-                "target_weight": effective_target,
-                "actual_weight": actual_weight,
-                "currency": currency,
-            })
+            if h["quantity"] is None:
+                # Fixed income: no market price, gain_loss=None renders as "—"
+                current_value = h["total_cost"]
+                actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
+                enriched.append({
+                    **h,
+                    "current_price": None,
+                    "current_value": current_value,
+                    "gain_loss": None,
+                    "target_weight": effective_target,
+                    "actual_weight": actual_weight,
+                    "currency": currency,
+                })
+            else:
+                price = prices.get(h["symbol"])
+                if price is not None:
+                    current_value = h["quantity"] * price
+                    gain_loss = (price - h["avg_price"]) * h["quantity"]
+                    actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
+                else:
+                    current_value = None
+                    gain_loss = None
+                    actual_weight = None
+
+                enriched.append({
+                    **h,
+                    "current_price": price,
+                    "current_value": current_value,
+                    "gain_loss": gain_loss,
+                    "target_weight": effective_target,
+                    "actual_weight": actual_weight,
+                    "currency": currency,
+                })
 
         return enriched

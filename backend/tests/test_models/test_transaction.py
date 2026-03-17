@@ -38,7 +38,7 @@ def test_create_buy_transaction(db):
     assert tx.unit_price == 150.0
     assert tx.total_value == 1500.0
     assert tx.currency == "USD"
-    assert tx.tax_amount == 0.0
+    assert tx.tax_amount is None
     assert tx.notes is None
     assert tx.created_at is not None
     assert tx.updated_at is not None

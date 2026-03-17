@@ -125,6 +125,9 @@ def portfolio_dividends(
         if not ac:
             return None
 
+        if holding["quantity"] is None:
+            return None  # Fixed income — no dividend calculation
+
         class_name = ac.name
         if class_name in CRYPTO_CLASS_NAMES or class_name == "Stablecoins":
             return None
