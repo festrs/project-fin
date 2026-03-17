@@ -23,11 +23,11 @@ export interface Transaction {
   asset_class_id: string;
   asset_symbol: string;
   type: "buy" | "sell" | "dividend";
-  quantity: number;
-  unit_price: number;
+  quantity: number | null;
+  unit_price: number | null;
   total_value: number;
   currency: "BRL" | "USD";
-  tax_amount: number;
+  tax_amount: number | null;
   date: string;
   notes: string | null;
   created_at: string;
@@ -37,8 +37,8 @@ export interface Transaction {
 export interface Holding {
   symbol: string;
   asset_class_id: string;
-  quantity: number;
-  avg_price: number;
+  quantity: number | null;
+  avg_price: number | null;
   total_cost: number;
   current_price?: number;
   current_value?: number;

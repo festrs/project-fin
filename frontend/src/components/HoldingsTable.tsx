@@ -429,8 +429,8 @@ function HoldingRows({
             )}
           </span>
         </td>
-        <td className="px-3 py-2 text-right">{h.quantity}</td>
-        <td className="px-3 py-2 text-right">{formatCurrency(h.avg_price, cur)}</td>
+        <td className="px-3 py-2 text-right">{h.quantity != null ? h.quantity : "—"}</td>
+        <td className="px-3 py-2 text-right">{h.avg_price != null ? formatCurrency(h.avg_price, cur) : "—"}</td>
         <td className="px-3 py-2 text-right">
           {h.current_price != null ? formatCurrency(h.current_price, cur) : "-"}
         </td>
@@ -551,10 +551,11 @@ function HoldingRows({
                     <tr key={t.id} className="border-t">
                       <td className="py-1 px-2">{t.date}</td>
                       <td className="py-1 px-2 capitalize">{t.type}</td>
-                      <td className="py-1 px-2 text-right">{t.quantity}</td>
+                      <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "—"}</td>
                       <td className="py-1 px-2 text-right">
-                        {t.currency === "BRL" ? "R$" : "$"}
-                        {t.unit_price.toFixed(2)}
+                        {t.unit_price != null
+                          ? `${t.currency === "BRL" ? "R$" : "$"}${t.unit_price.toFixed(2)}`
+                          : "—"}
                       </td>
                       <td className="py-1 px-2 text-right">
                         {t.currency === "BRL" ? "R$" : "$"}
