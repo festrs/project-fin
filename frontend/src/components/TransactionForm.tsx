@@ -6,6 +6,7 @@ type TransactionType = "buy" | "sell" | "dividend";
 interface TransactionFormProps {
   symbol: string;
   assetClassId: string;
+  isFixedIncome?: boolean;
   initialType?: TransactionType;
   onSubmit: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
   onCancel: () => void;
@@ -14,6 +15,7 @@ interface TransactionFormProps {
 export function TransactionForm({
   symbol,
   assetClassId,
+  isFixedIncome = false,
   initialType = "buy",
   onSubmit,
   onCancel,
@@ -29,9 +31,10 @@ export function TransactionForm({
   const [submitting, setSubmitting] = useState(false);
 
   const isDividend = type === "dividend";
+  const hideQuantityFields = isDividend || isFixedIncome;
 
   const computedTotal =
-    !isDividend && quantity && unitPrice
+    !hideQuantityFields && quantity && unitPrice
       ? (parseFloat(quantity) * parseFloat(unitPrice)).toFixed(2)
       : totalValue;
 
@@ -43,11 +46,11 @@ export function TransactionForm({
         asset_class_id: assetClassId,
         asset_symbol: symbol,
         type,
-        quantity: isDividend ? 0 : parseFloat(quantity) || 0,
-        unit_price: isDividend ? 0 : parseFloat(unitPrice) || 0,
-        total_value: isDividend ? parseFloat(totalValue) || 0 : parseFloat(computedTotal) || 0,
+        quantity: hideQuantityFields ? null : parseFloat(quantity) || 0,
+        unit_price: hideQuantityFields ? null : parseFloat(unitPrice) || 0,
+        total_value: hideQuantityFields ? parseFloat(totalValue) || 0 : parseFloat(computedTotal) || 0,
         currency,
-        tax_amount: parseFloat(taxAmount) || 0,
+        tax_amount: isFixedIncome ? null : parseFloat(taxAmount) || 0,
         date,
         notes: notes || null,
       });
@@ -72,12 +75,12 @@ export function TransactionForm({
           >
             <option value="buy">Buy</option>
             <option value="sell">Sell</option>
-            <option value="dividend">Dividend</option>
+            {!isFixedIncome && <option value="dividend">Dividend</option>}
           </select>
         </label>
       </div>
 
-      {!isDividend && (
+      {!hideQuantityFields && (
         <div className="flex gap-3">
           <div>
             <label className="block text-base text-text-muted mb-1">Quantity</label>
@@ -113,7 +116,7 @@ export function TransactionForm({
         </div>
       )}
 
-      {isDividend && (
+      {hideQuantityFields && (
         <div>
           <label className="block text-base text-text-muted mb-1">Total Value</label>
           <input
@@ -139,16 +142,18 @@ export function TransactionForm({
             <option value="USD">USD</option>
           </select>
         </div>
-        <div>
-          <label className="block text-base text-text-muted mb-1">Tax Amount</label>
-          <input
-            type="number"
-            step="any"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
-            value={taxAmount}
-            onChange={(e) => setTaxAmount(e.target.value)}
-          />
-        </div>
+        {!isFixedIncome && (
+          <div>
+            <label className="block text-base text-text-muted mb-1">Tax Amount</label>
+            <input
+              type="number"
+              step="any"
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              value={taxAmount}
+              onChange={(e) => setTaxAmount(e.target.value)}
+            />
+          </div>
+        )}
         <div>
           <label className="block text-base text-text-muted mb-1">Date</label>
           <input

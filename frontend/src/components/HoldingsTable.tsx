@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
+import { isFixedIncomeClass } from "../utils/assetClass";
 import type { Holding, Transaction, QuarantineStatus, AssetClass, FundamentalsScore } from "../types";
 
 interface HoldingsTableProps {
@@ -177,6 +178,9 @@ export function HoldingsTable({
           <TransactionForm
             symbol={transactionForm.symbol}
             assetClassId={transactionForm.assetClassId}
+            isFixedIncome={isFixedIncomeClass(
+              assetClasses.find((ac) => ac.id === transactionForm.assetClassId)?.name ?? ""
+            )}
             initialType={transactionForm.type}
             onSubmit={async (data) => {
               await onCreateTransaction(data);
