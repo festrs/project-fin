@@ -72,6 +72,26 @@ def _run_fundamentals_score():
         db.close()
 
 
+def _run_split_checker():
+    from app.database import SessionLocal
+    from app.providers.brapi import BrapiProvider
+    from app.providers.finnhub import FinnhubProvider
+    from app.services.split_checker_scheduler import SplitCheckerScheduler
+
+    scheduler = SplitCheckerScheduler(
+        finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key, base_url=settings.finnhub_base_url),
+        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
+    )
+
+    db = SessionLocal()
+    try:
+        scheduler.check_all(db)
+    except Exception:
+        logger.exception("Scheduled split check failed")
+    finally:
+        db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     from app.database import Base, engine
@@ -108,6 +128,13 @@ async def lifespan(app: FastAPI):
             logger.info(
                 f"Fundamentals scorer scheduled ({settings.fundamentals_scorer_day} at {settings.fundamentals_scorer_hour}:00 UTC)"
             )
+        if settings.enable_split_checker:
+            bg_scheduler.add_job(
+                _run_split_checker, "cron",
+                hour=settings.split_checker_hour,
+                id="split_checker",
+            )
+            logger.info(f"Split checker scheduled (daily at {settings.split_checker_hour}:00 UTC)")
         bg_scheduler.start()
         logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
 
@@ -138,7 +165,7 @@ app.add_middleware(
 from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
-    fundamentals,
+    fundamentals, splits,
 )
 
 app.include_router(asset_classes.router)
@@ -150,6 +177,7 @@ app.include_router(portfolio.router)
 app.include_router(recommendations.router)
 app.include_router(quarantine.router)
 app.include_router(fundamentals.router)
+app.include_router(splits.router)
 
 
 @app.get("/api/health")

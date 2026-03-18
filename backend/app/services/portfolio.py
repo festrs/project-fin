@@ -14,6 +14,8 @@ class PortfolioService:
         self.db = db
 
     def get_holdings(self, user_id: str) -> list[dict]:
+        from app.models.stock_split import StockSplit
+
         # Get all distinct symbols with their asset_class_id
         symbols = (
             self.db.query(Transaction.asset_symbol, Transaction.asset_class_id)
@@ -21,6 +23,16 @@ class PortfolioService:
             .distinct()
             .all()
         )
+
+        # Pre-load all applied splits for this user
+        applied_splits = (
+            self.db.query(StockSplit)
+            .filter(StockSplit.user_id == user_id, StockSplit.status == "applied")
+            .all()
+        )
+        splits_by_symbol: dict[str, list] = {}
+        for s in applied_splits:
+            splits_by_symbol.setdefault(s.symbol, []).append(s)
 
         holdings = []
         for symbol, asset_class_id in symbols:
@@ -55,6 +67,16 @@ class PortfolioService:
                 net_value = buy_value - sell_value
                 if net_value <= 0:
                     continue
+                tx_currency = (
+                    self.db.query(Transaction.currency)
+                    .filter(
+                        Transaction.user_id == user_id,
+                        Transaction.asset_symbol == symbol,
+                        Transaction.type == "buy",
+                    )
+                    .order_by(Transaction.date.desc())
+                    .first()
+                )
                 holdings.append(
                     {
                         "symbol": symbol,
@@ -62,33 +84,77 @@ class PortfolioService:
                         "quantity": None,
                         "avg_price": None,
                         "total_cost": net_value,
+                        "currency": tx_currency[0] if tx_currency else "BRL",
                     }
                 )
             else:
-                # Quantity-based (stocks/crypto): existing logic
-                buy_qty = buy_qty or 0
-                buy_value = buy_agg.total_value or 0
+                # Quantity-based: split-aware calculation
+                symbol_splits = splits_by_symbol.get(symbol, [])
 
-                sell_agg = (
-                    self.db.query(
-                        func.sum(Transaction.quantity).label("total_qty"),
+                if not symbol_splits:
+                    # Fast path: no splits, use original aggregate logic
+                    buy_qty = buy_qty or 0
+                    buy_value = buy_agg.total_value or 0
+                    sell_agg = (
+                        self.db.query(func.sum(Transaction.quantity).label("total_qty"))
+                        .filter(
+                            Transaction.user_id == user_id,
+                            Transaction.asset_symbol == symbol,
+                            Transaction.type == "sell",
+                        )
+                        .first()
                     )
+                    sell_qty = sell_agg.total_qty or 0
+                    net_qty = buy_qty - sell_qty
+                    if net_qty <= 0:
+                        continue
+                    avg_price = buy_value / buy_qty if buy_qty > 0 else 0
+                    total_cost = avg_price * net_qty
+                else:
+                    # Slow path: per-transaction split adjustment
+                    transactions = (
+                        self.db.query(Transaction)
+                        .filter(
+                            Transaction.user_id == user_id,
+                            Transaction.asset_symbol == symbol,
+                            Transaction.type.in_(["buy", "sell"]),
+                        )
+                        .all()
+                    )
+
+                    adjusted_buy_qty = 0.0
+                    adjusted_buy_value = 0.0
+                    adjusted_sell_qty = 0.0
+
+                    for tx in transactions:
+                        ratio = 1.0
+                        for sp in symbol_splits:
+                            if sp.split_date > tx.date:
+                                ratio *= sp.to_factor / sp.from_factor
+                        adjusted_qty = (tx.quantity or 0) * ratio
+
+                        if tx.type == "buy":
+                            adjusted_buy_qty += adjusted_qty
+                            adjusted_buy_value += tx.total_value
+                        elif tx.type == "sell":
+                            adjusted_sell_qty += adjusted_qty
+
+                    net_qty = adjusted_buy_qty - adjusted_sell_qty
+                    if net_qty <= 0:
+                        continue
+                    avg_price = adjusted_buy_value / adjusted_buy_qty if adjusted_buy_qty > 0 else 0
+                    total_cost = avg_price * net_qty
+
+                tx_currency = (
+                    self.db.query(Transaction.currency)
                     .filter(
                         Transaction.user_id == user_id,
                         Transaction.asset_symbol == symbol,
-                        Transaction.type == "sell",
+                        Transaction.type == "buy",
                     )
+                    .order_by(Transaction.date.desc())
                     .first()
                 )
-
-                sell_qty = sell_agg.total_qty or 0
-                net_qty = buy_qty - sell_qty
-
-                if net_qty <= 0:
-                    continue
-
-                avg_price = buy_value / buy_qty if buy_qty > 0 else 0
-                total_cost = avg_price * net_qty
 
                 holdings.append(
                     {
@@ -97,6 +163,7 @@ class PortfolioService:
                         "quantity": net_qty,
                         "avg_price": avg_price,
                         "total_cost": total_cost,
+                        "currency": tx_currency[0] if tx_currency else "BRL",
                     }
                 )
 
@@ -203,7 +270,8 @@ class PortfolioService:
             currency = "BRL" if country == "BR" else "USD"
 
             if h["quantity"] is None:
-                # Fixed income: no market price, gain_loss=None renders as "—"
+                # Fixed income: use the currency from the transaction, not from country
+                holding_currency = h.get("currency", currency)
                 current_value = h["total_cost"]
                 actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
                 enriched.append({
@@ -213,7 +281,7 @@ class PortfolioService:
                     "gain_loss": None,
                     "target_weight": effective_target,
                     "actual_weight": actual_weight,
-                    "currency": currency,
+                    "currency": holding_currency,
                 })
             else:
                 price = prices.get(h["symbol"])
@@ -226,6 +294,7 @@ class PortfolioService:
                     gain_loss = None
                     actual_weight = None
 
+                holding_currency = h.get("currency", currency)
                 enriched.append({
                     **h,
                     "current_price": price,
@@ -233,7 +302,7 @@ class PortfolioService:
                     "gain_loss": gain_loss,
                     "target_weight": effective_target,
                     "actual_weight": actual_weight,
-                    "currency": currency,
+                    "currency": holding_currency,
                 })
 
         return enriched

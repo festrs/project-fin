@@ -88,6 +88,17 @@ export interface FundamentalsScore {
   updated_at: string | null;
 }
 
+export interface StockSplit {
+  id: string;
+  symbol: string;
+  split_date: string;
+  from_factor: number;
+  to_factor: number;
+  detected_at: string;
+  current_quantity: number;
+  new_quantity: number;
+}
+
 export interface FundamentalsDetail extends FundamentalsScore {
   raw_data: Array<{
     year: number;

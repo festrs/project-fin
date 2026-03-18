@@ -173,6 +173,16 @@ class FinnhubProvider:
             "raw_data": raw_data,
         }
 
+    def get_splits(self, symbol: str, from_date: str, to_date: str) -> list[dict]:
+        """GET /stock/split for a symbol within a date range."""
+        resp = httpx.get(
+            f"{self._base_url}/stock/split",
+            params={"symbol": symbol, "from": from_date, "to": to_date, "token": self._api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         now = datetime.now(timezone.utc)
         days = PERIOD_DAYS.get(period, 30)

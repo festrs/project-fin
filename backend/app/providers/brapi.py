@@ -105,6 +105,32 @@ class BrapiProvider:
             "raw_data": [],
         }
 
+    def get_splits(self, symbol: str) -> list[dict]:
+        """Get stock splits from quote endpoint with dividends=true."""
+        ticker = _strip_sa(symbol)
+        resp = httpx.get(
+            f"{self._base_url}/api/quote/{ticker}",
+            params={"token": self._api_key, "dividends": "true"},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()["results"][0]
+        dividends_data = data.get("dividendsData", {})
+        stock_dividends = dividends_data.get("stockDividends", [])
+
+        splits = []
+        for entry in stock_dividends:
+            if entry.get("label") == "DESDOBRAMENTO":
+                date_str = entry.get("lastDatePrior", "")
+                if date_str:
+                    splits.append({
+                        "symbol": symbol,
+                        "date": date_str[:10],
+                        "fromFactor": 1,
+                        "toFactor": entry.get("rate", 1),
+                    })
+        return splits
+
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         ticker = _strip_sa(symbol)
         resp = httpx.get(

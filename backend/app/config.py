@@ -18,6 +18,8 @@ class Settings(BaseSettings):
     enable_fundamentals_scorer: bool = True
     fundamentals_scorer_day: str = "sun"
     fundamentals_scorer_hour: int = 3
+    enable_split_checker: bool = True
+    split_checker_hour: int = 10
 
     class Config:
         env_file = ".env"
