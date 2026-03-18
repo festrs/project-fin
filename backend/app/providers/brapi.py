@@ -127,7 +127,7 @@ class BrapiProvider:
                         "symbol": symbol,
                         "date": date_str[:10],
                         "fromFactor": 1,
-                        "toFactor": entry.get("rate", 1),
+                        "toFactor": entry.get("factor", 1),
                     })
         return splits
 

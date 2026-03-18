@@ -11,8 +11,8 @@ class TestBrapiSplits:
             "results": [{
                 "dividendsData": {
                     "stockDividends": [
-                        {"label": "DESDOBRAMENTO", "rate": 2, "lastDatePrior": "2008-03-24T00:00:00.000Z"},
-                        {"label": "BONIFICACAO", "rate": 0.1, "lastDatePrior": "2010-01-15T00:00:00.000Z"},
+                        {"label": "DESDOBRAMENTO", "factor": 2, "lastDatePrior": "2008-03-24T00:00:00.000Z"},
+                        {"label": "BONIFICACAO", "factor": 0.1, "lastDatePrior": "2010-01-15T00:00:00.000Z"},
                     ]
                 }
             }]
