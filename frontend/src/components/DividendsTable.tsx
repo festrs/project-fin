@@ -137,6 +137,7 @@ export function DividendsTable({
             <TransactionForm
               symbol={formSymbol}
               assetClassId={defaultAssetClassId}
+              type="stock"
               initialType="dividend"
               onSubmit={async (data) => {
                 await onCreateTransaction(data);

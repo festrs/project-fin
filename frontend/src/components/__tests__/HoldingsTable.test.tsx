@@ -1,11 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi } from "vitest";
 import { HoldingsTable } from "../HoldingsTable";
 import { AssetClass, Holding, QuarantineStatus, Transaction } from "../../types";
 
 const mockAssetClasses: AssetClass[] = [
-  { id: "c1", user_id: "u1", name: "Stocks", target_weight: 60, country: "us", created_at: "2024-01-01", updated_at: "2024-01-01" },
+  { id: "c1", user_id: "u1", name: "Stocks", target_weight: 60, country: "US", type: "stock", created_at: "2024-01-01", updated_at: "2024-01-01" },
 ];
 
 const mockHoldings: Holding[] = [
@@ -20,6 +21,7 @@ const mockHoldings: Holding[] = [
     gain_loss: 200,
     target_weight: 30,
     actual_weight: 35.5,
+    currency: "USD",
   },
   {
     symbol: "TSLA",
@@ -32,6 +34,7 @@ const mockHoldings: Holding[] = [
     gain_loss: -100,
     target_weight: 20,
     actual_weight: 18.8,
+    currency: "USD",
   },
 ];
 
@@ -66,15 +69,19 @@ const mockTransactions: Transaction[] = [
 describe("HoldingsTable", () => {
   it("renders holdings with data", () => {
     render(
-      <HoldingsTable
-        holdings={mockHoldings}
-        assetClasses={mockAssetClasses}
-        loading={false}
-        quarantineStatuses={mockQuarantineStatuses}
-        transactions={[]}
-        onFetchTransactions={vi.fn()}
-        onCreateTransaction={vi.fn()}
-      />
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={mockHoldings}
+          assetClassId="c1"
+          assetClasses={mockAssetClasses}
+          type="stock"
+          loading={false}
+          quarantineStatuses={mockQuarantineStatuses}
+          transactions={[]}
+          onFetchTransactions={vi.fn()}
+          onCreateTransaction={vi.fn()}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByText("AAPL")).toBeInTheDocument();
@@ -86,15 +93,19 @@ describe("HoldingsTable", () => {
 
   it("shows quarantine badge for quarantined assets", () => {
     render(
-      <HoldingsTable
-        holdings={mockHoldings}
-        assetClasses={mockAssetClasses}
-        loading={false}
-        quarantineStatuses={mockQuarantineStatuses}
-        transactions={[]}
-        onFetchTransactions={vi.fn()}
-        onCreateTransaction={vi.fn()}
-      />
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={mockHoldings}
+          assetClassId="c1"
+          assetClasses={mockAssetClasses}
+          type="stock"
+          loading={false}
+          quarantineStatuses={mockQuarantineStatuses}
+          transactions={[]}
+          onFetchTransactions={vi.fn()}
+          onCreateTransaction={vi.fn()}
+        />
+      </MemoryRouter>
     );
 
     // TSLA is quarantined
@@ -106,14 +117,18 @@ describe("HoldingsTable", () => {
     const fetchTransactions = vi.fn();
 
     const { rerender } = render(
-      <HoldingsTable
-        holdings={mockHoldings}
-        assetClasses={mockAssetClasses}
-        loading={false}
-        transactions={[]}
-        onFetchTransactions={fetchTransactions}
-        onCreateTransaction={vi.fn()}
-      />
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={mockHoldings}
+          assetClassId="c1"
+          assetClasses={mockAssetClasses}
+          type="stock"
+          loading={false}
+          transactions={[]}
+          onFetchTransactions={fetchTransactions}
+          onCreateTransaction={vi.fn()}
+        />
+      </MemoryRouter>
     );
 
     // Click AAPL row to expand
@@ -122,14 +137,18 @@ describe("HoldingsTable", () => {
 
     // Rerender with transactions loaded
     rerender(
-      <HoldingsTable
-        holdings={mockHoldings}
-        assetClasses={mockAssetClasses}
-        loading={false}
-        transactions={mockTransactions}
-        onFetchTransactions={fetchTransactions}
-        onCreateTransaction={vi.fn()}
-      />
+      <MemoryRouter>
+        <HoldingsTable
+          holdings={mockHoldings}
+          assetClassId="c1"
+          assetClasses={mockAssetClasses}
+          type="stock"
+          loading={false}
+          transactions={mockTransactions}
+          onFetchTransactions={fetchTransactions}
+          onCreateTransaction={vi.fn()}
+        />
+      </MemoryRouter>
     );
 
     expect(screen.getByText("Transaction History")).toBeInTheDocument();

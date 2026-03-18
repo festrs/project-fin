@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
-import { isFixedIncomeClass } from "../utils/assetClass";
-import { AddAssetForm } from "./AddAssetForm";
-import type { Holding, Transaction, QuarantineStatus, AssetClass, FundamentalsScore } from "../types";
+import type { Holding, Transaction, QuarantineStatus, AssetClass, AssetClassType, FundamentalsScore } from "../types";
 
 interface HoldingsTableProps {
   holdings: Holding[];
+  assetClassId: string;
   assetClasses: AssetClass[];
+  type: AssetClassType;
   loading: boolean;
   quarantineStatuses?: QuarantineStatus[];
   transactions: Transaction[];
@@ -22,7 +22,6 @@ interface HoldingsTableProps {
   onDeleteHolding?: (symbol: string) => Promise<unknown>;
   onChangeAssetClass?: (symbol: string, assetClassId: string) => Promise<unknown>;
   onUpdateWeight?: (symbol: string, targetWeight: number) => Promise<unknown>;
-  showAddAsset?: boolean;
 }
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
@@ -41,38 +40,11 @@ function formatCurrency(value: number, currency?: string): string {
   return `${sym}${value.toFixed(2)}`;
 }
 
-interface GroupedHoldings {
-  classId: string;
-  className: string;
-  holdings: Holding[];
-}
-
-function groupByAssetClass(holdings: Holding[], assetClasses: AssetClass[]): GroupedHoldings[] {
-  const classMap = new Map(assetClasses.map((ac) => [ac.id, ac.name]));
-  const groups = new Map<string, Holding[]>();
-
-  for (const h of holdings) {
-    const list = groups.get(h.asset_class_id) ?? [];
-    list.push(h);
-    groups.set(h.asset_class_id, list);
-  }
-
-  // Sort groups: by class name
-  const result: GroupedHoldings[] = [];
-  for (const [classId, classHoldings] of groups) {
-    result.push({
-      classId,
-      className: classMap.get(classId) ?? classId,
-      holdings: classHoldings,
-    });
-  }
-  result.sort((a, b) => a.className.localeCompare(b.className));
-  return result;
-}
-
 export function HoldingsTable({
   holdings,
+  assetClassId,
   assetClasses,
+  type,
   loading,
   quarantineStatuses = [],
   transactions,
@@ -86,34 +58,29 @@ export function HoldingsTable({
   onDeleteHolding,
   onChangeAssetClass,
   onUpdateWeight,
-  showAddAsset: enableAddAsset,
 }: HoldingsTableProps) {
   const navigate = useNavigate();
   const scoreMap = new Map((fundamentalsScores ?? []).map((s) => [s.symbol, s]));
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const [transactionForm, setTransactionForm] = useState<{
     symbol: string;
     assetClassId: string;
     type: "buy" | "sell" | "dividend";
   } | null>(null);
-  const [showAddAsset, setShowAddAsset] = useState(false);
   const [editingWeight, setEditingWeight] = useState<{ symbol: string; value: string } | null>(null);
 
   const quarantineMap = new Map(
     quarantineStatuses.map((q) => [q.asset_symbol, q])
   );
 
-  const groups = groupByAssetClass(holdings, assetClasses);
-
-  const toggleGroup = (classId: string) => {
-    setCollapsedGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(classId)) next.delete(classId);
-      else next.add(classId);
-      return next;
-    });
-  };
+  const isFixedIncome = type === "fixed_income";
+  const isCrypto = type === "crypto";
+  const showQty = !isFixedIncome;
+  const showAvgPrice = !isFixedIncome;
+  const showCurrentPrice = !isFixedIncome;
+  const showGainLoss = !isFixedIncome;
+  const showDiv = !isFixedIncome && !isCrypto;
+  const showScore = !isFixedIncome && !isCrypto;
 
   const handleRowClick = async (symbol: string) => {
     if (expandedRow === symbol) {
@@ -142,35 +109,14 @@ export function HoldingsTable({
     <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Holdings</h2>
-        {enableAddAsset && (
-          <button
-            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover"
-            onClick={() => setShowAddAsset(!showAddAsset)}
-          >
-            Add Asset
-          </button>
-        )}
       </div>
-
-      {showAddAsset && (
-        <AddAssetForm
-          assetClasses={assetClasses}
-          onSubmit={async (data) => {
-            await onCreateTransaction(data);
-            setShowAddAsset(false);
-          }}
-          onCancel={() => setShowAddAsset(false)}
-        />
-      )}
 
       {transactionForm && (
         <div className="mb-4">
           <TransactionForm
             symbol={transactionForm.symbol}
             assetClassId={transactionForm.assetClassId}
-            isFixedIncome={isFixedIncomeClass(
-              assetClasses.find((ac) => ac.id === transactionForm.assetClassId)?.name ?? ""
-            )}
+            type={type}
             initialType={transactionForm.type}
             onSubmit={async (data) => {
               await onCreateTransaction(data);
@@ -185,78 +131,71 @@ export function HoldingsTable({
         <table className="w-full text-base">
           <thead>
             <tr className="text-text-muted uppercase text-base tracking-wide">
-              <th className="text-left px-3 py-2">Symbol</th>
-              <th className="text-right px-3 py-2">Qty</th>
-              <th className="text-right px-3 py-2">Avg Price</th>
-              <th className="text-right px-3 py-2">Current Price</th>
-              <th className="text-right px-3 py-2">Current Value</th>
-              <th className="text-right px-3 py-2">Gain/Loss</th>
+              <th className="text-left px-3 py-2">{isFixedIncome ? "Name" : "Symbol"}</th>
+              {showQty && <th className="text-right px-3 py-2">Qty</th>}
+              {showAvgPrice && <th className="text-right px-3 py-2">Avg Price</th>}
+              {showCurrentPrice && <th className="text-right px-3 py-2">Current Price</th>}
+              <th className="text-right px-3 py-2">{isFixedIncome ? "Total Value" : "Current Value"}</th>
+              {showGainLoss && <th className="text-right px-3 py-2">Gain/Loss</th>}
               <th className="text-right px-3 py-2">Target %</th>
               <th className="text-right px-3 py-2">Actual %</th>
-              <th className="text-right px-3 py-2">Div ({new Date().getFullYear()})</th>
-              <th className="text-right px-3 py-2">
-                <span className="flex items-center justify-end gap-1">
-                  Score
-                  {onRefreshAllScores && (
-                    <button
-                      className="text-[10px] text-text-muted hover:text-primary ml-1"
-                      title="Fetch scores for all stocks"
-                      onClick={onRefreshAllScores}
-                    >
-                      ↻
-                    </button>
-                  )}
-                </span>
-              </th>
+              {showDiv && (
+                <th className="text-right px-3 py-2">Div ({new Date().getFullYear()})</th>
+              )}
+              {showScore && (
+                <th className="text-right px-3 py-2">
+                  <span className="flex items-center justify-end gap-1">
+                    Score
+                    {onRefreshAllScores && (
+                      <button
+                        className="text-[10px] text-text-muted hover:text-primary ml-1"
+                        title="Fetch scores for all stocks"
+                        onClick={onRefreshAllScores}
+                      >
+                        ↻
+                      </button>
+                    )}
+                  </span>
+                </th>
+              )}
               <th className="text-center px-3 py-2"></th>
             </tr>
           </thead>
           <tbody>
-            {groups.map((group) => {
-              const isCollapsed = collapsedGroups.has(group.classId);
-              const groupTotal = group.holdings.reduce(
-                (sum, h) => sum + (h.current_value ?? h.total_cost),
-                0
-              );
-              const groupCurrency = group.holdings[0]?.currency ?? "USD";
+            {holdings.map((h) => {
+              const q = quarantineMap.get(h.symbol);
+              const isExpanded = expandedRow === h.symbol;
+              const isEditingThis = editingWeight?.symbol === h.symbol;
 
               return (
-                <GroupSection
-                  key={group.classId}
-                  group={group}
-                  isCollapsed={isCollapsed}
-                  groupTotal={groupTotal}
-                  groupCurrency={groupCurrency}
-                  quarantineMap={quarantineMap}
-                  expandedRow={expandedRow}
+                <HoldingRows
+                  key={h.symbol}
+                  holding={h}
+                  type={type}
+                  quarantine={q}
+                  isExpanded={isExpanded}
                   transactions={transactions}
-                  editingWeight={editingWeight}
-                  dividendsBySymbol={dividendsBySymbol}
-                  scoreMap={scoreMap}
-                  onNavigateScore={(symbol) => navigate(`/fundamentals/${symbol}`)}
-                  onToggleGroup={() => toggleGroup(group.classId)}
-                  onRowClick={handleRowClick}
+                  classId={assetClassId}
+                  isEditingWeight={isEditingThis}
+                  editWeightValue={isEditingThis ? editingWeight!.value : undefined}
+                  dividendData={dividendsBySymbol.get(h.symbol)}
+                  score={scoreMap.get(h.symbol)}
                   assetClasses={assetClasses}
                   onUpdateTransaction={onUpdateTransaction}
                   onDeleteTransaction={onDeleteTransaction}
                   onDeleteHolding={onDeleteHolding}
                   onChangeAssetClass={onChangeAssetClass}
                   onFetchTransactions={onFetchTransactions}
-                  onBuy={(symbol, classId) =>
-                    setTransactionForm({ symbol, assetClassId: classId, type: "buy" })
-                  }
-                  onSell={(symbol, classId) =>
-                    setTransactionForm({ symbol, assetClassId: classId, type: "sell" })
-                  }
+                  onNavigateScore={() => navigate(`/fundamentals/${h.symbol}`)}
+                  onRowClick={() => handleRowClick(h.symbol)}
+                  onBuy={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "buy" })}
+                  onSell={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "sell" })}
                   onStartEditWeight={
                     onUpdateWeight
-                      ? (symbol, current) =>
-                          setEditingWeight({ symbol, value: String(current ?? 0) })
+                      ? () => setEditingWeight({ symbol: h.symbol, value: String(h.target_weight ?? 0) })
                       : undefined
                   }
-                  onWeightChange={(value) =>
-                    setEditingWeight((prev) => (prev ? { ...prev, value } : null))
-                  }
+                  onWeightChange={(value) => setEditingWeight((prev) => (prev ? { ...prev, value } : null))}
                   onCommitWeight={commitWeightEdit}
                   onCancelWeight={() => setEditingWeight(null)}
                 />
@@ -269,138 +208,9 @@ export function HoldingsTable({
   );
 }
 
-interface GroupSectionProps {
-  group: GroupedHoldings;
-  isCollapsed: boolean;
-  groupTotal: number;
-  groupCurrency: string;
-  quarantineMap: Map<string, QuarantineStatus>;
-  expandedRow: string | null;
-  transactions: Transaction[];
-  editingWeight: { symbol: string; value: string } | null;
-  dividendsBySymbol: Map<string, { income: number; currency: string }>;
-  scoreMap: Map<string, FundamentalsScore>;
-  assetClasses: AssetClass[];
-  onUpdateTransaction?: (id: string, data: Partial<Transaction>) => Promise<unknown>;
-  onDeleteTransaction?: (id: string) => Promise<unknown>;
-  onDeleteHolding?: (symbol: string) => Promise<unknown>;
-  onChangeAssetClass?: (symbol: string, assetClassId: string) => Promise<unknown>;
-  onFetchTransactions: (symbol: string) => Promise<void>;
-  onNavigateScore: (symbol: string) => void;
-  onToggleGroup: () => void;
-  onRowClick: (symbol: string) => void;
-  onBuy: (symbol: string, classId: string) => void;
-  onSell: (symbol: string, classId: string) => void;
-  onStartEditWeight?: (symbol: string, current: number | undefined) => void;
-  onWeightChange: (value: string) => void;
-  onCommitWeight: () => void;
-  onCancelWeight: () => void;
-}
-
-function GroupSection({
-  group,
-  isCollapsed,
-  groupTotal,
-  groupCurrency,
-  quarantineMap,
-  expandedRow,
-  transactions,
-  editingWeight,
-  dividendsBySymbol,
-  scoreMap,
-  assetClasses,
-  onUpdateTransaction,
-  onDeleteTransaction,
-  onDeleteHolding,
-  onChangeAssetClass,
-  onFetchTransactions,
-  onNavigateScore,
-  onToggleGroup,
-  onRowClick,
-  onBuy,
-  onSell,
-  onStartEditWeight,
-  onWeightChange,
-  onCommitWeight,
-  onCancelWeight,
-}: GroupSectionProps) {
-  const groupDivTotal = group.holdings.reduce((sum, h) => {
-    const div = dividendsBySymbol.get(h.symbol);
-    return sum + (div?.income ?? 0);
-  }, 0);
-  const groupDivCurrency = group.holdings[0]?.currency ?? "USD";
-
-  return (
-    <>
-      {/* Group header row */}
-      <tr
-        className="bg-[var(--glass-primary-soft)] cursor-pointer hover:bg-[rgba(79,70,229,0.08)]"
-        onClick={onToggleGroup}
-      >
-        <td colSpan={4} className="px-3 py-2 font-semibold text-primary">
-          <span className="mr-2 text-xs">{isCollapsed ? "▶" : "▼"}</span>
-          {group.className}
-          <span className="ml-2 text-xs font-normal text-text-muted">
-            ({group.holdings.length} {group.holdings.length === 1 ? "asset" : "assets"})
-          </span>
-        </td>
-        <td className="px-3 py-2 text-right font-semibold text-primary">
-          {formatCurrency(groupTotal, groupCurrency)}
-        </td>
-        <td colSpan={3} />
-        <td className="px-3 py-2 text-right font-semibold text-text-muted">
-          {groupDivTotal > 0 ? formatCurrency(groupDivTotal, groupDivCurrency) : ""}
-        </td>
-        <td />
-        <td />
-      </tr>
-
-      {/* Holdings rows */}
-      {!isCollapsed &&
-        group.holdings.map((h) => {
-          const q = quarantineMap.get(h.symbol);
-          const isExpanded = expandedRow === h.symbol;
-          const isEditingThis = editingWeight?.symbol === h.symbol;
-
-          return (
-            <HoldingRows
-              key={h.symbol}
-              holding={h}
-              quarantine={q}
-              isExpanded={isExpanded}
-              transactions={transactions}
-              classId={group.classId}
-              isEditingWeight={isEditingThis}
-              editWeightValue={isEditingThis ? editingWeight!.value : undefined}
-              dividendData={dividendsBySymbol.get(h.symbol)}
-              score={scoreMap.get(h.symbol)}
-              assetClasses={assetClasses}
-              onUpdateTransaction={onUpdateTransaction}
-              onDeleteTransaction={onDeleteTransaction}
-              onDeleteHolding={onDeleteHolding}
-              onChangeAssetClass={onChangeAssetClass}
-              onFetchTransactions={onFetchTransactions}
-              onNavigateScore={() => onNavigateScore(h.symbol)}
-              onRowClick={() => onRowClick(h.symbol)}
-              onBuy={() => onBuy(h.symbol, group.classId)}
-              onSell={() => onSell(h.symbol, group.classId)}
-              onStartEditWeight={
-                onStartEditWeight
-                  ? () => onStartEditWeight(h.symbol, h.target_weight)
-                  : undefined
-              }
-              onWeightChange={onWeightChange}
-              onCommitWeight={onCommitWeight}
-              onCancelWeight={onCancelWeight}
-            />
-          );
-        })}
-    </>
-  );
-}
-
 interface HoldingRowsProps {
   holding: Holding;
+  type: AssetClassType;
   quarantine?: QuarantineStatus;
   isExpanded: boolean;
   transactions: Transaction[];
@@ -427,6 +237,7 @@ interface HoldingRowsProps {
 
 function HoldingRows({
   holding: h,
+  type,
   quarantine: q,
   isExpanded,
   transactions,
@@ -463,6 +274,15 @@ function HoldingRows({
   const [changingAssetClass, setChangingAssetClass] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  const isFixedIncome = type === "fixed_income";
+  const isCrypto = type === "crypto";
+  const showQty = !isFixedIncome;
+  const showAvgPrice = !isFixedIncome;
+  const showCurrentPrice = !isFixedIncome;
+  const showGainLoss = !isFixedIncome;
+  const showDiv = !isFixedIncome && !isCrypto;
+  const showScore = !isFixedIncome && !isCrypto;
+
   const cur = h.currency as string;
   const sym = CURRENCY_SYMBOLS[cur] ?? `${cur} `;
   const scoreColor = (v: number) =>
@@ -471,6 +291,8 @@ function HoldingRows({
       : v >= 60
       ? "var(--color-warning)"
       : "var(--color-negative)";
+
+  const colCount = 4 + (showQty ? 1 : 0) + (showAvgPrice ? 1 : 0) + (showCurrentPrice ? 1 : 0) + (showGainLoss ? 1 : 0) + (showDiv ? 1 : 0) + (showScore ? 1 : 0);
 
   const startEditTx = (t: Transaction) => {
     setEditingTx(t.id);
@@ -513,7 +335,7 @@ function HoldingRows({
   return (
     <>
       <tr className="even:bg-[var(--glass-row-alt)] hover:bg-[var(--glass-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
-        <td className="px-3 py-2 pl-8">
+        <td className="px-3 py-2">
           <span className="flex items-center gap-2">
             <span className="font-medium">{h.symbol}</span>
             {q && (
@@ -524,35 +346,41 @@ function HoldingRows({
             )}
           </span>
         </td>
-        <td className="px-3 py-2 text-right">{h.quantity != null ? h.quantity : "—"}</td>
-        <td className="px-3 py-2 text-right">{h.avg_price != null ? formatCurrency(h.avg_price, cur) : "—"}</td>
+        {showQty && <td className="px-3 py-2 text-right">{h.quantity != null ? h.quantity : "—"}</td>}
+        {showAvgPrice && <td className="px-3 py-2 text-right">{h.avg_price != null ? formatCurrency(h.avg_price, cur) : "—"}</td>}
+        {showCurrentPrice && (
+          <td className="px-3 py-2 text-right">
+            {h.current_price != null ? formatCurrency(h.current_price, cur) : "-"}
+          </td>
+        )}
         <td className="px-3 py-2 text-right">
-          {h.current_price != null ? formatCurrency(h.current_price, cur) : "-"}
+          {isFixedIncome
+            ? formatCurrency(h.current_value ?? h.total_cost, cur)
+            : h.current_value != null ? formatCurrency(h.current_value, cur) : "-"}
         </td>
-        <td className="px-3 py-2 text-right">
-          {h.current_value != null ? formatCurrency(h.current_value, cur) : "-"}
-        </td>
-        <td className="px-3 py-2 text-right">
-          {h.gain_loss != null ? (
-            <span
-              className={
-                h.gain_loss > 0
-                  ? "text-positive"
-                  : h.gain_loss < 0
-                  ? "text-negative"
-                  : ""
-              }
-            >
-              {h.gain_loss === 0
-                ? `${sym}0.00`
-                : h.gain_loss > 0
-                ? `+${sym}${h.gain_loss.toFixed(2)}`
-                : `-${sym}${Math.abs(h.gain_loss).toFixed(2)}`}
-            </span>
-          ) : (
-            "-"
-          )}
-        </td>
+        {showGainLoss && (
+          <td className="px-3 py-2 text-right">
+            {h.gain_loss != null ? (
+              <span
+                className={
+                  h.gain_loss > 0
+                    ? "text-positive"
+                    : h.gain_loss < 0
+                    ? "text-negative"
+                    : ""
+                }
+              >
+                {h.gain_loss === 0
+                  ? `${sym}0.00`
+                  : h.gain_loss > 0
+                  ? `+${sym}${h.gain_loss.toFixed(2)}`
+                  : `-${sym}${Math.abs(h.gain_loss).toFixed(2)}`}
+              </span>
+            ) : (
+              "-"
+            )}
+          </td>
+        )}
         <td
           className="px-3 py-2 text-right"
           onDoubleClick={(e) => {
@@ -581,24 +409,28 @@ function HoldingRows({
         <td className="px-3 py-2 text-right">
           {h.actual_weight != null ? `${h.actual_weight.toFixed(1)}%` : "-"}
         </td>
-        <td className="px-3 py-2 text-right text-text-muted">
-          {dividendData && dividendData.income > 0
-            ? formatCurrency(dividendData.income, dividendData.currency)
-            : "-"}
-        </td>
-        <td className="px-3 py-2 text-right">
-          {score ? (
-            <span
-              style={{ color: scoreColor(score.composite_score), cursor: "pointer", fontWeight: 600 }}
-              onClick={(e) => { e.stopPropagation(); onNavigateScore(); }}
-              title={`IPO: ${score.ipo_rating} | EPS: ${score.eps_rating} | Debt: ${score.debt_rating} | Profit: ${score.profit_rating}`}
-            >
-              {score.composite_score}%
-            </span>
-          ) : (
-            <span className="text-text-muted">—</span>
-          )}
-        </td>
+        {showDiv && (
+          <td className="px-3 py-2 text-right text-text-muted">
+            {dividendData && dividendData.income > 0
+              ? formatCurrency(dividendData.income, dividendData.currency)
+              : "-"}
+          </td>
+        )}
+        {showScore && (
+          <td className="px-3 py-2 text-right">
+            {score ? (
+              <span
+                style={{ color: scoreColor(score.composite_score), cursor: "pointer", fontWeight: 600 }}
+                onClick={(e) => { e.stopPropagation(); onNavigateScore(); }}
+                title={`IPO: ${score.ipo_rating} | EPS: ${score.eps_rating} | Debt: ${score.debt_rating} | Profit: ${score.profit_rating}`}
+              >
+                {score.composite_score}%
+              </span>
+            ) : (
+              <span className="text-text-muted">—</span>
+            )}
+          </td>
+        )}
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center items-center relative">
             <button
@@ -705,7 +537,7 @@ function HoldingRows({
       {/* Expanded transaction history */}
       {isExpanded && (
         <tr>
-          <td colSpan={11} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
+          <td colSpan={colCount} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
             <h4 className="font-semibold text-base text-text-primary mb-2">Transaction History</h4>
             {transactions.length === 0 ? (
               <p className="text-text-muted text-base">No transactions found</p>

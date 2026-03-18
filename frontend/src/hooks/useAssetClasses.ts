@@ -24,10 +24,11 @@ export function useAssetClasses() {
     fetchClasses();
   }, [fetchClasses]);
 
-  const createClass = useCallback(async (name: string, targetWeight: number) => {
+  const createClass = useCallback(async (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income" = "stock") => {
     const res = await api.post<AssetClass>("/asset-classes", {
       name,
       target_weight: targetWeight,
+      type,
     });
     setAssetClasses((prev) => [...prev, res.data]);
     return res.data;

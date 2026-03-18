@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { AssetClass, Transaction } from "../types";
-import { isFixedIncomeClass } from "../utils/assetClass";
+import type { Transaction, AssetClassType } from "../types";
 import api from "../services/api";
 
 interface SearchResult {
@@ -10,22 +9,24 @@ interface SearchResult {
 }
 
 interface AddAssetFormProps {
-  assetClasses: AssetClass[];
+  type: AssetClassType;
+  assetClassId: string;
   onSubmit: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
   onCancel: () => void;
 }
 
 const CURRENCIES = ["BRL", "USD", "EUR", "GBP", "CHF", "JPY", "CAD", "AUD"];
 
-export function AddAssetForm({ assetClasses, onSubmit, onCancel }: AddAssetFormProps) {
+export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAssetFormProps) {
+  const isFixedIncome = type === "fixed_income";
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("");
   const [selectedName, setSelectedName] = useState("");
-  const [useCustomSymbol, setUseCustomSymbol] = useState(false);
-  const [assetClassId, setAssetClassId] = useState(assetClasses[0]?.id ?? "");
+  const [useCustomSymbol, setUseCustomSymbol] = useState(isFixedIncome);
   const [quantity, setQuantity] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
   const [currency, setCurrency] = useState("BRL");
@@ -35,8 +36,6 @@ export function AddAssetForm({ assetClasses, onSubmit, onCancel }: AddAssetFormP
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const selectedClass = assetClasses.find((ac) => ac.id === assetClassId);
-  const isFixedIncome = isFixedIncomeClass(selectedClass?.name ?? "");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -88,7 +87,7 @@ export function AddAssetForm({ assetClasses, onSubmit, onCancel }: AddAssetFormP
     setSelectedName("");
     setQuery("");
     setResults([]);
-    setUseCustomSymbol(false);
+    setUseCustomSymbol(isFixedIncome);
   };
 
   const handleConfirmCustom = () => {
@@ -104,7 +103,7 @@ export function AddAssetForm({ assetClasses, onSubmit, onCancel }: AddAssetFormP
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedSymbol || !assetClassId) return;
+    if (!selectedSymbol) return;
     setSubmitting(true);
     try {
       if (isFixedIncome) {
@@ -209,35 +208,22 @@ export function AddAssetForm({ assetClasses, onSubmit, onCancel }: AddAssetFormP
                   ))}
                 </ul>
               )}
-              <button
-                type="button"
-                onClick={() => {
-                  setUseCustomSymbol(!useCustomSymbol);
-                  setShowDropdown(false);
-                  setResults([]);
-                  setQuery("");
-                }}
-                className="text-base text-primary hover:text-primary-hover mt-1"
-              >
-                {useCustomSymbol ? "Search market instead" : "Use custom name (fixed income, etc.)"}
-              </button>
+              {!isFixedIncome && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUseCustomSymbol(!useCustomSymbol);
+                    setShowDropdown(false);
+                    setResults([]);
+                    setQuery("");
+                  }}
+                  className="text-base text-primary hover:text-primary-hover mt-1"
+                >
+                  {useCustomSymbol ? "Search market instead" : "Use custom name (fixed income, etc.)"}
+                </button>
+              )}
             </>
           )}
-        </div>
-
-        {/* Asset class */}
-        <div>
-          <label className="block text-base text-text-muted mb-1">Asset Class</label>
-          <select
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
-            value={assetClassId}
-            onChange={(e) => setAssetClassId(e.target.value)}
-            required
-          >
-            {assetClasses.map((ac) => (
-              <option key={ac.id} value={ac.id}>{ac.name}</option>
-            ))}
-          </select>
         </div>
       </div>
 

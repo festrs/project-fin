@@ -5,6 +5,7 @@ import Portfolio from "./pages/Portfolio";
 import Settings from "./pages/Settings";
 import Market from "./pages/Market";
 import Fundamentals from "./pages/Fundamentals";
+import AssetClassHoldings from "./pages/AssetClassHoldings";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/portfolio" element={<Portfolio />} />
+            <Route path="/portfolio/:assetClassId" element={<AssetClassHoldings />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/market" element={<Market />} />
             <Route path="/fundamentals/:symbol" element={<Fundamentals />} />

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DataTable, type Column } from "./DataTable";
 import type { AssetClass } from "../types";
 
@@ -12,7 +13,7 @@ interface AssetClassesTableProps {
   loading: boolean;
   allocationMap?: Record<string, AllocationInfo>;
   onUpdateClass: (id: string, data: Partial<AssetClass>) => Promise<unknown>;
-  onCreateClass: (name: string, targetWeight: number) => Promise<unknown>;
+  onCreateClass: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income") => Promise<unknown>;
   onDeleteClass: (id: string) => Promise<unknown>;
 }
 
@@ -29,9 +30,11 @@ export function AssetClassesTable({
   onCreateClass,
   onDeleteClass,
 }: AssetClassesTableProps) {
+  const navigate = useNavigate();
   const [showForm, setShowForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newWeight, setNewWeight] = useState("");
+  const [newType, setNewType] = useState<"stock" | "crypto" | "fixed_income">("stock");
 
   const rows: AssetClassRow[] = assetClasses.map((ac) => {
     const info = allocationMap[ac.id] ?? { actual_weight: 0, diff: 0 };
@@ -43,7 +46,25 @@ export function AssetClassesTable({
   });
 
   const columns: Column<AssetClassRow>[] = [
-    { key: "name", header: "Name", sortable: true },
+    {
+      key: "name",
+      header: "Name",
+      sortable: true,
+      render: (row) => (
+        <span className="flex items-center gap-1">
+          <span>{row.name}</span>
+          <span className="text-text-muted text-xs">&rsaquo;</span>
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      sortable: true,
+      render: (row) => (
+        <span className="text-text-muted capitalize">{row.type.replace("_", " ")}</span>
+      ),
+    },
     {
       key: "target_weight",
       header: "Target Weight",
@@ -92,9 +113,10 @@ export function AssetClassesTable({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    await onCreateClass(newName.trim(), parseFloat(newWeight) || 0);
+    await onCreateClass(newName.trim(), parseFloat(newWeight) || 0, newType);
     setNewName("");
     setNewWeight("");
+    setNewType("stock");
     setShowForm(false);
   };
 
@@ -127,6 +149,18 @@ export function AssetClassesTable({
             />
           </div>
           <div>
+            <label className="block text-base text-text-muted mb-1">Type</label>
+            <select
+              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              value={newType}
+              onChange={(e) => setNewType(e.target.value as "stock" | "crypto" | "fixed_income")}
+            >
+              <option value="stock">Stock</option>
+              <option value="crypto">Crypto</option>
+              <option value="fixed_income">Fixed Income</option>
+            </select>
+          </div>
+          <div>
             <label className="block text-base text-text-muted mb-1">Target Weight (%)</label>
             <input
               type="number"
@@ -156,6 +190,7 @@ export function AssetClassesTable({
         columns={columns}
         data={rows}
         getRowId={(r) => r.id}
+        onRowClick={(row) => navigate(`/portfolio/${row.id}`)}
       />
     </div>
   );

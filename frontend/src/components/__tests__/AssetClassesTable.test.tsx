@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 import { describe, it, expect, vi } from "vitest";
 import { AssetClassesTable } from "../AssetClassesTable";
 import { AssetClass } from "../../types";
@@ -10,6 +11,8 @@ const mockClasses: AssetClass[] = [
     user_id: "u1",
     name: "Stocks",
     target_weight: 60,
+    country: "US",
+    type: "stock",
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
   },
@@ -18,6 +21,8 @@ const mockClasses: AssetClass[] = [
     user_id: "u1",
     name: "Bonds",
     target_weight: 40,
+    country: "US",
+    type: "fixed_income",
     created_at: "2024-01-01",
     updated_at: "2024-01-01",
   },
@@ -31,14 +36,14 @@ const allocationMap = {
 describe("AssetClassesTable", () => {
   it("renders table with asset classes", () => {
     render(
-      <AssetClassesTable
+      <MemoryRouter><AssetClassesTable
         assetClasses={mockClasses}
         loading={false}
         allocationMap={allocationMap}
         onUpdateClass={vi.fn()}
         onCreateClass={vi.fn()}
         onDeleteClass={vi.fn()}
-      />
+      /></MemoryRouter>
     );
 
     expect(screen.getByText("Stocks")).toBeInTheDocument();
@@ -55,14 +60,14 @@ describe("AssetClassesTable", () => {
     const onUpdate = vi.fn().mockResolvedValue({});
 
     render(
-      <AssetClassesTable
+      <MemoryRouter><AssetClassesTable
         assetClasses={mockClasses}
         loading={false}
         allocationMap={allocationMap}
         onUpdateClass={onUpdate}
         onCreateClass={vi.fn()}
         onDeleteClass={vi.fn()}
-      />
+      /></MemoryRouter>
     );
 
     // Double-click the target weight cell to edit

@@ -1,12 +1,12 @@
 import { useState } from "react";
-import type { Transaction } from "../types";
+import type { Transaction, AssetClassType } from "../types";
 
 type TransactionType = "buy" | "sell" | "dividend";
 
 interface TransactionFormProps {
   symbol: string;
   assetClassId: string;
-  isFixedIncome?: boolean;
+  type: AssetClassType;
   initialType?: TransactionType;
   onSubmit: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
   onCancel: () => void;
@@ -15,7 +15,7 @@ interface TransactionFormProps {
 export function TransactionForm({
   symbol,
   assetClassId,
-  isFixedIncome = false,
+  type: assetClassType,
   initialType = "buy",
   onSubmit,
   onCancel,
@@ -30,6 +30,7 @@ export function TransactionForm({
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const isFixedIncome = assetClassType === "fixed_income";
   const isDividend = type === "dividend";
   const hideQuantityFields = isDividend || isFixedIncome;
 
