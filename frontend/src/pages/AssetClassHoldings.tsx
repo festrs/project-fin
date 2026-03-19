@@ -122,8 +122,8 @@ export default function AssetClassHoldings() {
   if (!assetClass) {
     return (
       <div className="space-y-4">
-        <Link to="/portfolio" className="text-primary hover:text-primary-hover text-base">
-          &lsaquo; Portfolio
+        <Link to="/" className="text-primary hover:text-primary-hover text-base">
+          &lsaquo; Dashboard
         </Link>
         <p className="text-text-muted">Asset class not found.</p>
       </div>
@@ -133,8 +133,8 @@ export default function AssetClassHoldings() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Link to="/portfolio" className="text-primary hover:text-primary-hover text-base">
-          &lsaquo; Portfolio
+        <Link to="/" className="text-primary hover:text-primary-hover text-base">
+          &lsaquo; Dashboard
         </Link>
         <span className="text-text-muted">/</span>
         <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">
