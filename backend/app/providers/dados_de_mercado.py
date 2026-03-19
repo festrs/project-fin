@@ -1,23 +1,15 @@
 import logging
-from dataclasses import dataclass
 from datetime import date
 
 import httpx
 from bs4 import BeautifulSoup
 
+from app.providers.common import DividendRecord
+
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.dadosdemercado.com.br"
 USER_AGENT = "ProjectFin/1.0"
-
-
-@dataclass
-class DividendRecord:
-    dividend_type: str
-    value: float
-    record_date: date
-    ex_date: date
-    payment_date: date | None
 
 
 def _strip_sa(symbol: str) -> str:
@@ -202,6 +194,80 @@ class DadosDeMercadoProvider:
             "current_net_debt_ebitda": current_net_debt_ebitda,
             "raw_data": raw_data,
         }
+
+    def scrape_splits(self, symbol: str) -> list[dict]:
+        """Scrape stock splits (desdobramentos) from dadosdemercado.com.br."""
+        ticker = _strip_sa(symbol).lower()
+        url = f"{self._base_url}/acoes/{ticker}/desdobramentos"
+
+        try:
+            resp = httpx.get(
+                url,
+                headers={"User-Agent": USER_AGENT},
+                timeout=15,
+                follow_redirects=True,
+            )
+            resp.raise_for_status()
+        except Exception:
+            logger.exception(f"Failed to fetch splits page for {symbol}")
+            return []
+
+        try:
+            return self._parse_splits_html(resp.text, symbol)
+        except Exception:
+            logger.exception(f"Failed to parse splits HTML for {symbol}")
+            return []
+
+    def _parse_splits_html(self, html: str, symbol: str) -> list[dict]:
+        soup = BeautifulSoup(html, "html.parser")
+        splits: list[dict] = []
+
+        for table in soup.find_all("table"):
+            thead = table.find("thead")
+            if not thead:
+                continue
+            headers = [th.get_text(strip=True) for th in thead.find_all(["th", "td"])]
+            if "Evento" not in headers or "Razão" not in headers:
+                continue
+
+            tbody = table.find("tbody")
+            if not tbody:
+                continue
+
+            for row in tbody.find_all("tr"):
+                cells = [td.get_text(strip=True) for td in row.find_all("td")]
+                if len(cells) < 5:
+                    continue
+
+                evento = cells[0]
+                if evento not in ("Desdobramento", "Bonificação"):
+                    continue
+
+                ex_date_str = cells[3]
+                razao = cells[4]
+
+                ex_date = _parse_date(ex_date_str)
+                if not ex_date:
+                    continue
+
+                # Parse ratio like "1:2" -> fromFactor=1, toFactor=2
+                try:
+                    parts = razao.split(":")
+                    from_factor = int(parts[0])
+                    to_factor = int(parts[1])
+                except (ValueError, IndexError):
+                    continue
+
+                event_type = "bonificacao" if evento == "Bonificação" else "split"
+                splits.append({
+                    "symbol": symbol,
+                    "date": ex_date.isoformat(),
+                    "fromFactor": from_factor,
+                    "toFactor": to_factor,
+                    "eventType": event_type,
+                })
+
+        return splits
 
     def _parse_html(self, html: str) -> list[DividendRecord]:
         soup = BeautifulSoup(html, "html.parser")
