@@ -36,10 +36,15 @@ def _run_scheduled_fetch():
 def _run_dividend_scrape():
     from app.database import SessionLocal
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
-    from app.services.dividend_scraper_scheduler import DividendScraperScheduler
+    from app.providers.yfinance import YFinanceProvider
+    from app.services.dividend_scraper_scheduler import DividendScheduler
 
-    provider = DadosDeMercadoProvider()
-    scheduler = DividendScraperScheduler(provider=provider, delay=settings.dividend_scraper_delay)
+    scheduler = DividendScheduler(
+        dados_provider=DadosDeMercadoProvider(),
+        yfinance_provider=YFinanceProvider(),
+        br_delay=settings.dividend_scraper_delay,
+        us_delay=settings.dividend_us_delay,
+    )
 
     db = SessionLocal()
     try:
@@ -54,11 +59,11 @@ def _run_fundamentals_score():
     from app.database import SessionLocal
     from app.providers.brapi import BrapiProvider
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
-    from app.providers.finnhub import FinnhubProvider
+    from app.providers.yfinance import YFinanceProvider
     from app.services.fundamentals_scheduler import FundamentalsScoreScheduler
 
     scheduler = FundamentalsScoreScheduler(
-        finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key, base_url=settings.finnhub_base_url),
+        yfinance_provider=YFinanceProvider(),
         brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
         dados_provider=DadosDeMercadoProvider(),
     )
