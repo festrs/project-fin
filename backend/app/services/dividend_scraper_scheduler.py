@@ -6,33 +6,46 @@ from sqlalchemy.orm import Session
 from app.models.asset_class import AssetClass
 from app.models.dividend_history import DividendHistory
 from app.models.transaction import Transaction
-from app.providers.dados_de_mercado import DadosDeMercadoProvider
 
 logger = logging.getLogger(__name__)
 
+# Note: matches fundamentals_scheduler.py. market_data.py uses a different set
+# that includes "Stablecoins" and "Cryptos". This is a pre-existing inconsistency.
+CRYPTO_CLASS_NAMES = {"Crypto", "Criptomoedas"}
 
-class DividendScraperScheduler:
-    def __init__(self, provider: DadosDeMercadoProvider, delay: float = 2.0):
-        self._provider = provider
-        self._delay = delay
+
+class DividendScheduler:
+    def __init__(self, dados_provider, yfinance_provider, br_delay: float = 2.0, us_delay: float = 1.0):
+        self._dados = dados_provider
+        self._yfinance = yfinance_provider
+        self._br_delay = br_delay
+        self._us_delay = us_delay
 
     def scrape_all(self, db: Session) -> None:
-        symbols = (
-            db.query(Transaction.asset_symbol)
+        rows = (
+            db.query(Transaction.asset_symbol, AssetClass.country)
             .join(AssetClass, Transaction.asset_class_id == AssetClass.id)
-            .filter(AssetClass.country == "BR")
+            .filter(
+                AssetClass.country.in_(["BR", "US"]),
+                AssetClass.name.notin_(CRYPTO_CLASS_NAMES),
+            )
             .distinct()
             .all()
         )
 
-        for (symbol,) in symbols:
+        for symbol, country in rows:
             try:
-                records = self._provider.scrape_dividends(symbol)
+                if country == "BR":
+                    records = self._dados.scrape_dividends(symbol)
+                    delay = self._br_delay
+                else:
+                    records = self._yfinance.get_dividends(symbol)
+                    delay = self._us_delay
+
                 new_count = 0
                 seen = set()
 
                 for rec in records:
-                    # Deduplicate within the scraped batch
                     key = (symbol, rec.record_date, rec.dividend_type, rec.value)
                     if key in seen:
                         continue
@@ -68,5 +81,5 @@ class DividendScraperScheduler:
                 logger.exception(f"Failed to scrape dividends for {symbol}")
                 db.rollback()
             finally:
-                if self._delay > 0:
-                    time.sleep(self._delay)
+                if delay > 0:
+                    time.sleep(delay)
