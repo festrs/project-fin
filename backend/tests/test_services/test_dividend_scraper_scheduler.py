@@ -36,10 +36,11 @@ def _setup_holdings(db):
     db.add(user)
     db.flush()
 
-    ac_br = AssetClass(user_id=user.id, name="BR Stocks", target_weight=50.0, country="BR")
+    ac_br = AssetClass(user_id=user.id, name="BR Stocks", target_weight=40.0, country="BR")
     ac_us = AssetClass(user_id=user.id, name="US Stocks", target_weight=30.0, country="US")
     ac_crypto = AssetClass(user_id=user.id, name="Crypto", target_weight=20.0, country="US")
-    db.add_all([ac_br, ac_us, ac_crypto])
+    ac_fii = AssetClass(user_id=user.id, name="FIIs", target_weight=10.0, country="BR")
+    db.add_all([ac_br, ac_us, ac_crypto, ac_fii])
     db.flush()
 
     db.add_all([
@@ -58,6 +59,11 @@ def _setup_holdings(db):
             type="buy", quantity=1, unit_price=50000.0, total_value=50000.0,
             currency="USD", date=date(2025, 1, 1),
         ),
+        Transaction(
+            user_id=user.id, asset_class_id=ac_fii.id, asset_symbol="HGLG11.SA",
+            type="buy", quantity=200, unit_price=160.0, total_value=32000.0,
+            currency="BRL", date=date(2025, 1, 1),
+        ),
     ])
     db.commit()
 
@@ -75,7 +81,8 @@ class TestDividendScheduler:
         us_symbols = [c.args[0] for c in yfinance_provider.get_dividends.call_args_list]
 
         assert set(br_symbols) == {"PETR4.SA"}
-        assert set(us_symbols) == {"AAPL"}
+        # FIIs use yfinance (DadosDeMercado doesn't cover them)
+        assert set(us_symbols) == {"AAPL", "HGLG11.SA"}
         # Crypto excluded
         assert "BTC" not in br_symbols + us_symbols
 

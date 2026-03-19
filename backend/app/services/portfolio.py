@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
+from app.models.stock_split import SplitEventType
 from app.models.transaction import Transaction
 from app.services.market_data import MarketDataService, CRYPTO_COINGECKO_MAP, CRYPTO_CLASS_NAMES
 
@@ -89,7 +90,10 @@ class PortfolioService:
                 )
             else:
                 # Quantity-based: split-aware calculation
-                symbol_splits = splits_by_symbol.get(symbol, [])
+                symbol_splits = [
+                    s for s in splits_by_symbol.get(symbol, [])
+                    if s.event_type != SplitEventType.BONIFICACAO
+                ]
 
                 if not symbol_splits:
                     # Fast path: no splits, use original aggregate logic
@@ -129,6 +133,10 @@ class PortfolioService:
                     for tx in transactions:
                         ratio = 1.0
                         for sp in symbol_splits:
+                            # Only adjust for actual splits, not bonificações
+                            # (bonificação bonus shares are recorded as separate buy transactions)
+                            if sp.event_type == SplitEventType.BONIFICACAO:
+                                continue
                             if sp.split_date > tx.date:
                                 ratio *= sp.to_factor / sp.from_factor
                         adjusted_qty = (tx.quantity or 0) * ratio

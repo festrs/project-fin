@@ -5,6 +5,7 @@ import type { StockSplit } from "../types";
 export function useSplits() {
   const [pendingSplits, setPendingSplits] = useState<StockSplit[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     try {
@@ -23,14 +24,24 @@ export function useSplits() {
   }, [refresh]);
 
   const applySplit = useCallback(async (splitId: string) => {
-    await api.post(`/splits/${splitId}/apply`);
-    await refresh();
+    setActionLoading((prev) => ({ ...prev, [splitId]: true }));
+    try {
+      await api.post(`/splits/${splitId}/apply`);
+      await refresh();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [splitId]: false }));
+    }
   }, [refresh]);
 
   const dismissSplit = useCallback(async (splitId: string) => {
-    await api.post(`/splits/${splitId}/dismiss`);
-    await refresh();
+    setActionLoading((prev) => ({ ...prev, [splitId]: true }));
+    try {
+      await api.post(`/splits/${splitId}/dismiss`);
+      await refresh();
+    } finally {
+      setActionLoading((prev) => ({ ...prev, [splitId]: false }));
+    }
   }, [refresh]);
 
-  return { pendingSplits, loading, applySplit, dismissSplit, refresh };
+  return { pendingSplits, loading, actionLoading, applySplit, dismissSplit, refresh };
 }

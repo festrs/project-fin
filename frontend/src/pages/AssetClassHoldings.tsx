@@ -24,16 +24,40 @@ export default function AssetClassHoldings() {
 
   const [quarantineStatuses, setQuarantineStatuses] = useState<QuarantineStatus[]>([]);
   const [dividendsBySymbol, setDividendsBySymbol] = useState<Map<string, { income: number; currency: string }>>(new Map());
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
 
   const assetClass = assetClasses.find((ac) => ac.id === assetClassId);
   const classHoldings = holdings.filter((h) => h.asset_class_id === assetClassId);
   const type = assetClass?.type ?? "stock";
 
-  const totalValue = classHoldings.reduce(
-    (sum, h) => sum + (h.current_value ?? h.total_cost),
-    0
-  );
-  const currency = classHoldings[0]?.currency ?? "USD";
+  const toBRL = (value: number, cur: string) => {
+    if (cur === "BRL") return value;
+    const rate = exchangeRates[`${cur}-BRL`];
+    return rate ? value * rate : value;
+  };
+
+  const totalValueBRL = classHoldings.reduce((sum, h) => {
+    const value = h.current_value ?? h.total_cost;
+    return sum + toBRL(value, h.currency ?? "BRL");
+  }, 0);
+
+  const fetchExchangeRates = useCallback(async () => {
+    const pairs = ["USD-BRL", "EUR-BRL"];
+    const rates: Record<string, number> = {};
+    await Promise.all(
+      pairs.map(async (pair) => {
+        try {
+          const res = await api.get<{ rate: number }>("/portfolio/exchange-rate", {
+            params: { pair },
+          });
+          rates[pair] = res.data.rate;
+        } catch {
+          // silently fail
+        }
+      })
+    );
+    setExchangeRates(rates);
+  }, []);
 
   const fetchQuarantineStatuses = useCallback(async () => {
     try {
@@ -60,9 +84,10 @@ export default function AssetClassHoldings() {
   }, []);
 
   useEffect(() => {
+    fetchExchangeRates();
     fetchQuarantineStatuses();
     fetchDividends();
-  }, [fetchQuarantineStatuses, fetchDividends]);
+  }, [fetchExchangeRates, fetchQuarantineStatuses, fetchDividends]);
 
   const handleCreateTransaction = async (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => {
     await createTransaction(data);
@@ -94,14 +119,6 @@ export default function AssetClassHoldings() {
     refreshPortfolio();
   };
 
-  const CURRENCY_SYMBOLS: Record<string, string> = {
-    BRL: "R$",
-    USD: "$",
-    EUR: "\u20AC",
-    GBP: "\u00A3",
-  };
-  const currencySymbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
-
   if (!assetClass) {
     return (
       <div className="space-y-4">
@@ -124,7 +141,7 @@ export default function AssetClassHoldings() {
           {assetClass.name}
         </h1>
         <span className="ml-auto text-text-muted text-base">
-          Total: {currencySymbol}{totalValue.toFixed(2)}
+          Total: R${totalValueBRL.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>
 
@@ -145,6 +162,7 @@ export default function AssetClassHoldings() {
         transactions={transactions}
         dividendsBySymbol={dividendsBySymbol}
         fundamentalsScores={fundamentalsScores}
+        exchangeRates={exchangeRates}
         onRefreshAllScores={async () => {
           await refreshAllScores();
           setTimeout(() => refreshScores(), 5000);

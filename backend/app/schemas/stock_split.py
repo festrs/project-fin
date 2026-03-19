@@ -8,6 +8,7 @@ class StockSplitPending(BaseModel):
     split_date: date
     from_factor: float
     to_factor: float
+    event_type: str = "split"
     detected_at: datetime
     current_quantity: float
     new_quantity: float

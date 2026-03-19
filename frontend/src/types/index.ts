@@ -88,15 +88,31 @@ export interface FundamentalsScore {
   updated_at: string | null;
 }
 
+export const SPLIT_EVENT_TYPE = {
+  SPLIT: "split",
+  BONIFICACAO: "bonificacao",
+} as const;
+
+export type SplitEventType = (typeof SPLIT_EVENT_TYPE)[keyof typeof SPLIT_EVENT_TYPE];
+
 export interface StockSplit {
   id: string;
   symbol: string;
   split_date: string;
   from_factor: number;
   to_factor: number;
+  event_type: SplitEventType;
   detected_at: string;
   current_quantity: number;
   new_quantity: number;
+}
+
+export interface DividendHistoryItem {
+  symbol: string;
+  dividend_type: string;
+  value: number;
+  ex_date: string;
+  payment_date: string | null;
 }
 
 export interface FundamentalsDetail extends FundamentalsScore {

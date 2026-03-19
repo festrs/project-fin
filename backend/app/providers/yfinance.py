@@ -1,4 +1,5 @@
 import logging
+import math
 
 import yfinance as yf
 
@@ -8,6 +9,37 @@ logger = logging.getLogger(__name__)
 
 
 class YFinanceProvider:
+    def get_splits(self, symbol: str, from_date: str, to_date: str) -> list[dict]:
+        """Fetch stock split history for a symbol within a date range.
+
+        Returns list of dicts with keys: date, fromFactor, toFactor.
+        """
+        try:
+            from datetime import date
+
+            start = date.fromisoformat(from_date)
+            end = date.fromisoformat(to_date)
+            ticker = yf.Ticker(symbol)
+            splits = ticker.splits
+
+            if splits.empty:
+                return []
+
+            results = []
+            for ts, ratio in splits.items():
+                split_date = ts.date()
+                if split_date < start or split_date > end:
+                    continue
+                results.append({
+                    "date": split_date.isoformat(),
+                    "fromFactor": 1,
+                    "toFactor": float(ratio),
+                })
+            return results
+        except Exception:
+            logger.warning("Failed to fetch splits for %s", symbol, exc_info=True)
+            return []
+
     def get_dividends(self, symbol: str) -> list[DividendRecord]:
         """Fetch full dividend history for a US stock."""
         try:
@@ -79,17 +111,24 @@ class YFinanceProvider:
             ebitda_row = _get_row(financials, "EBITDA", "Operating Income")
             debt_row = _get_row(balance_sheet, "Long Term Debt", "Total Debt")
 
+            def _safe_float(val: object) -> float:
+                """Convert to float, treating NaN/None as 0."""
+                if val is None:
+                    return 0.0
+                f = float(val)
+                return 0.0 if math.isnan(f) else f
+
             eps_history = []
             net_income_history = []
             debt_history = []
             raw_data = []
 
             for col in sorted_cols:
-                eps = float(eps_row.get(col, 0) or 0)
-                ni = float(ni_row.get(col, 0) or 0)
-                ebitda = float(ebitda_row.get(col, 0) or 0)
-                debt = float(debt_row.get(col, 0) or 0)
-                debt_ratio = (debt / ebitda) if ebitda != 0 else 0
+                eps = _safe_float(eps_row.get(col))
+                ni = _safe_float(ni_row.get(col))
+                ebitda = _safe_float(ebitda_row.get(col))
+                debt = _safe_float(debt_row.get(col))
+                debt_ratio = (debt / ebitda) if ebitda != 0 else 0.0
 
                 eps_history.append(eps)
                 net_income_history.append(ni)

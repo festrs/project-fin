@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Holding, AssetClass, Transaction } from "../types";
+import { DividendHistoryModal } from "./DividendHistoryModal";
 
 export interface ClassSummary {
   classId: string;
@@ -32,6 +33,8 @@ interface ClassSummaryTableProps {
   loading: boolean;
   usdToBrl: number;
   onUpdateTargetWeight?: (classId: string, weight: number) => Promise<void>;
+  onScrapeDividends?: () => void;
+  scrapingDividends?: boolean;
 }
 
 function formatValue(value: number, currency: string): string {
@@ -157,10 +160,13 @@ export function ClassSummaryTable({
   loading,
   usdToBrl,
   onUpdateTargetWeight,
+  onScrapeDividends,
+  scrapingDividends,
 }: ClassSummaryTableProps) {
   const [editingWeights, setEditingWeights] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
   const [investAmount, setInvestAmount] = useState<string>("");
+  const [dividendModal, setDividendModal] = useState<{ classId: string; className: string; currency: string } | null>(null);
 
   if (loading) {
     return (
@@ -298,7 +304,23 @@ export function ClassSummaryTable({
                 </div>
               </th>
               <th className="text-center py-2 px-2">Where to Invest</th>
-              <th className="text-right py-2 px-2">Dividends ({new Date().getFullYear()})</th>
+              <th className="text-right py-2 px-2">
+                <div className="flex items-center justify-end gap-1">
+                  Dividends ({new Date().getFullYear()})
+                  {onScrapeDividends && (
+                    <button
+                      onClick={onScrapeDividends}
+                      disabled={scrapingDividends}
+                      className="text-text-muted hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={scrapingDividends ? "Scraping dividends..." : "Refresh dividends"}
+                    >
+                      <svg className={`w-3.5 h-3.5 ${scrapingDividends ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -374,7 +396,14 @@ export function ClassSummaryTable({
                       )}
                     </div>
                   </td>
-                  <td className="py-2 px-2 text-right text-text-muted">
+                  <td
+                    className={`py-2 px-2 text-right text-text-muted ${divDisplay !== "-" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                    onClick={() => {
+                      if (divDisplay !== "-") {
+                        setDividendModal({ classId: s.classId, className: s.className, currency: s.currency });
+                      }
+                    }}
+                  >
                     {divDisplay}
                   </td>
                 </tr>
@@ -440,6 +469,14 @@ export function ClassSummaryTable({
           </tfoot>
         </table>
       </div>
+      {dividendModal && (
+        <DividendHistoryModal
+          className={dividendModal.className}
+          assetClassId={dividendModal.classId}
+          currency={dividendModal.currency}
+          onClose={() => setDividendModal(null)}
+        />
+      )}
     </div>
   );
 }

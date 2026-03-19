@@ -14,6 +14,7 @@ interface HoldingsTableProps {
   transactions: Transaction[];
   dividendsBySymbol?: Map<string, { income: number; currency: string }>;
   fundamentalsScores?: FundamentalsScore[];
+  exchangeRates?: Record<string, number>;
   onRefreshAllScores?: () => Promise<void>;
   onFetchTransactions: (symbol: string) => Promise<void>;
   onCreateTransaction: (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => Promise<unknown>;
@@ -50,6 +51,7 @@ export function HoldingsTable({
   transactions,
   dividendsBySymbol = new Map(),
   fundamentalsScores,
+  exchangeRates = {},
   onRefreshAllScores,
   onFetchTransactions,
   onCreateTransaction,
@@ -79,8 +81,15 @@ export function HoldingsTable({
   const showAvgPrice = !isFixedIncome;
   const showCurrentPrice = !isFixedIncome;
   const showGainLoss = !isFixedIncome;
+  const showValueBRL = isFixedIncome && holdings.some((h) => h.currency !== "BRL");
   const showDiv = !isFixedIncome && !isCrypto;
   const showScore = !isFixedIncome && !isCrypto;
+
+  const toBRL = (value: number, cur: string) => {
+    if (cur === "BRL") return value;
+    const rate = exchangeRates[`${cur}-BRL`];
+    return rate ? value * rate : value;
+  };
 
   const handleRowClick = async (symbol: string) => {
     if (expandedRow === symbol) {
@@ -136,6 +145,7 @@ export function HoldingsTable({
               {showAvgPrice && <th className="text-right px-3 py-2">Avg Price</th>}
               {showCurrentPrice && <th className="text-right px-3 py-2">Current Price</th>}
               <th className="text-right px-3 py-2">{isFixedIncome ? "Total Value" : "Current Value"}</th>
+              {showValueBRL && <th className="text-right px-3 py-2">Value (R$)</th>}
               {showGainLoss && <th className="text-right px-3 py-2">Gain/Loss</th>}
               <th className="text-right px-3 py-2">Target %</th>
               <th className="text-right px-3 py-2">Actual %</th>
@@ -181,6 +191,8 @@ export function HoldingsTable({
                   dividendData={dividendsBySymbol.get(h.symbol)}
                   score={scoreMap.get(h.symbol)}
                   assetClasses={assetClasses}
+                  showValueBRL={showValueBRL}
+                  toBRL={toBRL}
                   onUpdateTransaction={onUpdateTransaction}
                   onDeleteTransaction={onDeleteTransaction}
                   onDeleteHolding={onDeleteHolding}
@@ -220,6 +232,8 @@ interface HoldingRowsProps {
   dividendData?: { income: number; currency: string };
   score?: FundamentalsScore;
   assetClasses: AssetClass[];
+  showValueBRL: boolean;
+  toBRL: (value: number, currency: string) => number;
   onUpdateTransaction?: (id: string, data: Partial<Transaction>) => Promise<unknown>;
   onDeleteTransaction?: (id: string) => Promise<unknown>;
   onDeleteHolding?: (symbol: string) => Promise<unknown>;
@@ -247,6 +261,8 @@ function HoldingRows({
   dividendData,
   score,
   assetClasses,
+  showValueBRL,
+  toBRL,
   onUpdateTransaction,
   onDeleteTransaction,
   onDeleteHolding,
@@ -292,7 +308,7 @@ function HoldingRows({
       ? "var(--color-warning)"
       : "var(--color-negative)";
 
-  const colCount = 4 + (showQty ? 1 : 0) + (showAvgPrice ? 1 : 0) + (showCurrentPrice ? 1 : 0) + (showGainLoss ? 1 : 0) + (showDiv ? 1 : 0) + (showScore ? 1 : 0);
+  const colCount = 4 + (showQty ? 1 : 0) + (showAvgPrice ? 1 : 0) + (showCurrentPrice ? 1 : 0) + (showValueBRL ? 1 : 0) + (showGainLoss ? 1 : 0) + (showDiv ? 1 : 0) + (showScore ? 1 : 0);
 
   const startEditTx = (t: Transaction) => {
     setEditingTx(t.id);
@@ -358,6 +374,13 @@ function HoldingRows({
             ? formatCurrency(h.current_value ?? h.total_cost, cur)
             : h.current_value != null ? formatCurrency(h.current_value, cur) : "-"}
         </td>
+        {showValueBRL && (
+          <td className="px-3 py-2 text-right text-text-muted">
+            {cur !== "BRL"
+              ? formatCurrency(toBRL(h.current_value ?? h.total_cost, cur), "BRL")
+              : ""}
+          </td>
+        )}
         {showGainLoss && (
           <td className="px-3 py-2 text-right">
             {h.gain_loss != null ? (

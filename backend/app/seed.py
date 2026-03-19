@@ -24,10 +24,23 @@ def _backfill_asset_class_types(db):
     db.commit()
 
 
+def _backfill_stock_split_event_type(db):
+    """Ensure event_type column exists on stock_splits."""
+    inspector = inspect(db.bind)
+    tables = inspector.get_table_names()
+    if "stock_splits" not in tables:
+        return
+    columns = [c["name"] for c in inspector.get_columns("stock_splits")]
+    if "event_type" not in columns:
+        db.execute(text("ALTER TABLE stock_splits ADD COLUMN event_type VARCHAR(20) NOT NULL DEFAULT 'split'"))
+        db.commit()
+
+
 def seed_data():
     db = SessionLocal()
     try:
         _backfill_asset_class_types(db)
+        _backfill_stock_split_event_type(db)
 
         user_count = db.query(User).count()
         if user_count > 0:

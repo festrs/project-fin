@@ -80,11 +80,9 @@ def _run_fundamentals_score():
 def _run_split_checker():
     from app.database import SessionLocal
     from app.providers.brapi import BrapiProvider
-    from app.providers.finnhub import FinnhubProvider
     from app.services.split_checker_scheduler import SplitCheckerScheduler
 
     scheduler = SplitCheckerScheduler(
-        finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key, base_url=settings.finnhub_base_url),
         brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
     )
 
@@ -145,6 +143,8 @@ async def lifespan(app: FastAPI):
 
         import threading
         threading.Thread(target=_run_scheduled_fetch, daemon=True).start()
+        if settings.enable_dividend_scraper:
+            threading.Thread(target=_run_dividend_scrape, daemon=True).start()
 
     yield
 
@@ -170,7 +170,7 @@ app.add_middleware(
 from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
-    fundamentals, splits,
+    fundamentals, splits, dividends,
 )
 
 app.include_router(asset_classes.router)
@@ -183,6 +183,7 @@ app.include_router(recommendations.router)
 app.include_router(quarantine.router)
 app.include_router(fundamentals.router)
 app.include_router(splits.router)
+app.include_router(dividends.router)
 
 
 @app.get("/api/health")

@@ -21,9 +21,12 @@ class DividendScheduler:
         self._br_delay = br_delay
         self._us_delay = us_delay
 
+    # FIIs are not covered by DadosDeMercado; use yfinance for them
+    _YFINANCE_CLASS_NAMES = {"FIIs"}
+
     def scrape_all(self, db: Session) -> None:
         rows = (
-            db.query(Transaction.asset_symbol, AssetClass.country)
+            db.query(Transaction.asset_symbol, AssetClass.country, AssetClass.name)
             .join(AssetClass, Transaction.asset_class_id == AssetClass.id)
             .filter(
                 AssetClass.country.in_(["BR", "US"]),
@@ -33,14 +36,14 @@ class DividendScheduler:
             .all()
         )
 
-        for symbol, country in rows:
+        for symbol, country, class_name in rows:
             try:
-                if country == "BR":
-                    records = self._dados.scrape_dividends(symbol)
-                    delay = self._br_delay
-                else:
+                if country == "US" or class_name in self._YFINANCE_CLASS_NAMES:
                     records = self._yfinance.get_dividends(symbol)
                     delay = self._us_delay
+                else:
+                    records = self._dados.scrape_dividends(symbol)
+                    delay = self._br_delay
 
                 new_count = 0
                 seen = set()

@@ -1,5 +1,5 @@
 from datetime import date
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from app.models.asset_class import AssetClass
 from app.models.stock_split import StockSplit
@@ -33,17 +33,18 @@ def _setup_holdings(db):
 
 
 class TestSplitCheckerScheduler:
-    def test_creates_pending_splits(self, db):
+    @patch("app.services.split_checker_scheduler.YFinanceProvider")
+    def test_creates_pending_splits(self, mock_yf_cls, db):
         _setup_holdings(db)
-        finnhub = MagicMock()
+        mock_yf = mock_yf_cls.return_value
         brapi = MagicMock()
 
-        finnhub.get_splits.return_value = [
+        mock_yf.get_splits.return_value = [
             {"symbol": "FAST", "date": "2025-05-22", "fromFactor": 1, "toFactor": 2},
         ]
         brapi.get_splits.return_value = []
 
-        scheduler = SplitCheckerScheduler(finnhub_provider=finnhub, brapi_provider=brapi, delay=0)
+        scheduler = SplitCheckerScheduler(brapi_provider=brapi, delay=0)
         scheduler.check_all(db)
 
         splits = db.query(StockSplit).filter(StockSplit.symbol == "FAST").all()
@@ -52,8 +53,11 @@ class TestSplitCheckerScheduler:
         assert splits[0].from_factor == 1
         assert splits[0].to_factor == 2
 
-    def test_skips_existing_splits(self, db):
+    @patch("app.services.split_checker_scheduler.YFinanceProvider")
+    def test_skips_existing_splits(self, mock_yf_cls, db):
         user = _setup_holdings(db)
+        mock_yf = mock_yf_cls.return_value
+        brapi = MagicMock()
 
         ac = db.query(AssetClass).filter(AssetClass.name == "US Stocks").first()
         db.add(StockSplit(
@@ -62,47 +66,69 @@ class TestSplitCheckerScheduler:
         ))
         db.commit()
 
-        finnhub = MagicMock()
-        brapi = MagicMock()
-        finnhub.get_splits.return_value = [
+        mock_yf.get_splits.return_value = [
             {"symbol": "FAST", "date": "2025-05-22", "fromFactor": 1, "toFactor": 2},
         ]
         brapi.get_splits.return_value = []
 
-        scheduler = SplitCheckerScheduler(finnhub_provider=finnhub, brapi_provider=brapi, delay=0)
+        scheduler = SplitCheckerScheduler(brapi_provider=brapi, delay=0)
         scheduler.check_all(db)
 
         splits = db.query(StockSplit).filter(StockSplit.symbol == "FAST").all()
         assert len(splits) == 1  # no duplicate
 
-    def test_continues_on_provider_error(self, db):
+    @patch("app.services.split_checker_scheduler.YFinanceProvider")
+    def test_continues_on_provider_error(self, mock_yf_cls, db):
         _setup_holdings(db)
-        finnhub = MagicMock()
+        mock_yf = mock_yf_cls.return_value
         brapi = MagicMock()
 
-        finnhub.get_splits.side_effect = Exception("API error")
-        brapi.get_splits.return_value = [
-            {"symbol": "PETR4.SA", "date": "2008-03-24", "fromFactor": 1, "toFactor": 2},
+        mock_yf.get_splits.side_effect = Exception("API error")
+        mock_dados = MagicMock()
+        mock_dados.scrape_splits.return_value = [
+            {"symbol": "PETR4.SA", "date": "2025-06-15", "fromFactor": 1, "toFactor": 2},
         ]
 
-        scheduler = SplitCheckerScheduler(finnhub_provider=finnhub, brapi_provider=brapi, delay=0)
+        scheduler = SplitCheckerScheduler(brapi_provider=brapi, delay=0)
+        scheduler._dados = mock_dados
         scheduler.check_all(db)
 
         splits = db.query(StockSplit).all()
         assert len(splits) == 1
         assert splits[0].symbol == "PETR4.SA"
 
-    def test_uses_correct_provider_by_suffix(self, db):
+    @patch("app.services.split_checker_scheduler.YFinanceProvider")
+    def test_uses_dados_de_mercado_for_br_stocks(self, mock_yf_cls, db):
         _setup_holdings(db)
-        finnhub = MagicMock()
+        mock_yf = mock_yf_cls.return_value
         brapi = MagicMock()
-        finnhub.get_splits.return_value = []
-        brapi.get_splits.return_value = []
+        mock_yf.get_splits.return_value = []
+        mock_dados = MagicMock()
+        mock_dados.scrape_splits.return_value = []
 
-        scheduler = SplitCheckerScheduler(finnhub_provider=finnhub, brapi_provider=brapi, delay=0)
+        scheduler = SplitCheckerScheduler(brapi_provider=brapi, delay=0)
+        scheduler._dados = mock_dados
         scheduler.check_all(db)
 
-        finnhub.get_splits.assert_called_once()
-        assert finnhub.get_splits.call_args[0][0] == "FAST"
-        brapi.get_splits.assert_called_once()
-        assert brapi.get_splits.call_args[0][0] == "PETR4.SA"
+        mock_yf.get_splits.assert_called_once()
+        assert mock_yf.get_splits.call_args[0][0] == "FAST"
+        mock_dados.scrape_splits.assert_called_once()
+        assert mock_dados.scrape_splits.call_args[0][0] == "PETR4.SA"
+
+    @patch("app.services.split_checker_scheduler.YFinanceProvider")
+    def test_skips_splits_older_than_3_years(self, mock_yf_cls, db):
+        _setup_holdings(db)
+        mock_yf = mock_yf_cls.return_value
+        brapi = MagicMock()
+        mock_yf.get_splits.return_value = []
+        mock_dados = MagicMock()
+        mock_dados.scrape_splits.return_value = [
+            {"symbol": "PETR4.SA", "date": "2008-03-24", "fromFactor": 1, "toFactor": 2},
+        ]
+
+        scheduler = SplitCheckerScheduler(brapi_provider=brapi, delay=0)
+        scheduler._dados = mock_dados
+        scheduler.check_all(db)
+
+        splits = db.query(StockSplit).all()
+        assert len(splits) == 0

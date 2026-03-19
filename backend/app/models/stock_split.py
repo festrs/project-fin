@@ -7,6 +7,11 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 
 
+class SplitEventType:
+    SPLIT = "split"
+    BONIFICACAO = "bonificacao"
+
+
 class StockSplit(Base):
     __tablename__ = "stock_splits"
     __table_args__ = (
@@ -19,6 +24,7 @@ class StockSplit(Base):
     split_date: Mapped[date] = mapped_column(Date, nullable=False)
     from_factor: Mapped[float] = mapped_column(Float, nullable=False)
     to_factor: Mapped[float] = mapped_column(Float, nullable=False)
+    event_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="split")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     detected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     resolved_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

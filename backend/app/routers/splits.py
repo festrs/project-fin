@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
@@ -5,7 +6,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
-from app.models.stock_split import StockSplit
+from app.models.stock_split import StockSplit, SplitEventType
+from app.models.transaction import Transaction
 from app.schemas.stock_split import StockSplitPending, StockSplitAction
 from app.services.portfolio import PortfolioService
 
@@ -32,16 +34,24 @@ def get_pending_splits(
     result = []
     for s in splits:
         current_qty = qty_map.get(s.symbol, 0)
-        ratio = s.to_factor / s.from_factor
+        if s.event_type == SplitEventType.BONIFICACAO:
+            # Bonificação from:to means from bonus shares per to held
+            # e.g. 1:10 → 1 bonus per 10 held → 100 shares becomes 110
+            bonus_shares = math.floor(current_qty / s.to_factor * s.from_factor) if s.to_factor else 0
+            new_qty = current_qty + bonus_shares
+        else:
+            # Desdobramento from:to → from shares become to shares
+            new_qty = current_qty * s.to_factor / s.from_factor
         result.append(StockSplitPending(
             id=s.id,
             symbol=s.symbol,
             split_date=s.split_date,
             from_factor=s.from_factor,
             to_factor=s.to_factor,
+            event_type=s.event_type,
             detected_at=s.detected_at,
             current_quantity=current_qty,
-            new_quantity=current_qty * ratio,
+            new_quantity=new_qty,
         ))
 
     return result
@@ -62,6 +72,57 @@ def apply_split(
         raise HTTPException(status_code=404, detail="Split not found")
     if split.status != "pending":
         raise HTTPException(status_code=400, detail=f"Split already {split.status}")
+
+    if split.event_type == SplitEventType.BONIFICACAO:
+        # Bonificação: create a buy transaction for the bonus shares
+        service = PortfolioService(db)
+        holdings = service.get_holdings(x_user_id)
+        current_qty = next(
+            (h["quantity"] or 0 for h in holdings if h["symbol"] == split.symbol), 0
+        )
+        bonus_shares = math.floor(current_qty / split.to_factor * split.from_factor) if split.to_factor else 0
+
+        if bonus_shares > 0:
+            tx_currency = (
+                db.query(Transaction.currency)
+                .filter(
+                    Transaction.user_id == x_user_id,
+                    Transaction.asset_symbol == split.symbol,
+                    Transaction.type == "buy",
+                )
+                .order_by(Transaction.date.desc())
+                .first()
+            )
+            currency = tx_currency[0] if tx_currency else "BRL"
+
+            db.add(Transaction(
+                user_id=x_user_id,
+                asset_class_id=split.asset_class_id,
+                asset_symbol=split.symbol,
+                type="buy",
+                quantity=bonus_shares,
+                unit_price=0,
+                total_value=0,
+                currency=currency,
+                tax_amount=0,
+                date=split.split_date,
+                notes=f"Bonificação {split.from_factor}:{split.to_factor}",
+            ))
+    else:
+        # Stock split: adjust quantity and unit_price on existing transactions
+        ratio = split.to_factor / split.from_factor
+        txns = (
+            db.query(Transaction)
+            .filter(
+                Transaction.user_id == x_user_id,
+                Transaction.asset_symbol == split.symbol,
+                Transaction.type.in_(["buy", "sell"]),
+            )
+            .all()
+        )
+        for tx in txns:
+            tx.quantity = tx.quantity * ratio
+            tx.unit_price = tx.unit_price / ratio
 
     split.status = "applied"
     split.resolved_at = datetime.utcnow()
