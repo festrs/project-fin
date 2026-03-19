@@ -1,7 +1,6 @@
 import logging
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import date, timedelta
+from datetime import date
 
 import httpx
 from fastapi import APIRouter, Depends, Header, Request
@@ -100,10 +99,6 @@ def _fetch_exchange_rate(pair: str) -> float:
         raise
 
 
-_div_cache: dict[str, tuple[dict, float]] = {}  # symbol -> (data, timestamp)
-_DIV_CACHE_TTL = 3600  # 1 hour
-
-
 @router.get("/dividends")
 @limiter.limit(CRUD_LIMIT)
 def portfolio_dividends(
@@ -111,104 +106,67 @@ def portfolio_dividends(
     x_user_id: str = Header(),
     db: Session = Depends(get_db),
 ):
-    """Get estimated annual dividends per holding using Finnhub (US) and brapi (BR)."""
+    """Get estimated annual dividends per holding from dividend_history table."""
     service = PortfolioService(db)
     holdings = service.get_holdings(x_user_id)
 
     asset_classes = db.query(AssetClass).filter(AssetClass.user_id == x_user_id).all()
     class_map = {ac.id: ac for ac in asset_classes}
 
-    market_data = get_market_data_service()
-    finnhub = market_data._finnhub
-
-    # Pre-compute BR dividend data from local DividendHistory table (current year by payment date)
-    # Includes both Dividendo and JCP (Juros sobre Capital Próprio)
     current_year = date.today().year
     year_start = date(current_year, 1, 1)
     year_end = date(current_year, 12, 31)
-    br_symbols = [
+
+    # Collect all stock symbols (BR + US), excluding crypto
+    stock_symbols = [
         h["symbol"] for h in holdings
-        if class_map.get(h["asset_class_id"]) and class_map[h["asset_class_id"]].country == "BR"
+        if class_map.get(h["asset_class_id"])
+        and class_map[h["asset_class_id"]].name not in CRYPTO_CLASS_NAMES
+        and class_map[h["asset_class_id"]].name != "Stablecoins"
+        and class_map[h["asset_class_id"]].country in ("BR", "US")
     ]
-    br_div_map: dict[str, float] = {}
-    if br_symbols:
+
+    # Single batch query for all dividends (unified BR + US)
+    div_map: dict[str, float] = {}
+    if stock_symbols:
         rows = (
             db.query(DividendHistory.symbol, func.sum(DividendHistory.value))
             .filter(
-                DividendHistory.symbol.in_(br_symbols),
-                DividendHistory.payment_date >= year_start,
-                DividendHistory.payment_date <= year_end,
+                DividendHistory.symbol.in_(stock_symbols),
+                DividendHistory.ex_date >= year_start,
+                DividendHistory.ex_date <= year_end,
             )
             .group_by(DividendHistory.symbol)
             .all()
         )
         for symbol, total in rows:
-            br_div_map[symbol] = float(total)
-
-    def fetch_dividend(holding: dict) -> dict | None:
-        symbol = holding["symbol"]
-        ac = class_map.get(holding["asset_class_id"])
-        if not ac:
-            return None
-
-        if holding["quantity"] is None:
-            return None  # Fixed income — no dividend calculation
-
-        class_name = ac.name
-        if class_name in CRYPTO_CLASS_NAMES or class_name == "Stablecoins":
-            return None
-
-        if ac.country == "BR":
-            dps = br_div_map.get(symbol, 0)
-            if dps <= 0:
-                return None
-            annual_income = dps * holding["quantity"]
-            return {
-                "symbol": symbol,
-                "asset_class_id": holding["asset_class_id"],
-                "quantity": holding["quantity"],
-                "dividend_per_share": round(dps, 6),
-                "dividend_yield": 0,
-                "annual_income": round(annual_income, 2),
-                "currency": "BRL",
-            }
-
-        if ac.country == "US":
-            now = time.time()
-            cached = _div_cache.get(symbol)
-            if cached and (now - cached[1]) < _DIV_CACHE_TTL:
-                div_data = cached[0]
-            else:
-                try:
-                    div_data = finnhub.get_dividend_metric(symbol)
-                    _div_cache[symbol] = (div_data, now)
-                except Exception:
-                    logger.warning("Failed to fetch dividend for %s", symbol)
-                    return None
-
-            dps = div_data.get("dividend_per_share_annual", 0)
-            if dps <= 0:
-                return None
-            annual_income = dps * holding["quantity"]
-            return {
-                "symbol": symbol,
-                "asset_class_id": holding["asset_class_id"],
-                "quantity": holding["quantity"],
-                "dividend_per_share": dps,
-                "dividend_yield": div_data.get("dividend_yield_annual", 0),
-                "annual_income": round(annual_income, 2),
-                "currency": "USD",
-            }
-
-        return None
+            div_map[symbol] = float(total)
 
     results = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = {executor.submit(fetch_dividend, h): h for h in holdings}
-        for future in as_completed(futures):
-            result = future.result()
-            if result:
-                results.append(result)
+    for holding in holdings:
+        symbol = holding["symbol"]
+        ac = class_map.get(holding["asset_class_id"])
+        if not ac or holding["quantity"] is None:
+            continue
+        if ac.name in CRYPTO_CLASS_NAMES or ac.name == "Stablecoins":
+            continue
+
+        dps = div_map.get(symbol, 0)
+        if dps <= 0:
+            continue
+
+        annual_income = dps * holding["quantity"]
+        currency = "BRL" if ac.country == "BR" else "USD"
+
+        results.append({
+            "symbol": symbol,
+            "asset_class_id": holding["asset_class_id"],
+            "quantity": holding["quantity"],
+            "dividend_per_share": round(dps, 6),
+            "dividend_yield": 0,
+            "annual_income": round(annual_income, 2),
+            "currency": currency,
+        })
 
     # Aggregate by asset class
     class_totals: dict[str, dict] = {}
