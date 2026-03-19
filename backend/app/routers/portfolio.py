@@ -4,7 +4,7 @@ from datetime import date
 
 import httpx
 from fastapi import APIRouter, Depends, Header, Request
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -133,8 +133,18 @@ def portfolio_dividends(
             db.query(DividendHistory.symbol, func.sum(DividendHistory.value))
             .filter(
                 DividendHistory.symbol.in_(stock_symbols),
-                DividendHistory.ex_date >= year_start,
-                DividendHistory.ex_date <= year_end,
+                or_(
+                    and_(
+                        DividendHistory.payment_date.isnot(None),
+                        DividendHistory.payment_date >= year_start,
+                        DividendHistory.payment_date <= year_end,
+                    ),
+                    and_(
+                        DividendHistory.payment_date.is_(None),
+                        DividendHistory.ex_date >= year_start,
+                        DividendHistory.ex_date <= year_end,
+                    ),
+                ),
             )
             .group_by(DividendHistory.symbol)
             .all()

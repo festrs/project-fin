@@ -70,6 +70,7 @@ export function HoldingsTable({
     type: "buy" | "sell" | "dividend";
   } | null>(null);
   const [editingWeight, setEditingWeight] = useState<{ symbol: string; value: string } | null>(null);
+  const [sortAsc, setSortAsc] = useState<boolean | null>(null);
 
   const quarantineMap = new Map(
     quarantineStatuses.map((q) => [q.asset_symbol, q])
@@ -110,6 +111,18 @@ export function HoldingsTable({
     setEditingWeight(null);
   };
 
+  const sortedHoldings = sortAsc === null
+    ? holdings
+    : [...holdings].sort((a, b) =>
+        sortAsc
+          ? a.symbol.localeCompare(b.symbol)
+          : b.symbol.localeCompare(a.symbol)
+      );
+
+  const toggleSort = () => {
+    setSortAsc((prev) => (prev === null ? true : prev ? false : null));
+  };
+
   if (loading) {
     return <div>Loading holdings...</div>;
   }
@@ -140,7 +153,13 @@ export function HoldingsTable({
         <table className="w-full text-base">
           <thead>
             <tr className="text-text-muted uppercase text-base tracking-wide">
-              <th className="text-left px-3 py-2">{isFixedIncome ? "Name" : "Symbol"}</th>
+              <th
+                className="text-left px-3 py-2 cursor-pointer select-none hover:text-primary transition-colors"
+                onClick={toggleSort}
+              >
+                {isFixedIncome ? "Name" : "Symbol"}
+                {sortAsc === true ? " ▲" : sortAsc === false ? " ▼" : ""}
+              </th>
               {showQty && <th className="text-right px-3 py-2">Qty</th>}
               {showAvgPrice && <th className="text-right px-3 py-2">Avg Price</th>}
               {showCurrentPrice && <th className="text-right px-3 py-2">Current Price</th>}
@@ -172,7 +191,7 @@ export function HoldingsTable({
             </tr>
           </thead>
           <tbody>
-            {holdings.map((h) => {
+            {sortedHoldings.map((h) => {
               const q = quarantineMap.get(h.symbol);
               const isExpanded = expandedRow === h.symbol;
               const isEditingThis = editingWeight?.symbol === h.symbol;

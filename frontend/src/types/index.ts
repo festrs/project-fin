@@ -111,6 +111,8 @@ export interface DividendHistoryItem {
   symbol: string;
   dividend_type: string;
   value: number;
+  quantity: number;
+  total: number;
   ex_date: string;
   payment_date: string | null;
 }

@@ -9,6 +9,13 @@ interface DividendHistoryModalProps {
   onClose: () => void;
 }
 
+function formatCurrency(value: number, currency: string, decimals: number = 2) {
+  if (currency === "BRL") {
+    return `R$${value.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+  }
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+}
+
 export function DividendHistoryModal({
   className,
   assetClassId,
@@ -26,13 +33,6 @@ export function DividendHistoryModal({
       .then((res) => setItems(res.data))
       .finally(() => setLoading(false));
   }, [assetClassId]);
-
-  const formatValue = (value: number) => {
-    if (currency === "BRL") {
-      return `R$${value.toLocaleString("pt-BR", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
-    }
-    return `$${value.toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
-  };
 
   const formatDate = (iso: string) => {
     const [year, month, day] = iso.split("-");
@@ -77,20 +77,24 @@ export function DividendHistoryModal({
         ) : (
           <div className="space-y-4">
             {[...bySymbol.entries()].map(([symbol, records]) => {
-              const total = records.reduce((sum, r) => sum + r.value, 0);
+              const symbolTotal = records.reduce((sum, r) => sum + r.total, 0);
+              const quantity = records[0]?.quantity ?? 0;
               return (
                 <div key={symbol}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-base font-medium text-primary">{symbol}</span>
+                    <span className="text-base font-medium text-primary">
+                      {symbol} <span className="text-text-muted text-sm">({quantity} shares)</span>
+                    </span>
                     <span className="text-base font-semibold text-text-primary">
-                      {formatValue(total)}
+                      {formatCurrency(symbolTotal, currency)}
                     </span>
                   </div>
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="text-text-muted text-xs uppercase tracking-wide">
                         <th className="text-left py-1 px-1">Type</th>
-                        <th className="text-right py-1 px-1">Value</th>
+                        <th className="text-right py-1 px-1">Per Share</th>
+                        <th className="text-right py-1 px-1">Total</th>
                         <th className="text-right py-1 px-1">Ex Date</th>
                         <th className="text-right py-1 px-1">Payment</th>
                       </tr>
@@ -99,7 +103,8 @@ export function DividendHistoryModal({
                       {records.map((r, i) => (
                         <tr key={i} className="even:bg-[var(--glass-row-alt)]">
                           <td className="py-1 px-1 text-text-secondary">{r.dividend_type}</td>
-                          <td className="py-1 px-1 text-right">{formatValue(r.value)}</td>
+                          <td className="py-1 px-1 text-right">{formatCurrency(r.value, currency, 4)}</td>
+                          <td className="py-1 px-1 text-right">{formatCurrency(r.total, currency)}</td>
                           <td className="py-1 px-1 text-right text-text-muted">{formatDate(r.ex_date)}</td>
                           <td className="py-1 px-1 text-right text-text-muted">
                             {r.payment_date ? formatDate(r.payment_date) : "-"}

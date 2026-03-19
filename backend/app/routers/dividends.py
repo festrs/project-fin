@@ -2,6 +2,7 @@ import threading
 from datetime import date
 
 from fastapi import APIRouter, Depends, Header, Request
+from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 
 from app.config import settings
@@ -60,23 +61,22 @@ def get_dividend_history(
     db: Session = Depends(get_db),
 ):
     """Get dividend history for the current year filtered by asset class."""
-    from app.models.transaction import Transaction
+    from app.services.portfolio import PortfolioService
 
     current_year = date.today().year
     year_start = date(current_year, 1, 1)
     year_end = date(current_year, 12, 31)
 
-    # Get symbols belonging to this asset class for this user
-    symbols = (
-        db.query(Transaction.asset_symbol)
-        .filter(
-            Transaction.user_id == x_user_id,
-            Transaction.asset_class_id == asset_class_id,
-        )
-        .distinct()
-        .all()
-    )
-    symbol_list = [s[0] for s in symbols]
+    # Get holdings to know quantity per symbol
+    service = PortfolioService(db)
+    holdings = service.get_holdings(x_user_id)
+    qty_map: dict[str, float] = {}
+    symbol_list: list[str] = []
+    for h in holdings:
+        if h["asset_class_id"] == asset_class_id and h["quantity"]:
+            symbol_list.append(h["symbol"])
+            qty_map[h["symbol"]] = h["quantity"]
+
     if not symbol_list:
         return []
 
@@ -84,8 +84,18 @@ def get_dividend_history(
         db.query(DividendHistory)
         .filter(
             DividendHistory.symbol.in_(symbol_list),
-            DividendHistory.ex_date >= year_start,
-            DividendHistory.ex_date <= year_end,
+            or_(
+                and_(
+                    DividendHistory.payment_date.isnot(None),
+                    DividendHistory.payment_date >= year_start,
+                    DividendHistory.payment_date <= year_end,
+                ),
+                and_(
+                    DividendHistory.payment_date.is_(None),
+                    DividendHistory.ex_date >= year_start,
+                    DividendHistory.ex_date <= year_end,
+                ),
+            ),
         )
         .order_by(DividendHistory.ex_date.desc())
         .all()
@@ -96,6 +106,8 @@ def get_dividend_history(
             "symbol": r.symbol,
             "dividend_type": r.dividend_type,
             "value": r.value,
+            "quantity": qty_map.get(r.symbol, 0),
+            "total": round(r.value * qty_map.get(r.symbol, 0), 2),
             "ex_date": r.ex_date.isoformat(),
             "payment_date": r.payment_date.isoformat() if r.payment_date else None,
         }
