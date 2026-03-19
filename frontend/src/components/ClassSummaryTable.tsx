@@ -36,6 +36,8 @@ interface ClassSummaryTableProps {
   onUpdateTargetWeight?: (classId: string, weight: number) => Promise<void>;
   onScrapeDividends?: () => void;
   scrapingDividends?: boolean;
+  onCreateClass?: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income") => Promise<unknown>;
+  onDeleteClass?: (classId: string) => Promise<unknown>;
 }
 
 function formatValue(value: number, currency: string): string {
@@ -163,12 +165,19 @@ export function ClassSummaryTable({
   onUpdateTargetWeight,
   onScrapeDividends,
   scrapingDividends,
+  onCreateClass,
+  onDeleteClass,
 }: ClassSummaryTableProps) {
   const navigate = useNavigate();
   const [editingWeights, setEditingWeights] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
   const [investAmount, setInvestAmount] = useState<string>("");
   const [dividendModal, setDividendModal] = useState<{ classId: string; className: string; currency: string } | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newWeight, setNewWeight] = useState("");
+  const [newType, setNewType] = useState<"stock" | "crypto" | "fixed_income">("stock");
+  const [creating, setCreating] = useState(false);
 
   if (loading) {
     return (
@@ -266,9 +275,22 @@ export function ClassSummaryTable({
   return (
     <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
       <div className="flex items-center justify-between mb-3">
-        <div>
-          <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Consolidated Portfolio</h2>
-          <span className="text-base text-text-muted">USD/BRL: {usdToBrl.toFixed(2)}</span>
+        <div className="flex items-center gap-2">
+          <div>
+            <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Consolidated Portfolio</h2>
+            <span className="text-base text-text-muted">USD/BRL: {usdToBrl.toFixed(2)}</span>
+          </div>
+          {onCreateClass && (
+            <button
+              onClick={() => setShowCreateForm((v) => !v)}
+              className="text-primary hover:text-primary-hover transition-colors"
+              title="Add asset class"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <label className="text-base text-text-muted">Invest (R$):</label>
@@ -281,6 +303,62 @@ export function ClassSummaryTable({
           />
         </div>
       </div>
+      {showCreateForm && onCreateClass && (
+        <div className="flex items-center gap-2 mb-3">
+          <input
+            type="text"
+            placeholder="Class name"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+          />
+          <select
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            value={newType}
+            onChange={(e) => setNewType(e.target.value as "stock" | "crypto" | "fixed_income")}
+          >
+            <option value="stock">Stock</option>
+            <option value="crypto">Crypto</option>
+            <option value="fixed_income">Fixed Income</option>
+          </select>
+          <input
+            type="number"
+            placeholder="Target %"
+            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base w-24 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            value={newWeight}
+            onChange={(e) => setNewWeight(e.target.value)}
+          />
+          <button
+            disabled={creating || !newName.trim()}
+            onClick={async () => {
+              setCreating(true);
+              try {
+                await onCreateClass(newName.trim(), parseFloat(newWeight) || 0, newType);
+                setNewName("");
+                setNewWeight("");
+                setNewType("stock");
+                setShowCreateForm(false);
+              } finally {
+                setCreating(false);
+              }
+            }}
+            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
+          >
+            {creating ? "Saving..." : "Save"}
+          </button>
+          <button
+            onClick={() => {
+              setShowCreateForm(false);
+              setNewName("");
+              setNewWeight("");
+              setNewType("stock");
+            }}
+            className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-base">
           <thead>
@@ -323,6 +401,7 @@ export function ClassSummaryTable({
                   )}
                 </div>
               </th>
+              {onDeleteClass && <th className="py-2 px-2" />}
             </tr>
           </thead>
           <tbody>
@@ -414,6 +493,24 @@ export function ClassSummaryTable({
                   >
                     {divDisplay}
                   </td>
+                  {onDeleteClass && (
+                    <td className="py-2 px-2 text-center">
+                      <button
+                        className="text-text-muted hover:text-negative transition-colors"
+                        title="Delete class"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (window.confirm(`Delete asset class "${s.className}"?`)) {
+                            onDeleteClass(s.classId);
+                          }
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </td>
+                  )}
                 </tr>
               );
             })}
@@ -421,7 +518,7 @@ export function ClassSummaryTable({
           <tfoot>
             {isEditing && (
               <tr className="border-b">
-                <td colSpan={7} className="py-2 px-2">
+                <td colSpan={onDeleteClass ? 8 : 7} className="py-2 px-2">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -473,6 +570,7 @@ export function ClassSummaryTable({
               <td className="py-2 px-2 text-right">
                 {totalDivBRL > 0 ? formatValue(totalDivBRL, "BRL") : "-"}
               </td>
+              {onDeleteClass && <td className="py-2 px-2" />}
             </tr>
           </tfoot>
         </table>

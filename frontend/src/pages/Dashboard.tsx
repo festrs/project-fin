@@ -26,7 +26,7 @@ interface DividendsResponse {
 
 export default function Dashboard() {
   const { holdings, allocation, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolio();
-  const { assetClasses, loading: classesLoading, updateClass } = useAssetClasses();
+  const { assetClasses, loading: classesLoading, updateClass, createClass, deleteClass } = useAssetClasses();
   const savedCount = localStorage.getItem("recommendationCount");
   const count = savedCount ? parseInt(savedCount, 10) : 2;
   const { recommendations, loading: recsLoading } = useRecommendations(count);
@@ -124,6 +124,14 @@ export default function Dashboard() {
             onUpdateTargetWeight={handleUpdateTargetWeight}
             onScrapeDividends={handleScrapeDividends}
             scrapingDividends={scrapingDividends}
+            onCreateClass={async (name, weight, type) => {
+              await createClass(name, weight, type);
+              refreshPortfolio();
+            }}
+            onDeleteClass={async (classId) => {
+              await deleteClass(classId);
+              refreshPortfolio();
+            }}
           />
         </div>
         <div>
