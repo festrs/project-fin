@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import type { Holding, AssetClass, Transaction } from "../types";
 import { DividendHistoryModal } from "./DividendHistoryModal";
 
@@ -163,6 +164,7 @@ export function ClassSummaryTable({
   onScrapeDividends,
   scrapingDividends,
 }: ClassSummaryTableProps) {
+  const navigate = useNavigate();
   const [editingWeights, setEditingWeights] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
   const [investAmount, setInvestAmount] = useState<string>("");
@@ -354,7 +356,11 @@ export function ClassSummaryTable({
               }
 
               return (
-                <tr key={s.classId} className="even:bg-[var(--glass-row-alt)] rounded-lg">
+                <tr
+                  key={s.classId}
+                  className="even:bg-[var(--glass-row-alt)] rounded-lg cursor-pointer hover:bg-[var(--glass-hover)] transition-colors"
+                  onClick={() => navigate(`/portfolio/${s.classId}`)}
+                >
                   <td className="py-2 px-2 font-medium text-primary">{s.className}</td>
                   <td className="py-2 px-2 text-right">{formatValue(s.totalValue, s.currency)}</td>
                   <td className="py-2 px-2 text-right text-text-muted">
@@ -372,6 +378,7 @@ export function ClassSummaryTable({
                         max="100"
                         className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-2.5 py-1.5 text-base w-20 text-right focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
                         value={editedWeight ?? ""}
+                        onClick={(e) => e.stopPropagation()}
                         onChange={(e) => handleWeightChange(s.classId, e.target.value)}
                       />
                     ) : (
@@ -398,7 +405,8 @@ export function ClassSummaryTable({
                   </td>
                   <td
                     className={`py-2 px-2 text-right text-text-muted ${divDisplay !== "-" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       if (divDisplay !== "-") {
                         setDividendModal({ classId: s.classId, className: s.className, currency: s.currency });
                       }
