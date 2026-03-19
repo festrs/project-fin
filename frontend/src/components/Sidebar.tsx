@@ -1,10 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { LayoutGrid, Wallet, TrendingUp, Settings } from "lucide-react";
+import { LayoutGrid, Settings } from "lucide-react";
 
 const links = [
   { to: "/", label: "Dashboard", icon: LayoutGrid },
-  { to: "/portfolio", label: "Portfolio", icon: Wallet },
-  { to: "/market", label: "Market", icon: TrendingUp },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
