@@ -95,8 +95,28 @@ def _run_split_checker():
         db.close()
 
 
+def _run_migrations():
+    """Run database migrations before create_all.
+
+    Uses raw sqlite3 to alter existing tables that create_all cannot modify.
+    Safe to call repeatedly — each migration checks if already applied.
+    """
+    from app.config import settings
+
+    db_url = settings.database_url
+    if not db_url.startswith("sqlite"):
+        return
+
+    # Extract file path from sqlite URL (sqlite:///./data/project_fin.db -> ./data/project_fin.db)
+    db_path = db_url.replace("sqlite:///", "")
+    from app.migrations import run_all
+    run_all(db_path)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _run_migrations()
+
     from app.database import Base, engine
     Base.metadata.create_all(bind=engine)
     from app.seed import seed_data
