@@ -9,6 +9,7 @@ class AssetClassCreate(BaseModel):
     target_weight: float = 0.0
     country: str = "US"
     type: Literal["stock", "crypto", "fixed_income"] = "stock"
+    is_emergency_reserve: bool = False
 
 
 class AssetClassUpdate(BaseModel):
@@ -16,6 +17,7 @@ class AssetClassUpdate(BaseModel):
     target_weight: Optional[float] = None
     country: Optional[str] = None
     type: Literal["stock", "crypto", "fixed_income"] | None = None
+    is_emergency_reserve: Optional[bool] = None
 
 
 class AssetClassResponse(BaseModel):
@@ -25,6 +27,7 @@ class AssetClassResponse(BaseModel):
     target_weight: float
     country: str
     type: str
+    is_emergency_reserve: bool
     created_at: datetime
     updated_at: datetime
 
