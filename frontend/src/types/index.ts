@@ -12,6 +12,7 @@ export interface AssetClass {
   target_weight: number;
   country: string;
   type: AssetClassType;
+  is_emergency_reserve: boolean;
   created_at: string;
   updated_at: string;
 }
