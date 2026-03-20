@@ -1,8 +1,10 @@
 from datetime import date, timedelta
+from decimal import Decimal
 
 import pytest
 
 from app.models import User, AssetClass, AssetWeight, Transaction
+from app.money import Money, Currency
 from app.services.portfolio import PortfolioService
 
 
@@ -39,8 +41,8 @@ def _create_tx(db, user_id, asset_class_id, symbol, tx_type, quantity, unit_pric
         asset_symbol=symbol,
         type=tx_type,
         quantity=quantity,
-        unit_price=unit_price,
-        total_value=quantity * unit_price,
+        unit_price=Decimal(str(unit_price)),
+        total_value=Decimal(str(quantity)) * Decimal(str(unit_price)),
         currency="USD",
         date=tx_date,
     )
@@ -60,7 +62,7 @@ def _create_fixed_income_tx(db, user_id, asset_class_id, symbol, tx_type, total_
         type=tx_type,
         quantity=None,
         unit_price=None,
-        total_value=total_value,
+        total_value=Decimal(str(total_value)),
         currency="BRL",
         date=tx_date,
     )
@@ -86,8 +88,10 @@ class TestGetHoldings:
 
         aapl = next(h for h in holdings if h["symbol"] == "AAPL")
         assert aapl["quantity"] == 10
-        assert aapl["avg_price"] == 150.0
-        assert aapl["total_cost"] == 1500.0
+        assert aapl["avg_price"].amount == Decimal("150")
+        assert aapl["avg_price"].currency is Currency.USD
+        assert aapl["total_cost"].amount == Decimal("1500")
+        assert aapl["total_cost"].currency is Currency.USD
 
     def test_get_holdings_with_sells(self, db):
         user = _create_user(db)
@@ -105,9 +109,10 @@ class TestGetHoldings:
         # net quantity = 10 + 5 - 3 = 12
         assert aapl["quantity"] == 12
         # avg buy price = (10*150 + 5*160) / 15 = 2300/15 ≈ 153.33
-        assert round(aapl["avg_price"], 2) == 153.33
+        assert round(aapl["avg_price"].amount, 2) == Decimal("153.33")
         # total_cost = avg_price (unrounded) * quantity = (2300/15) * 12 = 1840.0
-        assert round(aapl["total_cost"], 2) == 1840.0
+        assert round(aapl["total_cost"].amount, 2) == Decimal("1840.00")
+        assert aapl["total_cost"].currency is Currency.USD
 
 
     def test_get_holdings_fixed_income(self, db):
@@ -124,7 +129,8 @@ class TestGetHoldings:
         assert cdb["symbol"] == "CDB Banco X"
         assert cdb["quantity"] is None
         assert cdb["avg_price"] is None
-        assert cdb["total_cost"] == 15000.0
+        assert cdb["total_cost"].amount == Decimal("15000")
+        assert cdb["total_cost"].currency is Currency.BRL
 
     def test_get_holdings_mixed_stock_and_fixed_income(self, db):
         user = _create_user(db)
@@ -145,7 +151,7 @@ class TestGetHoldings:
 
         cdb = next(h for h in holdings if h["symbol"] == "CDB Banco X")
         assert cdb["quantity"] is None
-        assert cdb["total_cost"] == 10000.0
+        assert cdb["total_cost"].amount == Decimal("10000")
 
     def test_get_holdings_fixed_income_with_sell(self, db):
         user = _create_user(db)
@@ -158,7 +164,7 @@ class TestGetHoldings:
 
         assert len(holdings) == 1
         cdb = holdings[0]
-        assert cdb["total_cost"] == 7000.0
+        assert cdb["total_cost"].amount == Decimal("7000")
 
     def test_get_holdings_fixed_income_fully_sold(self, db):
         user = _create_user(db)

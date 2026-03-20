@@ -1,4 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from decimal import Decimal
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.stock_split import SplitEventType
 from app.models.transaction import Transaction
+from app.money import Money, Currency
 from app.services.market_data import MarketDataService, CRYPTO_COINGECKO_MAP, CRYPTO_CLASS_NAMES
 
 
@@ -55,8 +57,8 @@ class PortfolioService:
 
             if buy_qty is None:
                 # Value-based (fixed income): no quantity, just total_value
-                buy_value = buy_agg.total_value or 0
-                sell_value = (
+                buy_value_raw = buy_agg.total_value or Decimal("0")
+                sell_value_raw = (
                     self.db.query(func.sum(Transaction.total_value))
                     .filter(
                         Transaction.user_id == user_id,
@@ -64,9 +66,9 @@ class PortfolioService:
                         Transaction.type == "sell",
                     )
                     .scalar()
-                ) or 0
-                net_value = buy_value - sell_value
-                if net_value <= 0:
+                ) or Decimal("0")
+                net_value_raw = buy_value_raw - sell_value_raw
+                if net_value_raw <= 0:
                     continue
                 tx_currency = (
                     self.db.query(Transaction.currency)
@@ -78,14 +80,16 @@ class PortfolioService:
                     .order_by(Transaction.date.desc())
                     .first()
                 )
+                currency_code = tx_currency[0] if tx_currency else "BRL"
+                currency = Currency.from_code(currency_code)
                 holdings.append(
                     {
                         "symbol": symbol,
                         "asset_class_id": asset_class_id,
                         "quantity": None,
                         "avg_price": None,
-                        "total_cost": net_value,
-                        "currency": tx_currency[0] if tx_currency else "BRL",
+                        "total_cost": Money(net_value_raw, currency),
+                        "currency": currency,
                     }
                 )
             else:
@@ -98,7 +102,7 @@ class PortfolioService:
                 if not symbol_splits:
                     # Fast path: no splits, use original aggregate logic
                     buy_qty = buy_qty or 0
-                    buy_value = buy_agg.total_value or 0
+                    buy_value_raw = buy_agg.total_value or Decimal("0")
                     sell_agg = (
                         self.db.query(func.sum(Transaction.quantity).label("total_qty"))
                         .filter(
@@ -112,8 +116,8 @@ class PortfolioService:
                     net_qty = buy_qty - sell_qty
                     if net_qty <= 0:
                         continue
-                    avg_price = buy_value / buy_qty if buy_qty > 0 else 0
-                    total_cost = avg_price * net_qty
+                    avg_price_raw = buy_value_raw / Decimal(str(buy_qty)) if buy_qty > 0 else Decimal("0")
+                    total_cost_raw = avg_price_raw * Decimal(str(net_qty))
                 else:
                     # Slow path: per-transaction split adjustment
                     transactions = (
@@ -127,7 +131,7 @@ class PortfolioService:
                     )
 
                     adjusted_buy_qty = 0.0
-                    adjusted_buy_value = 0.0
+                    adjusted_buy_value = Decimal("0")
                     adjusted_sell_qty = 0.0
 
                     for tx in transactions:
@@ -150,8 +154,8 @@ class PortfolioService:
                     net_qty = adjusted_buy_qty - adjusted_sell_qty
                     if net_qty <= 0:
                         continue
-                    avg_price = adjusted_buy_value / adjusted_buy_qty if adjusted_buy_qty > 0 else 0
-                    total_cost = avg_price * net_qty
+                    avg_price_raw = adjusted_buy_value / Decimal(str(adjusted_buy_qty)) if adjusted_buy_qty > 0 else Decimal("0")
+                    total_cost_raw = avg_price_raw * Decimal(str(net_qty))
 
                 tx_currency = (
                     self.db.query(Transaction.currency)
@@ -163,15 +167,17 @@ class PortfolioService:
                     .order_by(Transaction.date.desc())
                     .first()
                 )
+                currency_code = tx_currency[0] if tx_currency else "BRL"
+                currency = Currency.from_code(currency_code)
 
                 holdings.append(
                     {
                         "symbol": symbol,
                         "asset_class_id": asset_class_id,
                         "quantity": net_qty,
-                        "avg_price": avg_price,
-                        "total_cost": total_cost,
-                        "currency": tx_currency[0] if tx_currency else "BRL",
+                        "avg_price": Money(avg_price_raw, currency),
+                        "total_cost": Money(total_cost_raw, currency),
+                        "currency": currency,
                     }
                 )
 
@@ -239,7 +245,7 @@ class PortfolioService:
         qty_holdings = [h for h in holdings if h["quantity"] is not None]
         val_holdings = [h for h in holdings if h["quantity"] is None]
 
-        def fetch_price(holding: dict) -> tuple[str, float | None]:
+        def fetch_price(holding: dict) -> tuple[str, "Money | None"]:
             symbol = holding["symbol"]
             class_info = class_map.get(holding["asset_class_id"], {})
             class_name = class_info.get("name", "")
@@ -251,7 +257,7 @@ class PortfolioService:
             return symbol, market_data.get_quote_safe(symbol, is_crypto=False, country=country, db=db)
 
         # Fetch prices in parallel (only for quantity-based holdings)
-        prices: dict[str, float | None] = {}
+        prices: dict[str, "Money | None"] = {}
         with ThreadPoolExecutor(max_workers=10) as executor:
             futures = {executor.submit(fetch_price, h): h for h in qty_holdings}
             for future in as_completed(futures):
@@ -259,13 +265,13 @@ class PortfolioService:
                 prices[symbol] = price
 
         # Calculate total portfolio value
-        total_value = 0.0
+        total_value = Decimal("0")
         for h in qty_holdings:
             price = prices.get(h["symbol"])
             if price is not None:
-                total_value += h["quantity"] * price
+                total_value += price.amount * Decimal(str(h["quantity"]))
         for h in val_holdings:
-            total_value += h["total_cost"]
+            total_value += h["total_cost"].amount
 
         # Enrich each holding
         enriched = []
@@ -274,14 +280,10 @@ class PortfolioService:
             class_target = class_info.get("target_weight", 0.0)
             asset_target = weight_map.get(h["symbol"], 0.0)
             effective_target = class_target * asset_target / 100
-            country = class_info.get("country", "US")
-            currency = "BRL" if country == "BR" else "USD"
-
             if h["quantity"] is None:
-                # Fixed income: use the currency from the transaction, not from country
-                holding_currency = h.get("currency", currency)
-                current_value = h["total_cost"]
-                actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
+                # Fixed income: use the currency from the holding
+                current_value = h["total_cost"]  # already Money
+                actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
                 enriched.append({
                     **h,
                     "current_price": None,
@@ -289,20 +291,18 @@ class PortfolioService:
                     "gain_loss": None,
                     "target_weight": effective_target,
                     "actual_weight": actual_weight,
-                    "currency": holding_currency,
                 })
             else:
                 price = prices.get(h["symbol"])
                 if price is not None:
-                    current_value = h["quantity"] * price
-                    gain_loss = (price - h["avg_price"]) * h["quantity"]
-                    actual_weight = (current_value / total_value * 100) if total_value > 0 else 0.0
+                    current_value = price * Decimal(str(h["quantity"]))  # Money * scalar -> Money
+                    gain_loss = (price - h["avg_price"]) * Decimal(str(h["quantity"]))  # Money - Money -> Money, then * scalar
+                    actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
                 else:
                     current_value = None
                     gain_loss = None
                     actual_weight = None
 
-                holding_currency = h.get("currency", currency)
                 enriched.append({
                     **h,
                     "current_price": price,
@@ -310,7 +310,6 @@ class PortfolioService:
                     "gain_loss": gain_loss,
                     "target_weight": effective_target,
                     "actual_weight": actual_weight,
-                    "currency": holding_currency,
                 })
 
         return enriched
