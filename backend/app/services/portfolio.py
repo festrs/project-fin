@@ -197,6 +197,8 @@ class PortfolioService:
 
         result = []
         for ac in asset_classes:
+            if ac.is_emergency_reserve:
+                continue
             class_holdings = holdings_by_class.get(ac.id, [])
             if not class_holdings:
                 continue
