@@ -80,10 +80,14 @@ class YFinanceProvider:
             info = ticker.info
 
             # IPO years
+            from datetime import datetime, timezone
             epoch = info.get("firstTradeDateEpochUtc") or info.get("firstTradeDate")
+            epoch_ms = info.get("firstTradeDateMilliseconds")
             if epoch:
-                from datetime import datetime, timezone
                 ipo_date = datetime.fromtimestamp(epoch, tz=timezone.utc)
+                ipo_years = (datetime.now(timezone.utc) - ipo_date).days // 365
+            elif epoch_ms:
+                ipo_date = datetime.fromtimestamp(epoch_ms / 1000, tz=timezone.utc)
                 ipo_years = (datetime.now(timezone.utc) - ipo_date).days // 365
             else:
                 ipo_years = None
