@@ -49,7 +49,12 @@ def portfolio_summary(
     class_map = {}
     weight_map = {}
     for ac in asset_classes:
-        class_map[ac.id] = {"name": ac.name, "target_weight": ac.target_weight, "country": ac.country}
+        class_map[ac.id] = {
+            "name": ac.name,
+            "target_weight": ac.target_weight,
+            "country": ac.country,
+            "is_emergency_reserve": ac.is_emergency_reserve,
+        }
         weights = db.query(AssetWeight).filter(AssetWeight.asset_class_id == ac.id).all()
         for aw in weights:
             weight_map[aw.symbol] = aw.target_weight

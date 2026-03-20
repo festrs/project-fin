@@ -265,19 +265,24 @@ class PortfolioService:
                 symbol, price = future.result()
                 prices[symbol] = price
 
-        # Calculate total portfolio value
+        # Calculate total portfolio value (excluding emergency reserve)
         total_value = Decimal("0")
         for h in qty_holdings:
+            if class_map.get(h["asset_class_id"], {}).get("is_emergency_reserve"):
+                continue
             price = prices.get(h["symbol"])
             if price is not None:
                 total_value += price.amount * Decimal(str(h["quantity"]))
         for h in val_holdings:
+            if class_map.get(h["asset_class_id"], {}).get("is_emergency_reserve"):
+                continue
             total_value += h["total_cost"].amount
 
         # Enrich each holding
         enriched = []
         for h in holdings:
             class_info = class_map.get(h["asset_class_id"], {})
+            is_reserve = class_info.get("is_emergency_reserve", False)
             class_target = class_info.get("target_weight", 0.0)
             asset_target = weight_map.get(h["symbol"], 0.0)
             effective_target = class_target * asset_target / 100
@@ -285,6 +290,8 @@ class PortfolioService:
                 # Fixed income: use the currency from the holding
                 current_value = h["total_cost"]  # already Money
                 actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
+                if is_reserve:
+                    actual_weight = 0.0
                 enriched.append({
                     **h,
                     "current_price": None,
@@ -299,11 +306,15 @@ class PortfolioService:
                     current_value = price * Decimal(str(h["quantity"]))  # Money * scalar -> Money
                     gain_loss = (price - h["avg_price"]) * Decimal(str(h["quantity"]))  # Money - Money -> Money, then * scalar
                     actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
+                    if is_reserve:
+                        actual_weight = 0.0
                 elif price is not None:
                     # Currency mismatch between market data and transaction — use price currency
                     current_value = price * Decimal(str(h["quantity"]))
                     gain_loss = None  # Can't compute gain/loss across currencies
                     actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
+                    if is_reserve:
+                        actual_weight = 0.0
                 else:
                     current_value = None
                     gain_loss = None
