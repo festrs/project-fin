@@ -13,18 +13,25 @@ export interface ClassSummary {
   targetWeight: number;
   diff: number;
   currency: string;
+  isEmergencyReserve: boolean;
+}
+
+export interface ClassSummaryResult {
+  regular: ClassSummary[];
+  reserve: ClassSummary | null;
+  grandTotalBRL: number;
 }
 
 interface DividendClassData {
   asset_class_id: string;
   class_name: string;
-  annual_income: number;
+  annual_income: { amount: string; currency: string };
   currency: string;
 }
 
 interface DividendsResponse {
   dividends: DividendClassData[];
-  total_annual_income: number;
+  total_annual_income: { amount: string; currency: string };
 }
 
 interface ClassSummaryTableProps {
@@ -52,7 +59,7 @@ export function computeClassSummaries(
   holdings: Holding[],
   assetClasses: AssetClass[],
   usdToBrl: number
-): ClassSummary[] {
+): ClassSummaryResult {
   const classMap = new Map(assetClasses.map((ac) => [ac.id, ac]));
 
   const totals = new Map<string, { value: number; currency: string }>();
@@ -64,22 +71,30 @@ export function computeClassSummaries(
     totals.set(h.asset_class_id, existing);
   }
 
+  // Separate regular and reserve values
   let grandTotalBRL = 0;
   const classValues: { classId: string; value: number; valueBRL: number; currency: string }[] = [];
+  let reserveValue: { classId: string; value: number; valueBRL: number; currency: string } | null = null;
+
   for (const [classId, { value, currency }] of totals) {
+    const ac = classMap.get(classId);
     const valueBRL = currency === "USD" ? value * usdToBrl : value;
-    grandTotalBRL += valueBRL;
-    classValues.push({ classId, value, valueBRL, currency });
+    if (ac?.is_emergency_reserve) {
+      reserveValue = { classId, value, valueBRL, currency };
+    } else {
+      grandTotalBRL += valueBRL;
+      classValues.push({ classId, value, valueBRL, currency });
+    }
   }
 
-  const summaries: ClassSummary[] = [];
+  const regular: ClassSummary[] = [];
   const seenClassIds = new Set<string>();
 
   for (const { classId, value, valueBRL, currency } of classValues) {
     const ac = classMap.get(classId);
     const percentage = grandTotalBRL > 0 ? (valueBRL / grandTotalBRL) * 100 : 0;
     const targetWeight = ac?.target_weight ?? 0;
-    summaries.push({
+    regular.push({
       classId,
       className: ac?.name ?? classId,
       totalValue: value,
@@ -88,14 +103,15 @@ export function computeClassSummaries(
       targetWeight,
       diff: percentage - targetWeight,
       currency,
+      isEmergencyReserve: false,
     });
     seenClassIds.add(classId);
   }
 
-  // Include asset classes with no holdings yet
+  // Include asset classes with no holdings yet (excluding reserve)
   for (const ac of assetClasses) {
-    if (!seenClassIds.has(ac.id)) {
-      summaries.push({
+    if (!seenClassIds.has(ac.id) && !ac.is_emergency_reserve) {
+      regular.push({
         classId: ac.id,
         className: ac.name,
         totalValue: 0,
@@ -104,12 +120,31 @@ export function computeClassSummaries(
         targetWeight: ac.target_weight,
         diff: -ac.target_weight,
         currency: "BRL",
+        isEmergencyReserve: false,
       });
     }
   }
 
-  summaries.sort((a, b) => b.totalValueBRL - a.totalValueBRL);
-  return summaries;
+  regular.sort((a, b) => b.totalValueBRL - a.totalValueBRL);
+
+  // Build reserve summary
+  let reserve: ClassSummary | null = null;
+  const reserveClass = assetClasses.find((ac) => ac.is_emergency_reserve);
+  if (reserveClass) {
+    reserve = {
+      classId: reserveClass.id,
+      className: reserveClass.name,
+      totalValue: reserveValue?.value ?? 0,
+      totalValueBRL: reserveValue?.valueBRL ?? 0,
+      percentage: 0,
+      targetWeight: 0,
+      diff: 0,
+      currency: reserveValue?.currency ?? "BRL",
+      isEmergencyReserve: true,
+    };
+  }
+
+  return { regular, reserve, grandTotalBRL };
 }
 
 function computeManualDividendsByClass(dividends: Transaction[]): Map<string, { total: number; currency: string }> {
@@ -217,7 +252,7 @@ export function ClassSummaryTable({
   if (estimatedDividends) {
     for (const d of estimatedDividends.dividends) {
       estimatedDivByClass.set(d.asset_class_id, {
-        annual_income: d.annual_income,
+        annual_income: parseFloat(d.annual_income.amount),
         currency: d.currency,
       });
     }
@@ -469,7 +504,7 @@ export function ClassSummaryTable({
                       : ""}
                   </td>
                   <td className="py-2 px-2 text-right">{s.percentage.toFixed(2)}%</td>
-                  <td className="py-2 px-2 text-right">
+                  <td className="py-2 px-2 text-right" onClick={isEditing ? (e) => e.stopPropagation() : undefined}>
                     {isEditing ? (
                       <input
                         type="number"
@@ -479,6 +514,7 @@ export function ClassSummaryTable({
                         className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-2.5 py-1.5 text-base w-20 text-right focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
                         value={editedWeight ?? ""}
                         onClick={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onChange={(e) => handleWeightChange(s.classId, e.target.value)}
                       />
                     ) : (
