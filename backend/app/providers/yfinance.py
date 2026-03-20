@@ -1,5 +1,6 @@
 import logging
 import math
+from decimal import Decimal
 
 import yfinance as yf
 
@@ -54,7 +55,7 @@ class YFinanceProvider:
                 ex_date = ts.date()
                 records.append(DividendRecord(
                     dividend_type="Dividend",
-                    value=round(float(amount), 6),
+                    value=Decimal(str(amount)).quantize(Decimal("0.000001")),
                     record_date=ex_date,
                     ex_date=ex_date,
                     payment_date=None,

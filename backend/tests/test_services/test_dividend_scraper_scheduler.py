@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from unittest.mock import MagicMock
 
 import pytest
@@ -92,7 +93,7 @@ class TestDividendScheduler:
         dados_provider.scrape_dividends.return_value = []
         yfinance_provider.get_dividends.return_value = [
             DividendRecord(
-                dividend_type="Dividend", value=0.25,
+                dividend_type="Dividend", value=Decimal("0.25"),
                 record_date=date(2025, 2, 7), ex_date=date(2025, 2, 7),
                 payment_date=None,
             ),
@@ -111,7 +112,7 @@ class TestDividendScheduler:
 
         dados_provider.scrape_dividends.return_value = [
             DividendRecord(
-                dividend_type="Dividendo", value=1.50,
+                dividend_type="Dividendo", value=Decimal("1.50"),
                 record_date=date(2025, 10, 22), ex_date=date(2025, 10, 23),
                 payment_date=date(2025, 11, 28),
             ),
@@ -136,7 +137,7 @@ class TestDividendScheduler:
         dados_provider.scrape_dividends.return_value = []
         yfinance_provider.get_dividends.return_value = [
             DividendRecord(
-                dividend_type="Dividend", value=0.25,
+                dividend_type="Dividend", value=Decimal("0.25"),
                 record_date=date(2025, 2, 7), ex_date=date(2025, 2, 7),
                 payment_date=None,
             ),

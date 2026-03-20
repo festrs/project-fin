@@ -1,5 +1,6 @@
 import logging
 from datetime import date
+from decimal import Decimal
 
 import httpx
 from bs4 import BeautifulSoup
@@ -69,6 +70,12 @@ def _parse_value(text: str) -> float:
 
     num = float(cleaned.replace(".", "").replace(",", "."))
     return num * multiplier
+
+
+def _parse_monetary_value(text: str) -> Decimal:
+    """Parse a Brazilian-formatted monetary value string to Decimal."""
+    raw = _parse_value(text)
+    return Decimal(str(raw))
 
 
 class DadosDeMercadoProvider:
@@ -345,7 +352,7 @@ class DadosDeMercadoProvider:
             try:
                 # Real column order: Tipo, Valor, Data Com, Data Ex, Pagamento
                 dividend_type = cells[0].get_text(strip=True)
-                value = _parse_value(cells[1].get_text(strip=True))
+                value = _parse_monetary_value(cells[1].get_text(strip=True))
                 record_date = _parse_date(cells[2].get_text(strip=True))
                 ex_date = _parse_date(cells[3].get_text(strip=True))
                 payment_date = _parse_date(cells[4].get_text(strip=True))

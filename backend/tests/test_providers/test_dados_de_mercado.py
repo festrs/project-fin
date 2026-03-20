@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 from app.providers.dados_de_mercado import DadosDeMercadoProvider, DividendRecord
@@ -31,13 +32,13 @@ class TestDadosDeMercadoProvider:
         assert len(results) == 2
 
         assert results[0].dividend_type == "Dividendo"
-        assert results[0].value == 0.752895
+        assert results[0].value == Decimal("0.752895")
         assert results[0].record_date == date(2025, 10, 22)
         assert results[0].ex_date == date(2025, 10, 23)
         assert results[0].payment_date == date(2025, 11, 28)
 
         assert results[1].dividend_type == "JCP"
-        assert results[1].value == 1.234567
+        assert results[1].value == Decimal("1.234567")
         assert results[1].payment_date is None
 
     def test_strips_sa_suffix_in_url(self):
@@ -83,19 +84,19 @@ class TestDividendRecord:
     def test_dataclass_fields(self):
         record = DividendRecord(
             dividend_type="Dividendo",
-            value=1.50,
+            value=Decimal("1.50"),
             record_date=date(2025, 10, 22),
             ex_date=date(2025, 10, 23),
             payment_date=date(2025, 11, 28),
         )
         assert record.dividend_type == "Dividendo"
-        assert record.value == 1.50
+        assert record.value == Decimal("1.50")
         assert record.payment_date == date(2025, 11, 28)
 
     def test_payment_date_optional(self):
         record = DividendRecord(
             dividend_type="JCP",
-            value=0.75,
+            value=Decimal("0.75"),
             record_date=date(2025, 6, 15),
             ex_date=date(2025, 6, 16),
             payment_date=None,
