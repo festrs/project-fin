@@ -16,9 +16,6 @@ class Settings(BaseSettings):
     dividend_scraper_hour: int = 6
     dividend_scraper_delay: float = 2.0
     dividend_us_delay: float = 1.0
-    enable_fundamentals_scorer: bool = True
-    fundamentals_scorer_day: str = "sun"
-    fundamentals_scorer_hour: int = 3
     enable_split_checker: bool = True
     split_checker_hour: int = 10
 

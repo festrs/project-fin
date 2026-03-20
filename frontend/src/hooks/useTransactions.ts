@@ -25,7 +25,7 @@ export function useTransactions(symbol?: string) {
   }, [symbol]);
 
   const createTransaction = useCallback(async (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => {
-    const res = await api.post<Transaction>("/transactions", data);
+    const res = await api.post<Transaction & { fundamentals_refresh_started?: boolean }>("/transactions", data);
     setTransactions((prev) => [...prev, res.data]);
     return res.data;
   }, []);

@@ -1,13 +1,19 @@
+import logging
+import threading
 from datetime import date
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import SessionLocal, get_db
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
+from app.models.asset_class import AssetClass
+from app.models.fundamentals_score import FundamentalsScore
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionCreate, TransactionUpdate, TransactionResponse
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 
@@ -53,6 +59,22 @@ def list_transactions(
     return [_tx_to_response(tx) for tx in q.all()]
 
 
+def _trigger_fundamentals_refresh(symbol: str) -> None:
+    """Fetch fundamentals for a symbol in a background thread."""
+    def run():
+        db = SessionLocal()
+        try:
+            from app.routers.fundamentals import _refresh_score
+            _refresh_score(symbol, db)
+            logger.info("Fundamentals fetched for %s", symbol)
+        except Exception:
+            logger.exception("Failed to fetch fundamentals for %s", symbol)
+        finally:
+            db.close()
+
+    threading.Thread(target=run, daemon=True).start()
+
+
 @router.post("", status_code=201)
 @limiter.limit(CRUD_LIMIT)
 def create_transaction(
@@ -77,7 +99,19 @@ def create_transaction(
     db.add(tx)
     db.commit()
     db.refresh(tx)
-    return _tx_to_response(tx)
+
+    # Trigger background fundamentals fetch for stock assets without existing scores
+    fundamentals_refresh_started = False
+    asset_class = db.query(AssetClass).filter_by(id=body.asset_class_id).first()
+    if asset_class and asset_class.type == "stock":
+        existing_score = db.query(FundamentalsScore).filter_by(symbol=body.asset_symbol).first()
+        if not existing_score:
+            _trigger_fundamentals_refresh(body.asset_symbol)
+            fundamentals_refresh_started = True
+
+    response = _tx_to_response(tx)
+    response["fundamentals_refresh_started"] = fundamentals_refresh_started
+    return response
 
 
 @router.put("/{tx_id}")

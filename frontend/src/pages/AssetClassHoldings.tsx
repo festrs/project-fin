@@ -26,6 +26,7 @@ export default function AssetClassHoldings() {
   const [quarantineStatuses, setQuarantineStatuses] = useState<QuarantineStatus[]>([]);
   const [dividendsBySymbol, setDividendsBySymbol] = useState<Map<string, { income: number; currency: string }>>(new Map());
   const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+  const [fundamentalsLoading, setFundamentalsLoading] = useState<string | null>(null);
 
   const assetClass = assetClasses.find((ac) => ac.id === assetClassId);
   const classHoldings = holdings.filter((h) => h.asset_class_id === assetClassId);
@@ -92,9 +93,32 @@ export default function AssetClassHoldings() {
   }, [fetchExchangeRates, fetchQuarantineStatuses, fetchDividends]);
 
   const handleCreateTransaction = async (data: Omit<Transaction, "id" | "user_id" | "created_at" | "updated_at">) => {
-    await createTransaction(data);
+    const result = await createTransaction(data);
     refreshPortfolio();
     fetchQuarantineStatuses();
+
+    // Poll for fundamentals if a background refresh was started
+    if (result && 'fundamentals_refresh_started' in result && result.fundamentals_refresh_started) {
+      const symbol = data.asset_symbol;
+      setFundamentalsLoading(symbol);
+      const poll = async (attempts: number) => {
+        if (attempts <= 0) {
+          setFundamentalsLoading(null);
+          return;
+        }
+        await new Promise((r) => setTimeout(r, 5000));
+        try {
+          await api.get(`/fundamentals/${symbol}`);
+          // Score exists now
+          setFundamentalsLoading(null);
+          refreshScores();
+        } catch {
+          // Not ready yet, keep polling
+          poll(attempts - 1);
+        }
+      };
+      poll(6); // Poll up to 6 times (30s total)
+    }
   };
 
   const handleUpdateTransaction = async (id: string, data: Partial<Transaction>) => {
@@ -153,6 +177,16 @@ export default function AssetClassHoldings() {
         onSubmit={handleCreateTransaction}
         onCancel={() => {/* no-op: form is always visible */}}
       />
+
+      {fundamentalsLoading && (
+        <div className="flex items-center gap-2 px-4 py-3 bg-[var(--glass-primary-soft)] border border-[var(--glass-border)] rounded-[10px] text-base text-primary">
+          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+          <span>Fetching fundamentals for <strong>{fundamentalsLoading}</strong>...</span>
+        </div>
+      )}
 
       <HoldingsTable
         holdings={classHoldings}
