@@ -232,7 +232,8 @@ def portfolio_dividends(
         ct["annual_income"] = {"amount": str(ct["annual_income"].quantize(Decimal("0.01"))), "currency": ct["currency"]}
 
     total_annual = sum(
-        Decimal(ct["annual_income"]["amount"]) for ct in class_totals.values()
+        (Decimal(ct["annual_income"]["amount"]) for ct in class_totals.values()),
+        Decimal("0"),
     )
 
     return {
