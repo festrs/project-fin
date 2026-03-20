@@ -135,7 +135,21 @@ def _001_decimal_money(cur: sqlite3.Cursor) -> None:
     logger.info("  Converted %d dividend records to Decimal", len(rows))
 
 
+def _002_emergency_reserve_flag(cur: sqlite3.Cursor) -> None:
+    """Add is_emergency_reserve column to asset_classes table."""
+    # Skip if asset_classes table doesn't exist (fresh DB)
+    if not _table_exists(cur, "asset_classes"):
+        return
+
+    # Check if column already exists (idempotent)
+    columns = _get_columns(cur, "asset_classes")
+    if "is_emergency_reserve" not in columns:
+        cur.execute("ALTER TABLE asset_classes ADD COLUMN is_emergency_reserve BOOLEAN NOT NULL DEFAULT 0")
+        logger.info("  Added is_emergency_reserve column to asset_classes")
+
+
 # Register migrations in order
 _MIGRATIONS = [
     _001_decimal_money,
+    _002_emergency_reserve_flag,
 ]
