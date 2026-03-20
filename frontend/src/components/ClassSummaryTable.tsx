@@ -56,7 +56,7 @@ export function computeClassSummaries(
   const classMap = new Map(assetClasses.map((ac) => [ac.id, ac]));
 
   const totals = new Map<string, { value: number; currency: string }>();
-  for (const h of holdings) {
+  for (const h of holdings.filter((h) => classMap.has(h.asset_class_id))) {
     const val = moneyToNumber(h.current_value ?? h.total_cost);
     const cur = h.total_cost.currency;
     const existing = totals.get(h.asset_class_id) ?? { value: 0, currency: cur };
