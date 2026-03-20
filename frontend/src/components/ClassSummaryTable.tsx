@@ -73,6 +73,8 @@ export function computeClassSummaries(
   }
 
   const summaries: ClassSummary[] = [];
+  const seenClassIds = new Set<string>();
+
   for (const { classId, value, valueBRL, currency } of classValues) {
     const ac = classMap.get(classId);
     const percentage = grandTotalBRL > 0 ? (valueBRL / grandTotalBRL) * 100 : 0;
@@ -87,6 +89,23 @@ export function computeClassSummaries(
       diff: percentage - targetWeight,
       currency,
     });
+    seenClassIds.add(classId);
+  }
+
+  // Include asset classes with no holdings yet
+  for (const ac of assetClasses) {
+    if (!seenClassIds.has(ac.id)) {
+      summaries.push({
+        classId: ac.id,
+        className: ac.name,
+        totalValue: 0,
+        totalValueBRL: 0,
+        percentage: 0,
+        targetWeight: ac.target_weight,
+        diff: -ac.target_weight,
+        currency: "BRL",
+      });
+    }
   }
 
   summaries.sort((a, b) => b.totalValueBRL - a.totalValueBRL);
