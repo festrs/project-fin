@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
 from sqlalchemy.orm import Session
@@ -11,7 +12,25 @@ from app.schemas.transaction import TransactionCreate, TransactionUpdate, Transa
 router = APIRouter(prefix="/api/transactions", tags=["transactions"])
 
 
-@router.get("", response_model=list[TransactionResponse])
+def _tx_to_response(tx: Transaction) -> dict:
+    return {
+        "id": tx.id,
+        "user_id": tx.user_id,
+        "asset_class_id": tx.asset_class_id,
+        "asset_symbol": tx.asset_symbol,
+        "type": tx.type,
+        "quantity": tx.quantity,
+        "unit_price": {"amount": str(tx.unit_price), "currency": tx.currency} if tx.unit_price is not None else None,
+        "total_value": {"amount": str(tx.total_value), "currency": tx.currency},
+        "tax_amount": {"amount": str(tx.tax_amount), "currency": tx.currency} if tx.tax_amount is not None else None,
+        "date": tx.date.isoformat(),
+        "notes": tx.notes,
+        "created_at": tx.created_at.isoformat() if tx.created_at else None,
+        "updated_at": tx.updated_at.isoformat() if tx.updated_at else None,
+    }
+
+
+@router.get("")
 @limiter.limit(CRUD_LIMIT)
 def list_transactions(
     request: Request,
@@ -31,10 +50,10 @@ def list_transactions(
         q = q.filter(Transaction.date >= date_from)
     if date_to:
         q = q.filter(Transaction.date <= date_to)
-    return q.all()
+    return [_tx_to_response(tx) for tx in q.all()]
 
 
-@router.post("", response_model=TransactionResponse, status_code=201)
+@router.post("", status_code=201)
 @limiter.limit(CRUD_LIMIT)
 def create_transaction(
     request: Request,
@@ -48,20 +67,20 @@ def create_transaction(
         asset_symbol=body.asset_symbol,
         type=body.type,
         quantity=body.quantity,
-        unit_price=body.unit_price,
-        total_value=body.total_value,
-        currency=body.currency,
-        tax_amount=body.tax_amount,
+        unit_price=Decimal(body.unit_price.amount) if body.unit_price else None,
+        total_value=Decimal(body.total_value.amount),
+        currency=body.total_value.currency,
+        tax_amount=Decimal(body.tax_amount.amount) if body.tax_amount else None,
         date=body.date,
         notes=body.notes,
     )
     db.add(tx)
     db.commit()
     db.refresh(tx)
-    return tx
+    return _tx_to_response(tx)
 
 
-@router.put("/{tx_id}", response_model=TransactionResponse)
+@router.put("/{tx_id}")
 @limiter.limit(CRUD_LIMIT)
 def update_transaction(
     request: Request,
@@ -73,11 +92,19 @@ def update_transaction(
     tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == x_user_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
-    for field, value in body.model_dump(exclude_unset=True).items():
-        setattr(tx, field, value)
+    updates = body.model_dump(exclude_unset=True)
+    for field, value in updates.items():
+        if field in ("unit_price", "total_value", "tax_amount") and value is not None:
+            setattr(tx, field, Decimal(value["amount"]))
+            if field == "total_value":
+                tx.currency = value["currency"]
+        elif field == "currency":
+            pass  # deprecated, skip
+        else:
+            setattr(tx, field, value)
     db.commit()
     db.refresh(tx)
-    return tx
+    return _tx_to_response(tx)
 
 
 @router.delete("/{tx_id}", status_code=204)

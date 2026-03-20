@@ -1,6 +1,7 @@
 import logging
 import time
 from datetime import date
+from decimal import Decimal
 
 import httpx
 from fastapi import APIRouter, Depends, Header, Request
@@ -22,6 +23,14 @@ router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
 # Simple in-memory cache for exchange rate
 _fx_cache: dict[str, tuple[float, float]] = {}  # pair -> (rate, timestamp)
 _FX_CACHE_TTL = 600  # 10 minutes
+
+
+def _money_to_dict(m) -> dict | None:
+    if m is None:
+        return None
+    if isinstance(m, dict):
+        return m  # already serialized
+    return {"amount": str(m.amount), "currency": m.currency.code}
 
 
 @router.get("/summary")
@@ -46,7 +55,21 @@ def portfolio_summary(
 
     market_data = get_market_data_service()
     enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data, db=db)
-    return {"holdings": enriched}
+    enriched_serialized = []
+    for h in enriched:
+        enriched_serialized.append({
+            "symbol": h["symbol"],
+            "asset_class_id": h["asset_class_id"],
+            "quantity": h["quantity"],
+            "avg_price": _money_to_dict(h.get("avg_price")),
+            "total_cost": _money_to_dict(h["total_cost"]),
+            "current_price": _money_to_dict(h.get("current_price")),
+            "current_value": _money_to_dict(h.get("current_value")),
+            "gain_loss": _money_to_dict(h.get("gain_loss")),
+            "target_weight": h.get("target_weight"),
+            "actual_weight": h.get("actual_weight"),
+        })
+    return {"holdings": enriched_serialized}
 
 
 @router.get("/performance")
@@ -58,8 +81,15 @@ def portfolio_performance(
 ):
     service = PortfolioService(db)
     holdings = service.get_holdings(x_user_id)
-    total_cost = sum(h["total_cost"] for h in holdings)
-    return {"holdings": holdings, "total_cost": total_cost}
+    total_cost = sum((h["total_cost"].amount for h in holdings), Decimal("0"))
+    holdings_serialized = []
+    for h in holdings:
+        hs = {**h}
+        hs["total_cost"] = _money_to_dict(h["total_cost"])
+        hs["avg_price"] = _money_to_dict(h.get("avg_price"))
+        hs["currency"] = h["currency"].code if hasattr(h.get("currency", ""), "code") else h.get("currency", "")
+        holdings_serialized.append(hs)
+    return {"holdings": holdings_serialized, "total_cost": str(total_cost)}
 
 
 @router.get("/allocation")
@@ -71,6 +101,9 @@ def portfolio_allocation(
 ):
     service = PortfolioService(db)
     allocation = service.get_allocation(x_user_id)
+    for ac_data in allocation:
+        for asset in ac_data["assets"]:
+            asset["total_cost"] = _money_to_dict(asset["total_cost"])
     return {"allocation": allocation}
 
 
@@ -127,7 +160,7 @@ def portfolio_dividends(
     ]
 
     # Single batch query for all dividends (unified BR + US)
-    div_map: dict[str, float] = {}
+    div_map: dict[str, Decimal] = {}
     if stock_symbols:
         rows = (
             db.query(DividendHistory.symbol, func.sum(DividendHistory.value))
@@ -150,7 +183,7 @@ def portfolio_dividends(
             .all()
         )
         for symbol, total in rows:
-            div_map[symbol] = float(total)
+            div_map[symbol] = total if isinstance(total, Decimal) else Decimal(str(total))
 
     results = []
     for holding in holdings:
@@ -161,20 +194,20 @@ def portfolio_dividends(
         if ac.name in CRYPTO_CLASS_NAMES or ac.name == "Stablecoins":
             continue
 
-        dps = div_map.get(symbol, 0)
+        dps = div_map.get(symbol, Decimal("0"))
         if dps <= 0:
             continue
 
-        annual_income = dps * holding["quantity"]
+        annual_income_val = dps * Decimal(str(holding["quantity"]))
         currency = "BRL" if ac.country == "BR" else "USD"
 
         results.append({
             "symbol": symbol,
             "asset_class_id": holding["asset_class_id"],
             "quantity": holding["quantity"],
-            "dividend_per_share": round(dps, 6),
+            "dividend_per_share": {"amount": str(dps), "currency": currency},
             "dividend_yield": 0,
-            "annual_income": round(annual_income, 2),
+            "annual_income": {"amount": str(annual_income_val.quantize(Decimal("0.01"))), "currency": currency},
             "currency": currency,
         })
 
@@ -187,17 +220,24 @@ def portfolio_dividends(
             class_totals[cid] = {
                 "asset_class_id": cid,
                 "class_name": ac.name if ac else cid,
-                "annual_income": 0,
+                "annual_income": Decimal("0"),
                 "currency": r["currency"],
                 "assets": [],
             }
-        class_totals[cid]["annual_income"] += r["annual_income"]
-        class_totals[cid]["annual_income"] = round(class_totals[cid]["annual_income"], 2)
+        class_totals[cid]["annual_income"] += Decimal(r["annual_income"]["amount"])
         class_totals[cid]["assets"].append(r)
+
+    # Serialize class totals
+    for ct in class_totals.values():
+        ct["annual_income"] = {"amount": str(ct["annual_income"].quantize(Decimal("0.01"))), "currency": ct["currency"]}
+
+    total_annual = sum(
+        Decimal(ct["annual_income"]["amount"]) for ct in class_totals.values()
+    )
 
     return {
         "dividends": list(class_totals.values()),
-        "total_annual_income": round(sum(ct["annual_income"] for ct in class_totals.values()), 2),
+        "total_annual_income": {"amount": str(total_annual.quantize(Decimal("0.01"))), "currency": "mixed"},
     }
 
 

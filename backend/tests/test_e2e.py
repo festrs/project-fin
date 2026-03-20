@@ -1,6 +1,8 @@
 from datetime import date, timedelta
+from decimal import Decimal
 from unittest.mock import patch
 
+from app.money import Money, Currency
 from app.models.user import User
 from app.models.quarantine_config import QuarantineConfig
 
@@ -49,7 +51,7 @@ def test_full_investment_flow(client, db):
     )
     assert resp.status_code == 201
 
-    # 4. Record buy transactions
+    # 4. Record buy transactions (using MoneyInput format)
     today = date.today().isoformat()
 
     resp = client.post(
@@ -59,10 +61,9 @@ def test_full_investment_flow(client, db):
             "asset_symbol": "AAPL",
             "type": "buy",
             "quantity": 10,
-            "unit_price": 150.0,
-            "total_value": 1500.0,
-            "currency": "USD",
-            "tax_amount": 0.0,
+            "unit_price": {"amount": "150.0", "currency": "USD"},
+            "total_value": {"amount": "1500.0", "currency": "USD"},
+            "tax_amount": {"amount": "0.0", "currency": "USD"},
             "date": today,
         },
         headers=headers,
@@ -76,10 +77,9 @@ def test_full_investment_flow(client, db):
             "asset_symbol": "BTC",
             "type": "buy",
             "quantity": 0.01,
-            "unit_price": 65000.0,
-            "total_value": 650.0,
-            "currency": "USD",
-            "tax_amount": 0.0,
+            "unit_price": {"amount": "65000.0", "currency": "USD"},
+            "total_value": {"amount": "650.0", "currency": "USD"},
+            "tax_amount": {"amount": "0.0", "currency": "USD"},
             "date": today,
         },
         headers=headers,
@@ -106,10 +106,9 @@ def test_full_investment_flow(client, db):
             "asset_symbol": "BTC",
             "type": "buy",
             "quantity": 0.005,
-            "unit_price": 66000.0,
-            "total_value": 330.0,
-            "currency": "USD",
-            "tax_amount": 0.0,
+            "unit_price": {"amount": "66000.0", "currency": "USD"},
+            "total_value": {"amount": "330.0", "currency": "USD"},
+            "tax_amount": {"amount": "0.0", "currency": "USD"},
             "date": today,
         },
         headers=headers,
@@ -133,8 +132,8 @@ def test_full_investment_flow(client, db):
     # 9. Get recommendations (mock market data) — verify BTC is excluded
     with patch("app.services.recommendation.MarketDataService") as MockMarketData:
         mock_instance = MockMarketData.return_value
-        mock_instance.get_stock_quote.return_value = {"current_price": 175.0}
-        mock_instance.get_crypto_quote.return_value = {"current_price": 67000.0}
+        mock_instance.get_stock_quote.return_value = {"current_price": Money(Decimal("175"), Currency.USD)}
+        mock_instance.get_crypto_quote.return_value = {"current_price": Money(Decimal("67000"), Currency.USD)}
 
         resp = client.get(
             "/api/recommendations?count=5", headers=headers

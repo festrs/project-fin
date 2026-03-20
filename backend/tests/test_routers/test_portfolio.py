@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
@@ -19,10 +20,10 @@ def _setup_portfolio(db, user_id):
         asset_symbol="AAPL",
         type="buy",
         quantity=10,
-        unit_price=150.0,
-        total_value=1500.0,
+        unit_price=Decimal("150.0"),
+        total_value=Decimal("1500.0"),
         currency="USD",
-        tax_amount=0.0,
+        tax_amount=Decimal("0.0"),
         date=date(2025, 6, 1),
     )
     db.add(tx)
@@ -39,6 +40,9 @@ def test_portfolio_summary(client, default_user, db):
     assert len(data["holdings"]) == 1
     assert data["holdings"][0]["symbol"] == "AAPL"
     assert data["holdings"][0]["quantity"] == 10
+    # Money fields are now nested dicts
+    assert "amount" in data["holdings"][0]["total_cost"]
+    assert "currency" in data["holdings"][0]["total_cost"]
 
 
 def test_portfolio_performance(client, default_user, db):
@@ -47,7 +51,7 @@ def test_portfolio_performance(client, default_user, db):
     resp = client.get("/api/portfolio/performance", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
-    assert data["total_cost"] == 1500.0
+    assert data["total_cost"] == "1500.00000000"
 
 
 def test_portfolio_allocation(client, default_user, db):
@@ -59,3 +63,5 @@ def test_portfolio_allocation(client, default_user, db):
     assert len(data["allocation"]) == 1
     assert data["allocation"][0]["class_name"] == "Stocks"
     assert data["allocation"][0]["assets"][0]["symbol"] == "AAPL"
+    # total_cost is now a nested dict
+    assert "amount" in data["allocation"][0]["assets"][0]["total_cost"]

@@ -1,5 +1,6 @@
 import threading
 from datetime import date
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy import or_, and_
@@ -101,18 +102,23 @@ def get_dividend_history(
         .all()
     )
 
-    return [
-        {
+    result = []
+    for r in rows:
+        value = r.value if isinstance(r.value, Decimal) else Decimal(str(r.value))
+        qty = Decimal(str(qty_map.get(r.symbol, 0)))
+        total = value * qty
+        currency = r.currency
+        result.append({
             "symbol": r.symbol,
             "dividend_type": r.dividend_type,
-            "value": r.value,
-            "quantity": qty_map.get(r.symbol, 0),
-            "total": round(r.value * qty_map.get(r.symbol, 0), 2),
+            "value": {"amount": str(value), "currency": currency},
+            "quantity": float(qty),
+            "total": {"amount": str(total.quantize(Decimal("0.01"))), "currency": currency},
             "ex_date": r.ex_date.isoformat(),
             "payment_date": r.payment_date.isoformat() if r.payment_date else None,
-        }
-        for r in rows
-    ]
+        })
+
+    return result
 
 
 @router.get("/scrape/status")

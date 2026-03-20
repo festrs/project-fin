@@ -14,10 +14,9 @@ def _tx_body(asset_class_id):
         "asset_symbol": "AAPL",
         "type": "buy",
         "quantity": 10,
-        "unit_price": 150.0,
-        "total_value": 1500.0,
-        "currency": "USD",
-        "tax_amount": 0.0,
+        "unit_price": {"amount": "150.0", "currency": "USD"},
+        "total_value": {"amount": "1500.0", "currency": "USD"},
+        "tax_amount": {"amount": "0.0", "currency": "USD"},
         "date": "2025-06-01",
     }
 
@@ -31,6 +30,10 @@ def test_create_buy(client, default_user, db):
     assert data["type"] == "buy"
     assert data["asset_symbol"] == "AAPL"
     assert data["quantity"] == 10
+    assert data["total_value"]["amount"] == "1500.00000000"
+    assert data["total_value"]["currency"] == "USD"
+    assert data["unit_price"]["amount"] == "150.00000000"
+    assert data["unit_price"]["currency"] == "USD"
 
 
 def test_list_with_filter(client, default_user, db):
@@ -40,7 +43,7 @@ def test_list_with_filter(client, default_user, db):
     sell_body = _tx_body(ac.id)
     sell_body["type"] = "sell"
     sell_body["quantity"] = 5
-    sell_body["total_value"] = 750.0
+    sell_body["total_value"] = {"amount": "750.0", "currency": "USD"}
     client.post("/api/transactions", json=sell_body, headers=headers)
 
     # Filter by type=buy

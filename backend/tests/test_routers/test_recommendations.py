@@ -1,6 +1,8 @@
 from datetime import date
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
+from app.money import Money, Currency
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.transaction import Transaction
@@ -20,10 +22,10 @@ def _setup(db, user_id):
         asset_symbol="AAPL",
         type="buy",
         quantity=10,
-        unit_price=150.0,
-        total_value=1500.0,
+        unit_price=Decimal("150.0"),
+        total_value=Decimal("1500.0"),
         currency="USD",
-        tax_amount=0.0,
+        tax_amount=Decimal("0.0"),
         date=date(2025, 6, 1),
     )
     db.add(tx)
@@ -36,7 +38,7 @@ def test_get_recommendations(MockMarketData, client, default_user, db):
     _setup(db, default_user.id)
 
     mock_instance = MockMarketData.return_value
-    mock_instance.get_stock_quote.return_value = {"current_price": 175.0}
+    mock_instance.get_stock_quote.return_value = {"current_price": Money(Decimal("175"), Currency.USD)}
 
     headers = {"X-User-Id": default_user.id}
     resp = client.get("/api/recommendations?count=2", headers=headers)

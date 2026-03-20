@@ -1,5 +1,6 @@
 import math
 from datetime import datetime
+from decimal import Decimal
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from sqlalchemy.orm import Session
@@ -122,7 +123,8 @@ def apply_split(
         )
         for tx in txns:
             tx.quantity = tx.quantity * ratio
-            tx.unit_price = tx.unit_price / ratio
+            if tx.unit_price is not None:
+                tx.unit_price = tx.unit_price / Decimal(str(ratio))
 
     split.status = "applied"
     split.resolved_at = datetime.utcnow()

@@ -1,6 +1,9 @@
 # backend/tests/test_market_search.py
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
+
+from app.money import Money, Currency
 from app.main import app
 
 client = TestClient(app)
@@ -10,9 +13,9 @@ def test_stock_quote_returns_price_field():
     mock_quote = {
         "symbol": "AAPL",
         "name": "Apple Inc.",
-        "current_price": 150.0,
-        "currency": "USD",
-        "market_cap": 2_500_000_000_000,
+        "current_price": Money(Decimal("150"), Currency.USD),
+        "currency": Currency.USD,
+        "market_cap": Money(Decimal("2500000000000"), Currency.USD),
     }
     with patch("app.routers.stocks.get_market_data_service") as mock_get:
         mock_mds = MagicMock()
@@ -23,7 +26,8 @@ def test_stock_quote_returns_price_field():
         data = resp.json()
         assert "price" in data
         assert "current_price" not in data
-        assert data["price"] == 150.0
+        assert data["price"]["amount"] == "150"
+        assert data["price"]["currency"] == "USD"
         assert data["symbol"] == "AAPL"
         assert data["name"] == "Apple Inc."
 
@@ -31,9 +35,9 @@ def test_stock_quote_returns_price_field():
 def test_crypto_quote_returns_price_and_name_fields():
     mock_quote = {
         "coin_id": "bitcoin",
-        "current_price": 95000.0,
-        "currency": "USD",
-        "market_cap": 1_800_000_000_000,
+        "current_price": Money(Decimal("95000"), Currency.USD),
+        "currency": Currency.USD,
+        "market_cap": Money(Decimal("1800000000000"), Currency.USD),
         "change_24h": 2.5,
     }
     with patch("app.routers.crypto.get_market_data_service") as mock_get:
@@ -46,7 +50,8 @@ def test_crypto_quote_returns_price_and_name_fields():
         assert "price" in data
         assert "name" in data
         assert "current_price" not in data
-        assert data["price"] == 95000.0
+        assert data["price"]["amount"] == "95000"
+        assert data["price"]["currency"] == "USD"
         assert data["name"] == "bitcoin"
         assert data["coin_id"] == "bitcoin"
 
