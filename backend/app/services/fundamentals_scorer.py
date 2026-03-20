@@ -23,11 +23,11 @@ def evaluate_ipo(ipo_years: int | None) -> tuple[str, int]:
 def evaluate_eps_growth(eps_history: list[float]) -> tuple[str, int]:
     """
     Evaluate EPS growth consistency.
-    Requires at least 3 data points.
+    Requires at least 5 data points.
     Count YoY growth years (eps[i] > eps[i-1]).
     >50% growth years → green, 40-50% → yellow, <40% → red.
     """
-    if len(eps_history) < 3:
+    if len(eps_history) < 5:
         return ("red", 0)
 
     comparisons = len(eps_history) - 1
@@ -48,12 +48,12 @@ def evaluate_debt(
 ) -> tuple[str, int]:
     """
     Evaluate debt level.
-    Requires at least 3 data points in debt_history and a non-None current_ratio.
+    Requires at least 5 data points in debt_history and a non-None current_ratio.
     Green: current_ratio < 3 AND ≤30% of historical years have ratio > 3.
     Yellow: only one condition met.
     Red: neither condition met (or insufficient data / None current_ratio).
     """
-    if current_ratio is None or len(debt_history) < 3:
+    if current_ratio is None or len(debt_history) < 5:
         return ("red", 0)
 
     current_ok = current_ratio < 3
@@ -71,12 +71,12 @@ def evaluate_debt(
 def evaluate_profitability(net_income_history: list[float]) -> tuple[str, int]:
     """
     Evaluate profitability history.
-    Requires at least 3 data points.
+    Requires at least 5 data points.
     Green: ALL profitable OR last 15 consecutive years profitable.
     Yellow: ≥80% profitable.
     Red: <80%.
     """
-    if len(net_income_history) < 3:
+    if len(net_income_history) < 5:
         return ("red", 0)
 
     profitable = [v > 0 for v in net_income_history]

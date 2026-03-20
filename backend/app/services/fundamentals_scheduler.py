@@ -15,10 +15,11 @@ CRYPTO_CLASS_NAMES = {"Crypto", "Criptomoedas"}
 
 
 class FundamentalsScoreScheduler:
-    def __init__(self, yfinance_provider, brapi_provider, dados_provider, delay: float = 1.5):
+    def __init__(self, yfinance_provider, brapi_provider, dados_provider, finnhub_provider=None, delay: float = 1.5):
         self._yfinance = yfinance_provider
         self._brapi = brapi_provider
         self._dados = dados_provider
+        self._finnhub = finnhub_provider
         self._delay = delay
 
     def score_all(self, db: Session) -> None:
@@ -50,6 +51,8 @@ class FundamentalsScoreScheduler:
 
     def _fetch_fundamentals(self, symbol: str, country: str) -> dict:
         if country == "US":
+            if self._finnhub:
+                return self._finnhub.get_fundamentals(symbol)
             return self._yfinance.get_fundamentals(symbol)
 
         # BR: try brapi first, fall back to dados if eps_history is insufficient

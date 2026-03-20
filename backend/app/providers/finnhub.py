@@ -1,9 +1,12 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import httpx
 
 from app.money import Money, Currency
+
+logger = logging.getLogger(__name__)
 
 PERIOD_DAYS = {
     "1mo": 30,
@@ -68,6 +71,120 @@ class FinnhubProvider:
         )
         resp.raise_for_status()
         return resp.json()
+
+    def get_fundamentals(self, symbol: str) -> dict:
+        """Fetch fundamentals from SEC filings via /stock/financials-reported."""
+        empty = {
+            "ipo_years": None,
+            "eps_history": [],
+            "net_income_history": [],
+            "debt_history": [],
+            "current_net_debt_ebitda": None,
+            "raw_data": [],
+        }
+        try:
+            # IPO years from profile
+            profile_resp = httpx.get(
+                f"{self._base_url}/stock/profile2",
+                params={"symbol": symbol, "token": self._api_key},
+                timeout=10,
+            )
+            profile_resp.raise_for_status()
+            profile = profile_resp.json()
+            ipo_str = profile.get("ipo")
+            if ipo_str:
+                ipo_date = datetime.strptime(ipo_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                ipo_years = (datetime.now(timezone.utc) - ipo_date).days // 365
+            else:
+                ipo_years = None
+
+            # Financial statements from SEC filings
+            resp = httpx.get(
+                f"{self._base_url}/stock/financials-reported",
+                params={"symbol": symbol, "token": self._api_key, "freq": "annual"},
+                timeout=15,
+            )
+            resp.raise_for_status()
+            filings = resp.json().get("data", [])
+
+            if not filings:
+                empty["ipo_years"] = ipo_years
+                return empty
+
+            # Sort by year ascending
+            filings.sort(key=lambda f: f.get("year", 0))
+
+            eps_history = []
+            net_income_history = []
+            debt_history = []
+            raw_data = []
+
+            for filing in filings:
+                year = filing.get("year")
+                report = filing.get("report", {})
+
+                eps = self._extract_field(report, "ic", [
+                    "earningspersharediluted",
+                    "earningspersharebasicanddiluted",
+                    "earningspersharebasic",
+                ])
+                net_income = self._extract_field(report, "ic", [
+                    "netincome",
+                    "netincomeloss",
+                    "profitloss",
+                ])
+                operating_income = self._extract_field(report, "ic", [
+                    "operatingincome",
+                    "operatingincomeloss",
+                ])
+                total_debt = self._extract_field(report, "bs", [
+                    "longtermdebt",
+                    "longtermdebtnoncurrent",
+                    "totaldebt",
+                ])
+
+                eps_val = eps if eps is not None else 0.0
+                ni_val = net_income if net_income is not None else 0.0
+                oi_val = operating_income if operating_income is not None else 0.0
+                debt_val = total_debt if total_debt is not None else 0.0
+                debt_ratio = (debt_val / oi_val) if oi_val != 0 else 0.0
+
+                eps_history.append(eps_val)
+                net_income_history.append(ni_val)
+                debt_history.append(debt_ratio)
+                raw_data.append({
+                    "year": year,
+                    "eps": eps_val,
+                    "net_income": ni_val,
+                    "net_debt_ebitda": round(debt_ratio, 4),
+                })
+
+            current_net_debt_ebitda = debt_history[-1] if debt_history else None
+
+            return {
+                "ipo_years": ipo_years,
+                "eps_history": eps_history,
+                "net_income_history": net_income_history,
+                "debt_history": debt_history,
+                "current_net_debt_ebitda": current_net_debt_ebitda,
+                "raw_data": raw_data,
+            }
+        except Exception:
+            logger.warning("Failed to fetch fundamentals for %s", symbol, exc_info=True)
+            return empty
+
+    @staticmethod
+    def _extract_field(report: dict, section: str, concept_keywords: list[str]) -> float | None:
+        """Extract a value from a SEC filing report section by matching concept keywords."""
+        items = report.get(section, [])
+        for keyword in concept_keywords:
+            for item in items:
+                concept = (item.get("concept") or "").lower().replace("-", "").replace("_", "")
+                if keyword in concept:
+                    val = item.get("value")
+                    if val is not None:
+                        return float(val)
+        return None
 
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         now = datetime.now(timezone.utc)
