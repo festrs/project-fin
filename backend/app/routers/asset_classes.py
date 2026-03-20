@@ -27,7 +27,24 @@ def create_asset_class(
     x_user_id: str = Header(),
     db: Session = Depends(get_db),
 ):
-    ac = AssetClass(user_id=x_user_id, name=body.name, target_weight=body.target_weight, country=body.country, type=body.type)
+    if body.is_emergency_reserve:
+        existing = (
+            db.query(AssetClass)
+            .filter(AssetClass.user_id == x_user_id, AssetClass.is_emergency_reserve == True)
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="Emergency reserve already exists")
+        body.target_weight = 0.0
+
+    ac = AssetClass(
+        user_id=x_user_id,
+        name=body.name,
+        target_weight=body.target_weight,
+        country=body.country,
+        type=body.type,
+        is_emergency_reserve=body.is_emergency_reserve,
+    )
     db.add(ac)
     db.commit()
     db.refresh(ac)
@@ -50,6 +67,24 @@ def update_asset_class(
     )
     if not ac:
         raise HTTPException(status_code=404, detail="Asset class not found")
+    if body.is_emergency_reserve is True and not ac.is_emergency_reserve:
+        existing = (
+            db.query(AssetClass)
+            .filter(
+                AssetClass.user_id == x_user_id,
+                AssetClass.is_emergency_reserve == True,
+                AssetClass.id != ac_id,
+            )
+            .first()
+        )
+        if existing:
+            raise HTTPException(status_code=400, detail="Emergency reserve already exists")
+    if body.is_emergency_reserve is not None:
+        ac.is_emergency_reserve = body.is_emergency_reserve
+    # Force target_weight to 0 for emergency reserve
+    if ac.is_emergency_reserve:
+        ac.target_weight = 0.0
+        body.target_weight = None  # prevent overwrite below
     if body.name is not None:
         ac.name = body.name
     if body.target_weight is not None:
