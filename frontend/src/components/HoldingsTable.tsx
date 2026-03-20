@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
+import { formatMoney, moneyToNumber } from "../utils/money";
 import type { Holding, Transaction, QuarantineStatus, AssetClass, AssetClassType, FundamentalsScore } from "../types";
 
 interface HoldingsTableProps {
@@ -36,7 +37,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   AUD: "A$",
 };
 
-function formatCurrency(value: number, currency?: string): string {
+function formatCurrencyValue(value: number, currency?: string): string {
   const sym = CURRENCY_SYMBOLS[currency ?? "USD"] ?? `${currency ?? ""} `;
   return `${sym}${value.toFixed(2)}`;
 }
@@ -82,7 +83,8 @@ export function HoldingsTable({
   const showAvgPrice = !isFixedIncome;
   const showCurrentPrice = !isFixedIncome;
   const showGainLoss = !isFixedIncome;
-  const showValueBRL = isFixedIncome && holdings.some((h) => h.currency !== "BRL");
+  const getCurrency = (h: Holding) => h.total_cost.currency;
+  const showValueBRL = isFixedIncome && holdings.some((h) => getCurrency(h) !== "BRL");
   const showDiv = !isFixedIncome && !isCrypto;
   const showScore = !isFixedIncome && !isCrypto;
 
@@ -158,7 +160,7 @@ export function HoldingsTable({
                 onClick={toggleSort}
               >
                 {isFixedIncome ? "Name" : "Symbol"}
-                {sortAsc === true ? " ▲" : sortAsc === false ? " ▼" : ""}
+                {sortAsc === true ? " \u25B2" : sortAsc === false ? " \u25BC" : ""}
               </th>
               {showQty && <th className="text-right px-3 py-2">Qty</th>}
               {showAvgPrice && <th className="text-right px-3 py-2">Avg Price</th>}
@@ -181,7 +183,7 @@ export function HoldingsTable({
                         title="Fetch scores for all stocks"
                         onClick={onRefreshAllScores}
                       >
-                        ↻
+                        \u21BB
                       </button>
                     )}
                   </span>
@@ -318,7 +320,7 @@ function HoldingRows({
   const showDiv = !isFixedIncome && !isCrypto;
   const showScore = !isFixedIncome && !isCrypto;
 
-  const cur = h.currency as string;
+  const cur = h.total_cost.currency;
   const sym = CURRENCY_SYMBOLS[cur] ?? `${cur} `;
   const scoreColor = (v: number) =>
     v >= 90
@@ -333,9 +335,9 @@ function HoldingRows({
     setEditingTx(t.id);
     setEditTxData({
       quantity: t.quantity != null ? String(t.quantity) : "",
-      unit_price: t.unit_price != null ? String(t.unit_price) : "",
-      total_value: String(t.total_value),
-      tax_amount: t.tax_amount != null ? String(t.tax_amount) : "",
+      unit_price: t.unit_price != null ? t.unit_price.amount : "",
+      total_value: t.total_value.amount,
+      tax_amount: t.tax_amount != null ? t.tax_amount.amount : "",
       date: t.date,
       notes: t.notes ?? "",
     });
@@ -343,6 +345,7 @@ function HoldingRows({
 
   const saveEditTx = async (t: Transaction) => {
     if (!onUpdateTransaction) return;
+    const txCurrency = t.total_value.currency;
     const isValueBased = t.quantity == null;
     const qty = isValueBased ? null : (parseFloat(editTxData.quantity) || 0);
     const price = isValueBased ? null : (parseFloat(editTxData.unit_price) || 0);
@@ -351,9 +354,9 @@ function HoldingRows({
       : (qty ?? 0) * (price ?? 0);
     await onUpdateTransaction(t.id, {
       quantity: qty,
-      unit_price: price,
-      total_value: total,
-      tax_amount: isValueBased ? null : (parseFloat(editTxData.tax_amount) || 0),
+      unit_price: price != null ? { amount: String(price), currency: txCurrency } : null,
+      total_value: { amount: String(total), currency: txCurrency },
+      tax_amount: isValueBased ? null : { amount: String(parseFloat(editTxData.tax_amount) || 0), currency: txCurrency },
       date: editTxData.date,
       notes: editTxData.notes || null,
     });
@@ -366,6 +369,8 @@ function HoldingRows({
     await onDeleteTransaction(id);
     await onFetchTransactions(h.symbol);
   };
+
+  const gainLossNum = moneyToNumber(h.gain_loss);
 
   return (
     <>
@@ -381,22 +386,22 @@ function HoldingRows({
             )}
           </span>
         </td>
-        {showQty && <td className="px-3 py-2 text-right">{h.quantity != null ? h.quantity : "—"}</td>}
-        {showAvgPrice && <td className="px-3 py-2 text-right">{h.avg_price != null ? formatCurrency(h.avg_price, cur) : "—"}</td>}
+        {showQty && <td className="px-3 py-2 text-right">{h.quantity != null ? h.quantity : "\u2014"}</td>}
+        {showAvgPrice && <td className="px-3 py-2 text-right">{h.avg_price != null ? formatMoney(h.avg_price) : "\u2014"}</td>}
         {showCurrentPrice && (
           <td className="px-3 py-2 text-right">
-            {h.current_price != null ? formatCurrency(h.current_price, cur) : "-"}
+            {h.current_price != null ? formatMoney(h.current_price) : "-"}
           </td>
         )}
         <td className="px-3 py-2 text-right">
           {isFixedIncome
-            ? formatCurrency(h.current_value ?? h.total_cost, cur)
-            : h.current_value != null ? formatCurrency(h.current_value, cur) : "-"}
+            ? formatMoney(h.current_value ?? h.total_cost)
+            : h.current_value != null ? formatMoney(h.current_value) : "-"}
         </td>
         {showValueBRL && (
           <td className="px-3 py-2 text-right text-text-muted">
             {cur !== "BRL"
-              ? formatCurrency(toBRL(h.current_value ?? h.total_cost, cur), "BRL")
+              ? formatCurrencyValue(toBRL(moneyToNumber(h.current_value ?? h.total_cost), cur), "BRL")
               : ""}
           </td>
         )}
@@ -405,18 +410,18 @@ function HoldingRows({
             {h.gain_loss != null ? (
               <span
                 className={
-                  h.gain_loss > 0
+                  gainLossNum > 0
                     ? "text-positive"
-                    : h.gain_loss < 0
+                    : gainLossNum < 0
                     ? "text-negative"
                     : ""
                 }
               >
-                {h.gain_loss === 0
+                {gainLossNum === 0
                   ? `${sym}0.00`
-                  : h.gain_loss > 0
-                  ? `+${sym}${h.gain_loss.toFixed(2)}`
-                  : `-${sym}${Math.abs(h.gain_loss).toFixed(2)}`}
+                  : gainLossNum > 0
+                  ? `+${formatMoney(h.gain_loss)}`
+                  : formatMoney(h.gain_loss)}
               </span>
             ) : (
               "-"
@@ -454,7 +459,7 @@ function HoldingRows({
         {showDiv && (
           <td className="px-3 py-2 text-right text-text-muted">
             {dividendData && dividendData.income > 0
-              ? formatCurrency(dividendData.income, dividendData.currency)
+              ? formatCurrencyValue(dividendData.income, dividendData.currency)
               : "-"}
           </td>
         )}
@@ -469,7 +474,7 @@ function HoldingRows({
                 {score.composite_score}%
               </span>
             ) : (
-              <span className="text-text-muted">—</span>
+              <span className="text-text-muted">\u2014</span>
             )}
           </td>
         )}
@@ -505,7 +510,7 @@ function HoldingRows({
                   }}
                   title="More actions"
                 >
-                  ···
+                  \u00B7\u00B7\u00B7
                 </button>
                 {showHoldingMenu && (
                   <div
@@ -614,7 +619,7 @@ function HoldingRows({
                         <td className="py-1 px-2 capitalize">{t.type}</td>
                         <td className="py-1 px-2 text-right">
                           {t.type === "dividend" || t.quantity == null ? (
-                            <span>{t.quantity ?? "—"}</span>
+                            <span>{t.quantity ?? "\u2014"}</span>
                           ) : (
                             <input
                               type="number"
@@ -627,7 +632,7 @@ function HoldingRows({
                         </td>
                         <td className="py-1 px-2 text-right">
                           {t.type === "dividend" || t.quantity == null ? (
-                            <span>{t.unit_price != null ? t.unit_price.toFixed(2) : "—"}</span>
+                            <span>{t.unit_price != null ? formatMoney(t.unit_price) : "\u2014"}</span>
                           ) : (
                             <input
                               type="number"
@@ -649,7 +654,7 @@ function HoldingRows({
                             />
                           ) : (
                             <span className="text-text-muted">
-                              {CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}
+                              {CURRENCY_SYMBOLS[t.total_value.currency] ?? `${t.total_value.currency} `}
                               {((parseFloat(editTxData.quantity) || 0) * (parseFloat(editTxData.unit_price) || 0)).toFixed(2)}
                             </span>
                           )}
@@ -693,18 +698,17 @@ function HoldingRows({
                       <tr key={t.id} className="border-t hover:bg-[var(--glass-hover)]">
                         <td className="py-1 px-2">{t.date}</td>
                         <td className="py-1 px-2 capitalize">{t.type}</td>
-                        <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "—"}</td>
+                        <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "\u2014"}</td>
                         <td className="py-1 px-2 text-right">
                           {t.unit_price != null
-                            ? `${CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}${t.unit_price.toFixed(2)}`
-                            : "—"}
+                            ? formatMoney(t.unit_price)
+                            : "\u2014"}
                         </td>
                         <td className="py-1 px-2 text-right">
-                          {CURRENCY_SYMBOLS[t.currency] ?? `${t.currency} `}
-                          {t.total_value.toFixed(2)}
+                          {formatMoney(t.total_value)}
                         </td>
                         <td className="py-1 px-2 text-right text-text-muted">
-                          {t.tax_amount != null && t.tax_amount > 0 ? formatCurrency(t.tax_amount, t.currency) : "-"}
+                          {t.tax_amount != null && moneyToNumber(t.tax_amount) > 0 ? formatMoney(t.tax_amount) : "-"}
                         </td>
                         <td className="py-1 px-2 text-text-muted truncate max-w-[150px]">
                           {t.notes || "-"}

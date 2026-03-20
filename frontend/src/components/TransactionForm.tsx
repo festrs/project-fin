@@ -43,15 +43,15 @@ export function TransactionForm({
     e.preventDefault();
     setSubmitting(true);
     try {
+      const finalTotal = hideQuantityFields ? parseFloat(totalValue) || 0 : parseFloat(computedTotal) || 0;
       await onSubmit({
         asset_class_id: assetClassId,
         asset_symbol: symbol,
         type,
         quantity: hideQuantityFields ? null : parseFloat(quantity) || 0,
-        unit_price: hideQuantityFields ? null : parseFloat(unitPrice) || 0,
-        total_value: hideQuantityFields ? parseFloat(totalValue) || 0 : parseFloat(computedTotal) || 0,
-        currency,
-        tax_amount: isFixedIncome ? null : parseFloat(taxAmount) || 0,
+        unit_price: hideQuantityFields ? null : { amount: String(parseFloat(unitPrice) || 0), currency },
+        total_value: { amount: String(finalTotal), currency },
+        tax_amount: isFixedIncome ? null : { amount: String(parseFloat(taxAmount) || 0), currency },
         date,
         notes: notes || null,
       });

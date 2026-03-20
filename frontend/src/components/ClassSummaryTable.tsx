@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Holding, AssetClass, Transaction } from "../types";
+import { moneyToNumber } from "../utils/money";
 import { DividendHistoryModal } from "./DividendHistoryModal";
 
 export interface ClassSummary {
@@ -56,8 +57,9 @@ export function computeClassSummaries(
 
   const totals = new Map<string, { value: number; currency: string }>();
   for (const h of holdings) {
-    const val = h.current_value ?? h.total_cost;
-    const existing = totals.get(h.asset_class_id) ?? { value: 0, currency: h.currency ?? "USD" };
+    const val = moneyToNumber(h.current_value ?? h.total_cost);
+    const cur = h.total_cost.currency;
+    const existing = totals.get(h.asset_class_id) ?? { value: 0, currency: cur };
     existing.value += val;
     totals.set(h.asset_class_id, existing);
   }
@@ -94,8 +96,8 @@ export function computeClassSummaries(
 function computeManualDividendsByClass(dividends: Transaction[]): Map<string, { total: number; currency: string }> {
   const result = new Map<string, { total: number; currency: string }>();
   for (const d of dividends) {
-    const existing = result.get(d.asset_class_id) ?? { total: 0, currency: d.currency };
-    existing.total += d.total_value;
+    const existing = result.get(d.asset_class_id) ?? { total: 0, currency: d.total_value.currency };
+    existing.total += moneyToNumber(d.total_value);
     result.set(d.asset_class_id, existing);
   }
   return result;

@@ -1,3 +1,8 @@
+export interface Money {
+  amount: string;
+  currency: string;
+}
+
 export type AssetClassType = "stock" | "crypto" | "fixed_income";
 
 export interface AssetClass {
@@ -27,10 +32,9 @@ export interface Transaction {
   asset_symbol: string;
   type: "buy" | "sell" | "dividend";
   quantity: number | null;
-  unit_price: number | null;
-  total_value: number;
-  currency: string;
-  tax_amount: number | null;
+  unit_price: Money | null;
+  total_value: Money;
+  tax_amount: Money | null;
   date: string;
   notes: string | null;
   created_at: string;
@@ -41,14 +45,13 @@ export interface Holding {
   symbol: string;
   asset_class_id: string;
   quantity: number | null;
-  avg_price: number | null;
-  total_cost: number;
-  current_price?: number;
-  current_value?: number;
-  gain_loss?: number;
+  avg_price: Money | null;
+  total_cost: Money;
+  current_price?: Money;
+  current_value?: Money;
+  gain_loss?: Money;
   target_weight?: number;
   actual_weight?: number;
-  currency?: string;
 }
 
 export interface Recommendation {
@@ -110,9 +113,9 @@ export interface StockSplit {
 export interface DividendHistoryItem {
   symbol: string;
   dividend_type: string;
-  value: number;
+  value: Money;
   quantity: number;
-  total: number;
+  total: Money;
   ex_date: string;
   payment_date: string | null;
 }

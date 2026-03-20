@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
-import type { Holding } from "../types";
+import type { Holding, Money } from "../types";
+import { moneyToNumber } from "../utils/money";
 
 interface AllocationAsset {
   symbol: string;
   quantity: number;
-  total_cost: number;
+  total_cost: Money;
   target_weight: number;
 }
 
@@ -41,12 +42,12 @@ export function usePortfolio() {
       // Compute actual_weight per class from total_cost
       const rawAlloc = allocationRes.data.allocation;
       const grandTotal = rawAlloc.reduce(
-        (sum, entry) => sum + entry.assets.reduce((s, a) => s + a.total_cost, 0),
+        (sum, entry) => sum + entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0),
         0
       );
 
       const computed: AllocationEntry[] = rawAlloc.map((entry) => {
-        const classTotal = entry.assets.reduce((s, a) => s + a.total_cost, 0);
+        const classTotal = entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0);
         return {
           asset_class_id: entry.class_id,
           class_name: entry.class_name,

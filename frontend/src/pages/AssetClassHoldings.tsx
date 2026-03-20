@@ -6,6 +6,7 @@ import { useTransactions } from "../hooks/useTransactions";
 import { useFundamentals } from "../hooks/useFundamentals";
 import { HoldingsTable } from "../components/HoldingsTable";
 import { AddAssetForm } from "../components/AddAssetForm";
+import { moneyToNumber } from "../utils/money";
 import type { QuarantineStatus, Transaction } from "../types";
 import api from "../services/api";
 
@@ -37,8 +38,9 @@ export default function AssetClassHoldings() {
   };
 
   const totalValueBRL = classHoldings.reduce((sum, h) => {
-    const value = h.current_value ?? h.total_cost;
-    return sum + toBRL(value, h.currency ?? "BRL");
+    const value = moneyToNumber(h.current_value ?? h.total_cost);
+    const cur = h.total_cost.currency;
+    return sum + toBRL(value, cur);
   }, 0);
 
   const fetchExchangeRates = useCallback(async () => {

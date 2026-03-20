@@ -1,19 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import type { DividendHistoryItem } from "../types";
+import { formatMoney, moneyToNumber } from "../utils/money";
+import type { DividendHistoryItem, Money } from "../types";
 
 interface DividendHistoryModalProps {
   className: string;
   assetClassId: string;
   currency: string;
   onClose: () => void;
-}
-
-function formatCurrency(value: number, currency: string, decimals: number = 2) {
-  if (currency === "BRL") {
-    return `R$${value.toLocaleString("pt-BR", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
-  }
-  return `$${value.toLocaleString("en-US", { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
 }
 
 export function DividendHistoryModal({
@@ -77,8 +71,9 @@ export function DividendHistoryModal({
         ) : (
           <div className="space-y-4">
             {[...bySymbol.entries()].map(([symbol, records]) => {
-              const symbolTotal = records.reduce((sum, r) => sum + r.total, 0);
+              const symbolTotal = records.reduce((sum, r) => sum + moneyToNumber(r.total), 0);
               const quantity = records[0]?.quantity ?? 0;
+              const symbolTotalMoney: Money = { amount: String(symbolTotal), currency };
               return (
                 <div key={symbol}>
                   <div className="flex items-center justify-between mb-1">
@@ -86,7 +81,7 @@ export function DividendHistoryModal({
                       {symbol} <span className="text-text-muted text-sm">({quantity} shares)</span>
                     </span>
                     <span className="text-base font-semibold text-text-primary">
-                      {formatCurrency(symbolTotal, currency)}
+                      {formatMoney(symbolTotalMoney)}
                     </span>
                   </div>
                   <table className="w-full text-sm">
@@ -103,8 +98,8 @@ export function DividendHistoryModal({
                       {records.map((r, i) => (
                         <tr key={i} className="even:bg-[var(--glass-row-alt)]">
                           <td className="py-1 px-1 text-text-secondary">{r.dividend_type}</td>
-                          <td className="py-1 px-1 text-right">{formatCurrency(r.value, currency, 4)}</td>
-                          <td className="py-1 px-1 text-right">{formatCurrency(r.total, currency)}</td>
+                          <td className="py-1 px-1 text-right">{formatMoney(r.value, 4)}</td>
+                          <td className="py-1 px-1 text-right">{formatMoney(r.total)}</td>
                           <td className="py-1 px-1 text-right text-text-muted">{formatDate(r.ex_date)}</td>
                           <td className="py-1 px-1 text-right text-text-muted">
                             {r.payment_date ? formatDate(r.payment_date) : "-"}
