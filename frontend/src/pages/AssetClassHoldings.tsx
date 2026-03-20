@@ -31,6 +31,7 @@ export default function AssetClassHoldings() {
   const assetClass = assetClasses.find((ac) => ac.id === assetClassId);
   const classHoldings = holdings.filter((h) => h.asset_class_id === assetClassId);
   const type = assetClass?.type ?? "stock";
+  const isReserve = assetClass?.is_emergency_reserve ?? false;
 
   const toBRL = (value: number, cur: string) => {
     if (cur === "BRL") return value;
@@ -73,11 +74,11 @@ export default function AssetClassHoldings() {
 
   const fetchDividends = useCallback(async () => {
     try {
-      const res = await api.get<{ dividends: Array<{ assets: Array<{ symbol: string; annual_income: number; currency: string }> }> }>("/portfolio/dividends");
+      const res = await api.get<{ dividends: Array<{ assets: Array<{ symbol: string; annual_income: { amount: string; currency: string }; currency: string }> }> }>("/portfolio/dividends");
       const map = new Map<string, { income: number; currency: string }>();
       for (const cls of res.data.dividends) {
         for (const asset of cls.assets) {
-          map.set(asset.symbol, { income: asset.annual_income, currency: asset.currency });
+          map.set(asset.symbol, { income: parseFloat(asset.annual_income.amount), currency: asset.currency });
         }
       }
       setDividendsBySymbol(map);
@@ -168,6 +169,7 @@ export default function AssetClassHoldings() {
         </h1>
         <span className="ml-auto text-text-muted text-base">
           Total: R${totalValueBRL.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {isReserve && <span className="ml-2 text-xs bg-[var(--glass-primary-soft)] px-2 py-0.5 rounded">(Emergency Reserve)</span>}
         </span>
       </div>
 
