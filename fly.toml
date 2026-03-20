@@ -16,7 +16,7 @@ primary_region = "gru"
 
 [[vm]]
   size = "shared-cpu-1x"
-  memory = "256mb"
+  memory = "512mb"
 
 [mounts]
   source = "project_fin_data"
