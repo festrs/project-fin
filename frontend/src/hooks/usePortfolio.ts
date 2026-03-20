@@ -24,10 +24,13 @@ export interface AllocationEntry {
   target_weight: number;
 }
 
+let _holdingsCache: Holding[] | null = null;
+let _allocationCache: AllocationEntry[] | null = null;
+
 export function usePortfolio() {
-  const [holdings, setHoldings] = useState<Holding[]>([]);
-  const [allocation, setAllocation] = useState<AllocationEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [holdings, setHoldings] = useState<Holding[]>(_holdingsCache ?? []);
+  const [allocation, setAllocation] = useState<AllocationEntry[]>(_allocationCache ?? []);
+  const [loading, setLoading] = useState(!_holdingsCache);
   const [error, setError] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -38,14 +41,15 @@ export function usePortfolio() {
         api.get<{ holdings: Holding[] }>("/portfolio/summary", { params: { live: false } }),
         api.get<{ allocation: AllocationApiEntry[] }>("/portfolio/allocation"),
       ]);
-      setHoldings(summaryRes.data.holdings);
+      _holdingsCache = summaryRes.data.holdings;
+      setHoldings(_holdingsCache);
 
       const rawAlloc = allocationRes.data.allocation;
       const grandTotal = rawAlloc.reduce(
         (sum, entry) => sum + entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0),
         0
       );
-      setAllocation(rawAlloc.map((entry) => {
+      _allocationCache = rawAlloc.map((entry) => {
         const classTotal = entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0);
         return {
           asset_class_id: entry.class_id,
@@ -53,13 +57,14 @@ export function usePortfolio() {
           target_weight: entry.target_weight,
           actual_weight: grandTotal > 0 ? (classTotal / grandTotal) * 100 : 0,
         };
-      }));
+      });
+      setAllocation(_allocationCache);
       setLoading(false);
       setError(null);
 
       // Phase 2: Refresh with live prices in background (non-blocking)
       api.get<{ holdings: Holding[] }>("/portfolio/summary", { params: { live: true } })
-        .then((res) => setHoldings(res.data.holdings))
+        .then((res) => { _holdingsCache = res.data.holdings; setHoldings(_holdingsCache); })
         .catch(() => { /* live refresh failed, cached data still shown */ });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch portfolio");

@@ -2,16 +2,19 @@ import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import type { StockSplit } from "../types";
 
+let _splitsCache: StockSplit[] | null = null;
+
 export function useSplits() {
-  const [pendingSplits, setPendingSplits] = useState<StockSplit[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [pendingSplits, setPendingSplits] = useState<StockSplit[]>(_splitsCache ?? []);
+  const [loading, setLoading] = useState(!_splitsCache);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
   const refresh = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!_splitsCache) setLoading(true);
       const res = await api.get<StockSplit[]>("/splits/pending");
-      setPendingSplits(res.data);
+      _splitsCache = res.data;
+      setPendingSplits(_splitsCache);
     } catch {
       // silently fail
     } finally {

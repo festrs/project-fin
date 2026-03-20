@@ -2,15 +2,18 @@ import { useState, useEffect, useCallback } from "react";
 import api from "../services/api";
 import type { AssetClass } from "../types";
 
+let _cache: AssetClass[] | null = null;
+
 export function useAssetClasses() {
-  const [assetClasses, setAssetClasses] = useState<AssetClass[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [assetClasses, setAssetClasses] = useState<AssetClass[]>(_cache ?? []);
+  const [loading, setLoading] = useState(!_cache);
   const [error, setError] = useState<string | null>(null);
 
   const fetchClasses = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!_cache) setLoading(true);
       const res = await api.get<AssetClass[]>("/asset-classes");
+      _cache = res.data;
       setAssetClasses(res.data);
       setError(null);
     } catch (err) {

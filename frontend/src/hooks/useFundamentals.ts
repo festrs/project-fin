@@ -2,15 +2,18 @@ import { useCallback, useEffect, useState } from "react";
 import api from "../services/api";
 import type { FundamentalsDetail, FundamentalsScore } from "../types";
 
+let _scoresCache: FundamentalsScore[] | null = null;
+
 export function useFundamentals() {
-  const [scores, setScores] = useState<FundamentalsScore[]>([]);
+  const [scores, setScores] = useState<FundamentalsScore[]>(_scoresCache ?? []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchScores = useCallback(async () => {
     try {
-      setLoading(true);
+      if (!_scoresCache) setLoading(true);
       const resp = await api.get<FundamentalsScore[]>("/fundamentals/scores");
+      _scoresCache = resp.data;
       setScores(resp.data);
       setError(null);
     } catch (err) {
