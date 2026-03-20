@@ -30,47 +30,42 @@ export function usePortfolio() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSummary = useCallback(async (live: boolean) => {
-    const [summaryRes, allocationRes] = await Promise.all([
-      api.get<{ holdings: Holding[] }>("/portfolio/summary", { params: { live } }),
-      api.get<{ allocation: AllocationApiEntry[] }>("/portfolio/allocation"),
-    ]);
-    setHoldings(summaryRes.data.holdings);
-
-    const rawAlloc = allocationRes.data.allocation;
-    const grandTotal = rawAlloc.reduce(
-      (sum, entry) => sum + entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0),
-      0
-    );
-
-    const computed: AllocationEntry[] = rawAlloc.map((entry) => {
-      const classTotal = entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0);
-      return {
-        asset_class_id: entry.class_id,
-        class_name: entry.class_name,
-        target_weight: entry.target_weight,
-        actual_weight: grandTotal > 0 ? (classTotal / grandTotal) * 100 : 0,
-      };
-    });
-
-    setAllocation(computed);
-  }, []);
-
   const refresh = useCallback(async () => {
     try {
       setLoading(true);
       // Phase 1: Load cached data instantly
-      await fetchSummary(false);
+      const [summaryRes, allocationRes] = await Promise.all([
+        api.get<{ holdings: Holding[] }>("/portfolio/summary", { params: { live: false } }),
+        api.get<{ allocation: AllocationApiEntry[] }>("/portfolio/allocation"),
+      ]);
+      setHoldings(summaryRes.data.holdings);
+
+      const rawAlloc = allocationRes.data.allocation;
+      const grandTotal = rawAlloc.reduce(
+        (sum, entry) => sum + entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0),
+        0
+      );
+      setAllocation(rawAlloc.map((entry) => {
+        const classTotal = entry.assets.reduce((s, a) => s + moneyToNumber(a.total_cost), 0);
+        return {
+          asset_class_id: entry.class_id,
+          class_name: entry.class_name,
+          target_weight: entry.target_weight,
+          actual_weight: grandTotal > 0 ? (classTotal / grandTotal) * 100 : 0,
+        };
+      }));
       setLoading(false);
-      // Phase 2: Refresh with live prices in background
-      await fetchSummary(true);
       setError(null);
+
+      // Phase 2: Refresh with live prices in background (non-blocking)
+      api.get<{ holdings: Holding[] }>("/portfolio/summary", { params: { live: true } })
+        .then((res) => setHoldings(res.data.holdings))
+        .catch(() => { /* live refresh failed, cached data still shown */ });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch portfolio");
-    } finally {
       setLoading(false);
     }
-  }, [fetchSummary]);
+  }, []);
 
   useEffect(() => {
     refresh();
