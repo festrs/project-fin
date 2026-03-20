@@ -123,8 +123,8 @@ export default function Dashboard() {
             onUpdateTargetWeight={handleUpdateTargetWeight}
             onScrapeDividends={handleScrapeDividends}
             scrapingDividends={scrapingDividends}
-            onCreateClass={async (name, weight, type, isEmergencyReserve) => {
-              await createClass(name, weight, type, isEmergencyReserve);
+            onCreateClass={async (name, weight, type, isEmergencyReserve, country) => {
+              await createClass(name, weight, type, isEmergencyReserve, country);
               refreshPortfolio();
             }}
             onDeleteClass={async (classId) => {

@@ -31,13 +31,15 @@ export function useAssetClasses() {
     name: string,
     targetWeight: number,
     type: "stock" | "crypto" | "fixed_income" = "stock",
-    isEmergencyReserve: boolean = false
+    isEmergencyReserve: boolean = false,
+    country: string = "US"
   ) => {
     const res = await api.post<AssetClass>("/asset-classes", {
       name,
       target_weight: targetWeight,
       type,
       is_emergency_reserve: isEmergencyReserve,
+      country,
     });
     setAssetClasses((prev) => { _cache = [...prev, res.data]; return _cache; });
     return res.data;

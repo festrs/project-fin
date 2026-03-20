@@ -44,7 +44,7 @@ interface ClassSummaryTableProps {
   onUpdateTargetWeight?: (classId: string, weight: number) => Promise<void>;
   onScrapeDividends?: () => void;
   scrapingDividends?: boolean;
-  onCreateClass?: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income", isEmergencyReserve?: boolean) => Promise<unknown>;
+  onCreateClass?: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income", isEmergencyReserve?: boolean, country?: string) => Promise<unknown>;
   onDeleteClass?: (classId: string) => Promise<unknown>;
 }
 
@@ -352,7 +352,7 @@ export function ClassSummaryTable({
             <button
               onClick={async () => {
                 if (window.confirm('Create Emergency Reserve class?')) {
-                  await onCreateClass("Emergency Reserve", 0, "fixed_income", true);
+                  await onCreateClass("Emergency Reserve", 0, "fixed_income", true, "BR");
                 }
               }}
               className="text-xs text-text-muted hover:text-primary transition-colors border border-[var(--glass-border)] rounded-lg px-2 py-1"
