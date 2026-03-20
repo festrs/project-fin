@@ -1,7 +1,10 @@
 import logging
 from datetime import datetime, timezone
+from decimal import Decimal
 
 import httpx
+
+from app.money import Money, Currency
 from cachetools import TTLCache
 from sqlalchemy.orm import Session
 
@@ -55,9 +58,9 @@ class MarketDataService:
                 result = {
                     "symbol": stored.symbol,
                     "name": stored.name,
-                    "current_price": stored.current_price,
-                    "currency": stored.currency,
-                    "market_cap": stored.market_cap,
+                    "current_price": Money.from_db(stored.current_price, stored.currency),
+                    "currency": Currency.from_code(stored.currency),
+                    "market_cap": Money.from_db(stored.market_cap, stored.currency),
                 }
                 self._quote_cache[symbol] = result
                 return result
@@ -74,9 +77,11 @@ class MarketDataService:
                 quote = MarketQuote(symbol=symbol, country=country)
                 db.add(quote)
             quote.name = result["name"]
-            quote.current_price = result["current_price"]
-            quote.currency = result["currency"]
-            quote.market_cap = result["market_cap"]
+            price_amount, price_currency = result["current_price"].to_db()
+            quote.current_price = price_amount
+            quote.currency = price_currency
+            mcap_amount, _ = result["market_cap"].to_db()
+            quote.market_cap = mcap_amount
             quote.country = country
             quote.updated_at = datetime.now(timezone.utc)
             db.commit()
@@ -95,7 +100,7 @@ class MarketDataService:
 
     def get_quote_safe(
         self, symbol_or_coin_id: str, is_crypto: bool = False, country: str = "US", db: Session | None = None
-    ) -> float | None:
+    ) -> "Money | None":
         try:
             if is_crypto:
                 quote = self.get_crypto_quote(symbol_or_coin_id)
@@ -120,9 +125,9 @@ class MarketDataService:
         data = resp.json()[coin_id]
         result = {
             "coin_id": coin_id,
-            "current_price": data["usd"],
-            "currency": "USD",
-            "market_cap": data["usd_market_cap"],
+            "current_price": Money(Decimal(str(data["usd"])), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal(str(data["usd_market_cap"])), Currency.USD),
             "change_24h": data["usd_24h_change"],
         }
         self._crypto_quote_cache[coin_id] = result
@@ -140,7 +145,7 @@ class MarketDataService:
         result = [
             {
                 "date": datetime.fromtimestamp(ts / 1000, tz=timezone.utc).strftime("%Y-%m-%d"),
-                "price": price,
+                "price": Decimal(str(price)),
             }
             for ts, price in data["prices"]
         ]

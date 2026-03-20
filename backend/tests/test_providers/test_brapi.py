@@ -1,7 +1,9 @@
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
 from app.providers.brapi import BrapiProvider
 from app.providers.base import MarketDataProvider
+from app.money import Money, Currency
 
 
 class TestBrapiGetQuote:
@@ -26,9 +28,9 @@ class TestBrapiGetQuote:
 
         assert result["symbol"] == "PETR4.SA"
         assert result["name"] == "PETROBRAS PN"
-        assert result["current_price"] == 38.50
-        assert result["currency"] == "BRL"
-        assert result["market_cap"] == 500_000_000_000
+        assert result["current_price"] == Money(Decimal("38.5"), Currency.BRL)
+        assert result["currency"] == Currency.BRL
+        assert result["market_cap"] == Money(Decimal("500000000000"), Currency.BRL)
 
     def test_strips_sa_suffix_for_api_call(self):
         provider = BrapiProvider(api_key="test-key", base_url="https://brapi.dev")
@@ -70,7 +72,7 @@ class TestBrapiGetHistory:
 
         assert len(result) == 2
         assert result[0]["date"] == "2024-01-01"
-        assert result[0]["close"] == 35.0
+        assert result[0]["close"] == Decimal("35.0")
         assert result[0]["volume"] == 5000000
 
     def test_strips_sa_suffix_for_history(self):

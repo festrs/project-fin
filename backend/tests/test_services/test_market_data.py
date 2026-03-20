@@ -1,9 +1,11 @@
 from datetime import datetime, timezone
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
 import pytest
 
 from app.models.market_quote import MarketQuote
+from app.money import Money, Currency
 from app.services.market_data import MarketDataService
 
 
@@ -22,9 +24,9 @@ class TestGetStockQuote:
         quote = MarketQuote(
             symbol="AAPL",
             name="Apple Inc",
-            current_price=175.50,
+            current_price=Decimal("175.50"),
             currency="USD",
-            market_cap=2_800_000_000_000,
+            market_cap=Decimal("2800000000000"),
             country="US",
         )
         db.add(quote)
@@ -33,42 +35,43 @@ class TestGetStockQuote:
         result = service.get_stock_quote("AAPL", country="US", db=db)
 
         assert result["symbol"] == "AAPL"
-        assert result["current_price"] == 175.50
+        assert result["current_price"] == Money(Decimal("175.50"), Currency.USD)
+        assert result["currency"] == Currency.USD
 
     def test_falls_back_to_provider_when_not_in_db(self, service, db):
         mock_provider = MagicMock()
         mock_provider.get_quote.return_value = {
             "symbol": "AAPL",
             "name": "Apple Inc",
-            "current_price": 175.50,
-            "currency": "USD",
-            "market_cap": 2_800_000_000_000,
+            "current_price": Money(Decimal("175.50"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("2800000000000"), Currency.USD),
         }
         service._finnhub = mock_provider
 
         result = service.get_stock_quote("AAPL", country="US", db=db)
 
-        assert result["current_price"] == 175.50
+        assert result["current_price"] == Money(Decimal("175.50"), Currency.USD)
         mock_provider.get_quote.assert_called_once_with("AAPL")
         # Verify it was stored in DB
         stored = db.query(MarketQuote).filter_by(symbol="AAPL").first()
         assert stored is not None
-        assert stored.current_price == 175.50
+        assert stored.current_price == Decimal("175.50")
 
     def test_routes_br_to_brapi(self, service, db):
         mock_provider = MagicMock()
         mock_provider.get_quote.return_value = {
             "symbol": "PETR4.SA",
             "name": "Petrobras",
-            "current_price": 38.50,
-            "currency": "BRL",
-            "market_cap": 500_000_000_000,
+            "current_price": Money(Decimal("38.50"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
         }
         service._brapi = mock_provider
 
         result = service.get_stock_quote("PETR4.SA", country="BR", db=db)
 
-        assert result["current_price"] == 38.50
+        assert result["current_price"] == Money(Decimal("38.50"), Currency.BRL)
         mock_provider.get_quote.assert_called_once_with("PETR4.SA")
 
 
@@ -76,7 +79,7 @@ class TestGetStockHistory:
     def test_routes_us_to_finnhub(self, service):
         mock_provider = MagicMock()
         mock_provider.get_history.return_value = [
-            {"date": "2024-01-01", "close": 170.0, "volume": 1000000},
+            {"date": "2024-01-01", "close": Decimal("170.0"), "volume": 1000000},
         ]
         service._finnhub = mock_provider
 
@@ -88,7 +91,7 @@ class TestGetStockHistory:
     def test_routes_br_to_brapi(self, service):
         mock_provider = MagicMock()
         mock_provider.get_history.return_value = [
-            {"date": "2024-01-01", "close": 35.0, "volume": 5000000},
+            {"date": "2024-01-01", "close": Decimal("35.0"), "volume": 5000000},
         ]
         service._brapi = mock_provider
 
@@ -103,16 +106,16 @@ class TestGetQuoteSafe:
         quote = MarketQuote(
             symbol="PETR4.SA",
             name="Petrobras",
-            current_price=38.50,
+            current_price=Decimal("38.50"),
             currency="BRL",
-            market_cap=500_000_000_000,
+            market_cap=Decimal("500000000000"),
             country="BR",
         )
         db.add(quote)
         db.commit()
 
         result = service.get_quote_safe("PETR4.SA", is_crypto=False, country="BR", db=db)
-        assert result == 38.50
+        assert result == Money(Decimal("38.50"), Currency.BRL)
 
     def test_returns_none_on_error(self, service, db):
         service._finnhub = MagicMock()
@@ -139,7 +142,7 @@ class TestGetCryptoQuote:
         result = service.get_crypto_quote("bitcoin")
 
         assert result["coin_id"] == "bitcoin"
-        assert result["current_price"] == 65000.0
+        assert result["current_price"] == Money(Decimal("65000.0"), Currency.USD)
 
 
 class TestGetCryptoHistory:
@@ -158,4 +161,4 @@ class TestGetCryptoHistory:
         result = service.get_crypto_history("bitcoin", days=30)
 
         assert len(result) == 2
-        assert result[0]["price"] == 42000.0
+        assert result[0]["price"] == Decimal("42000.0")

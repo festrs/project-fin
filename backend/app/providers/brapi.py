@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import httpx
+
+from app.money import Money, Currency
 
 
 def _strip_sa(symbol: str) -> str:
@@ -34,12 +37,13 @@ class BrapiProvider:
         resp.raise_for_status()
         data = resp.json()["results"][0]
 
+        currency = Currency.from_code(data.get("currency", "BRL"))
         return {
             "symbol": symbol,
             "name": data.get("shortName", ""),
-            "current_price": data.get("regularMarketPrice", 0.0),
-            "currency": data.get("currency", "BRL"),
-            "market_cap": data.get("marketCap", 0),
+            "current_price": Money(Decimal(str(data.get("regularMarketPrice", 0))), currency),
+            "currency": currency,
+            "market_cap": Money(Decimal(str(data.get("marketCap", 0))), currency),
         }
 
     def get_dividend_data(self, symbol: str) -> dict:
@@ -60,13 +64,13 @@ class BrapiProvider:
         resp.raise_for_status()
         data = resp.json()["results"][0]
 
-        price = data.get("regularMarketPrice", 0)
+        price = Decimal(str(data.get("regularMarketPrice", 0)))
         dividends_data = data.get("dividendsData", {})
         cash_dividends = dividends_data.get("cashDividends", [])
 
         # Sum dividends paid in the last 12 months
         cutoff = datetime.now(timezone.utc) - timedelta(days=365)
-        annual_dps = 0.0
+        annual_dps = Decimal("0")
         for d in cash_dividends:
             payment_date_str = d.get("paymentDate", "")
             if not payment_date_str:
@@ -74,16 +78,16 @@ class BrapiProvider:
             try:
                 payment_date = datetime.fromisoformat(payment_date_str.replace("Z", "+00:00"))
                 if payment_date >= cutoff:
-                    annual_dps += d.get("rate", 0)
+                    annual_dps += Decimal(str(d.get("rate", 0)))
             except (ValueError, TypeError):
                 continue
 
-        dividend_yield = (annual_dps / price * 100) if price > 0 and annual_dps > 0 else 0
+        dividend_yield = (annual_dps / price * 100) if price > 0 and annual_dps > 0 else Decimal("0")
 
         return {
             "symbol": symbol,
-            "dividend_per_share_annual": round(annual_dps, 6),
-            "dividend_yield_annual": round(dividend_yield, 4),
+            "dividend_per_share_annual": annual_dps,
+            "dividend_yield_annual": dividend_yield,
         }
 
     def get_fundamentals(self, symbol: str) -> dict:
@@ -148,7 +152,7 @@ class BrapiProvider:
         return [
             {
                 "date": datetime.fromtimestamp(item["date"], tz=timezone.utc).strftime("%Y-%m-%d"),
-                "close": item["close"],
+                "close": Decimal(str(item["close"])),
                 "volume": int(item.get("volume", 0)),
             }
             for item in history

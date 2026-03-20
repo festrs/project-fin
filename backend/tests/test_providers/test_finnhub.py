@@ -1,8 +1,10 @@
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 
 from app.providers.finnhub import FinnhubProvider
 from app.providers.base import MarketDataProvider
+from app.money import Money, Currency
 
 
 class TestFinnhubGetQuote:
@@ -33,9 +35,9 @@ class TestFinnhubGetQuote:
 
         assert result["symbol"] == "AAPL"
         assert result["name"] == "Apple Inc"
-        assert result["current_price"] == 175.50
-        assert result["currency"] == "USD"
-        assert result["market_cap"] == 2_800_000_000_000  # converted from millions
+        assert result["current_price"] == Money(Decimal("175.5"), Currency.USD)
+        assert result["currency"] == Currency.USD
+        assert result["market_cap"] == Money(Decimal("2800000000000.0"), Currency.USD)
 
     def test_passes_api_key(self):
         provider = FinnhubProvider(api_key="my-key", base_url="https://finnhub.io/api/v1")
@@ -72,7 +74,7 @@ class TestFinnhubGetHistory:
 
         assert len(result) == 2
         assert result[0]["date"] == "2024-01-01"
-        assert result[0]["close"] == 170.0
+        assert result[0]["close"] == Decimal("170.0")
         assert result[0]["volume"] == 1000000
         assert result[1]["date"] == "2024-01-02"
 

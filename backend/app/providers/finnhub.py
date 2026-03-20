@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import httpx
+
+from app.money import Money, Currency
 
 PERIOD_DAYS = {
     "1mo": 30,
@@ -47,12 +50,13 @@ class FinnhubProvider:
         profile_resp.raise_for_status()
         profile_data = profile_resp.json()
 
+        currency = Currency.from_code(profile_data.get("currency", "USD"))
         return {
             "symbol": symbol,
             "name": profile_data.get("name", ""),
-            "current_price": quote_data.get("c", 0.0),
-            "currency": profile_data.get("currency", "USD"),
-            "market_cap": profile_data.get("marketCapitalization", 0) * 1_000_000,
+            "current_price": Money(Decimal(str(quote_data.get("c", 0))), currency),
+            "currency": currency,
+            "market_cap": Money(Decimal(str(profile_data.get("marketCapitalization", 0))) * Decimal("1000000"), currency),
         }
 
     def get_splits(self, symbol: str, from_date: str, to_date: str) -> list[dict]:
@@ -90,7 +94,7 @@ class FinnhubProvider:
         return [
             {
                 "date": datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"),
-                "close": close,
+                "close": Decimal(str(close)),
                 "volume": int(volume),
             }
             for ts, close, volume in zip(data["t"], data["c"], data["v"])

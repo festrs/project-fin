@@ -1,3 +1,4 @@
+from decimal import Decimal
 from unittest.mock import patch, MagicMock, call
 
 import pytest
@@ -6,6 +7,7 @@ from app.models.market_quote import MarketQuote
 from app.models.asset_class import AssetClass
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.money import Money, Currency
 from app.services.market_data_scheduler import MarketDataScheduler
 
 
@@ -47,24 +49,28 @@ class TestFetchAllQuotes:
         _setup_user_with_holdings(db)
 
         scheduler._finnhub.get_quote.return_value = {
-            "symbol": "AAPL", "name": "Apple", "current_price": 175.0,
-            "currency": "USD", "market_cap": 2_800_000_000_000,
+            "symbol": "AAPL", "name": "Apple",
+            "current_price": Money(Decimal("175.0"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("2800000000000"), Currency.USD),
         }
         scheduler._brapi.get_quote.return_value = {
-            "symbol": "PETR4.SA", "name": "Petrobras", "current_price": 40.0,
-            "currency": "BRL", "market_cap": 500_000_000_000,
+            "symbol": "PETR4.SA", "name": "Petrobras",
+            "current_price": Money(Decimal("40.0"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
         }
 
         scheduler.fetch_all_quotes(db)
 
         aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
         assert aapl is not None
-        assert aapl.current_price == 175.0
+        assert aapl.current_price == Decimal("175.0")
         assert aapl.country == "US"
 
         petr = db.query(MarketQuote).filter_by(symbol="PETR4.SA").first()
         assert petr is not None
-        assert petr.current_price == 40.0
+        assert petr.current_price == Decimal("40.0")
         assert petr.country == "BR"
 
     def test_continues_on_individual_failure(self, scheduler, db):
@@ -72,8 +78,10 @@ class TestFetchAllQuotes:
 
         scheduler._finnhub.get_quote.side_effect = Exception("Finnhub down")
         scheduler._brapi.get_quote.return_value = {
-            "symbol": "PETR4.SA", "name": "Petrobras", "current_price": 40.0,
-            "currency": "BRL", "market_cap": 500_000_000_000,
+            "symbol": "PETR4.SA", "name": "Petrobras",
+            "current_price": Money(Decimal("40.0"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
         }
 
         scheduler.fetch_all_quotes(db)
@@ -90,21 +98,25 @@ class TestFetchAllQuotes:
         _setup_user_with_holdings(db)
 
         # Pre-existing quote
-        old = MarketQuote(symbol="AAPL", name="Apple", current_price=170.0, currency="USD", country="US")
+        old = MarketQuote(symbol="AAPL", name="Apple", current_price=Decimal("170.0"), currency="USD", country="US")
         db.add(old)
         db.commit()
 
         scheduler._finnhub.get_quote.return_value = {
-            "symbol": "AAPL", "name": "Apple Inc", "current_price": 175.0,
-            "currency": "USD", "market_cap": 2_800_000_000_000,
+            "symbol": "AAPL", "name": "Apple Inc",
+            "current_price": Money(Decimal("175.0"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("2800000000000"), Currency.USD),
         }
         scheduler._brapi.get_quote.return_value = {
-            "symbol": "PETR4.SA", "name": "Petrobras", "current_price": 40.0,
-            "currency": "BRL", "market_cap": 500_000_000_000,
+            "symbol": "PETR4.SA", "name": "Petrobras",
+            "current_price": Money(Decimal("40.0"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
         }
 
         scheduler.fetch_all_quotes(db)
 
         aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
-        assert aapl.current_price == 175.0
+        assert aapl.current_price == Decimal("175.0")
         assert aapl.name == "Apple Inc"

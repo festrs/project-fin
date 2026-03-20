@@ -40,9 +40,11 @@ class MarketDataScheduler:
                     db.add(quote)
 
                 quote.name = quote_data["name"]
-                quote.current_price = quote_data["current_price"]
-                quote.currency = quote_data["currency"]
-                quote.market_cap = quote_data.get("market_cap", 0)
+                price_amount, price_currency = quote_data["current_price"].to_db()
+                quote.current_price = price_amount
+                quote.currency = price_currency
+                mcap_amount, _ = quote_data["market_cap"].to_db()
+                quote.market_cap = mcap_amount
                 quote.country = country
                 quote.updated_at = datetime.now(timezone.utc)
                 db.commit()
