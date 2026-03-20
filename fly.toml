@@ -1,0 +1,23 @@
+app = "project-fin"
+primary_region = "gru"
+
+[build]
+
+[env]
+  DATABASE_URL = "sqlite:///./data/project_fin.db"
+  CORS_ORIGIN = "*"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "256mb"
+
+[mounts]
+  source = "project_fin_data"
+  destination = "/app/data"
