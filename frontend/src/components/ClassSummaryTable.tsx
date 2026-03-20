@@ -44,7 +44,7 @@ interface ClassSummaryTableProps {
   onUpdateTargetWeight?: (classId: string, weight: number) => Promise<void>;
   onScrapeDividends?: () => void;
   scrapingDividends?: boolean;
-  onCreateClass?: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income") => Promise<unknown>;
+  onCreateClass?: (name: string, targetWeight: number, type: "stock" | "crypto" | "fixed_income", isEmergencyReserve?: boolean) => Promise<unknown>;
   onDeleteClass?: (classId: string) => Promise<unknown>;
 }
 
@@ -235,6 +235,8 @@ export function ClassSummaryTable({
   const [newType, setNewType] = useState<"stock" | "crypto" | "fixed_income">("stock");
   const [creating, setCreating] = useState(false);
 
+  const hasEmergencyReserve = assetClasses.some((ac) => ac.is_emergency_reserve);
+
   if (loading) {
     return (
       <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
@@ -243,8 +245,7 @@ export function ClassSummaryTable({
     );
   }
 
-  const summaries = computeClassSummaries(holdings, assetClasses, usdToBrl);
-  const grandTotalBRL = summaries.reduce((sum, s) => sum + s.totalValueBRL, 0);
+  const { regular: summaries, reserve: reserveSummary, grandTotalBRL } = computeClassSummaries(holdings, assetClasses, usdToBrl);
   const manualDivByClass = computeManualDividendsByClass(manualDividends);
 
   // Build estimated dividend map by class ID
@@ -345,6 +346,19 @@ export function ClassSummaryTable({
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
+            </button>
+          )}
+          {onCreateClass && !hasEmergencyReserve && (
+            <button
+              onClick={async () => {
+                if (window.confirm('Create Emergency Reserve class?')) {
+                  await onCreateClass("Emergency Reserve", 0, "fixed_income", true);
+                }
+              }}
+              className="text-xs text-text-muted hover:text-primary transition-colors border border-[var(--glass-border)] rounded-lg px-2 py-1"
+              title="Add emergency reserve"
+            >
+              + Reserve
             </button>
           )}
         </div>
@@ -611,6 +625,46 @@ export function ClassSummaryTable({
                 </td>
               </tr>
             )}
+            {reserveSummary && (
+              <tr className="border-t border-[var(--glass-border)]">
+                <td
+                  className="py-2 px-2 font-medium text-text-secondary cursor-pointer hover:text-primary transition-colors"
+                  onClick={() => navigate(`/portfolio/${reserveSummary.classId}`)}
+                >
+                  {reserveSummary.className}
+                </td>
+                <td className="py-2 px-2 text-right text-text-secondary">
+                  {formatValue(reserveSummary.totalValue, reserveSummary.currency)}
+                </td>
+                <td className="py-2 px-2 text-right text-text-muted">
+                  {reserveSummary.currency === "USD"
+                    ? formatValue(reserveSummary.totalValueBRL, "BRL")
+                    : ""}
+                </td>
+                <td className="py-2 px-2 text-right text-text-muted">-</td>
+                <td className="py-2 px-2 text-right text-text-muted">-</td>
+                <td className="py-2 px-2 text-center text-text-muted">-</td>
+                <td className="py-2 px-2 text-right text-text-muted">-</td>
+                {onDeleteClass && (
+                  <td className="py-2 px-2 text-center">
+                    <button
+                      className="text-text-muted hover:text-negative transition-colors"
+                      title="Delete emergency reserve"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm('Delete emergency reserve?')) {
+                          onDeleteClass(reserveSummary.classId);
+                        }
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </td>
+                )}
+              </tr>
+            )}
             <tr className="font-semibold bg-[var(--glass-primary-soft)]">
               <td className="py-2 px-2">Total</td>
               <td className="py-2 px-2" />
@@ -629,6 +683,16 @@ export function ClassSummaryTable({
               </td>
               {onDeleteClass && <td className="py-2 px-2" />}
             </tr>
+            {reserveSummary && reserveSummary.totalValueBRL > 0 && (
+              <tr className="font-semibold text-text-secondary">
+                <td className="py-2 px-2">Total + Reserve</td>
+                <td className="py-2 px-2" />
+                <td className="py-2 px-2 text-right">
+                  {formatValue(grandTotalBRL + reserveSummary.totalValueBRL, "BRL")}
+                </td>
+                <td colSpan={onDeleteClass ? 5 : 4} className="py-2 px-2" />
+              </tr>
+            )}
           </tfoot>
         </table>
       </div>
