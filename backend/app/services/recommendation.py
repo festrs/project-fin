@@ -39,7 +39,7 @@ class RecommendationService:
         # Build class name map
         asset_classes = (
             self.db.query(AssetClass)
-            .filter(AssetClass.user_id == user_id)
+            .filter(AssetClass.user_id == user_id, AssetClass.is_emergency_reserve == False)
             .all()
         )
         class_map = {ac.id: ac for ac in asset_classes}
@@ -63,8 +63,10 @@ class RecommendationService:
         asset_values: dict[str, Decimal] = {}
         for h in holdings:
             ac = class_map.get(h["asset_class_id"])
-            class_name = ac.name if ac else ""
-            country = ac.country if ac else "US"
+            if not ac:
+                continue  # skip holdings in emergency reserve (filtered out of class_map)
+            class_name = ac.name
+            country = ac.country
             if h["quantity"] is None:
                 # Value-based holding: use total_cost (now a Money object)
                 asset_values[h["symbol"]] = h["total_cost"].amount
