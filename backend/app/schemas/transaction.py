@@ -3,16 +3,18 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, model_validator
 
+from app.schemas.money import MoneyInput, MoneyResponse
+
 
 class TransactionCreate(BaseModel):
     asset_class_id: str
     asset_symbol: str
     type: Literal["buy", "sell", "dividend"]
     quantity: Optional[float] = None
-    unit_price: Optional[float] = None
-    total_value: float
-    currency: str
-    tax_amount: Optional[float] = 0.0
+    unit_price: Optional[MoneyInput] = None
+    total_value: MoneyInput
+    currency: Optional[str] = None  # DEPRECATED: kept for backward compat, currency comes from MoneyInput now
+    tax_amount: Optional[MoneyInput] = None
     date: dt.date
     notes: Optional[str] = None
 
@@ -28,9 +30,9 @@ class TransactionCreate(BaseModel):
 
 class TransactionUpdate(BaseModel):
     quantity: Optional[float] = None
-    unit_price: Optional[float] = None
-    total_value: Optional[float] = None
-    tax_amount: Optional[float] = None
+    unit_price: Optional[MoneyInput] = None
+    total_value: Optional[MoneyInput] = None
+    tax_amount: Optional[MoneyInput] = None
     date: Optional[dt.date] = None
     notes: Optional[str] = None
 
@@ -42,10 +44,9 @@ class TransactionResponse(BaseModel):
     asset_symbol: str
     type: str
     quantity: float | None
-    unit_price: float | None
-    total_value: float
-    currency: str
-    tax_amount: float | None
+    unit_price: MoneyResponse | None
+    total_value: MoneyResponse
+    tax_amount: MoneyResponse | None
     date: dt.date
     notes: Optional[str]
     created_at: dt.datetime
