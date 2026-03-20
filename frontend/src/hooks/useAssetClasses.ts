@@ -33,21 +33,19 @@ export function useAssetClasses() {
       target_weight: targetWeight,
       type,
     });
-    setAssetClasses((prev) => [...prev, res.data]);
+    setAssetClasses((prev) => { _cache = [...prev, res.data]; return _cache; });
     return res.data;
   }, []);
 
   const updateClass = useCallback(async (id: string, data: Partial<AssetClass>) => {
     const res = await api.put<AssetClass>(`/asset-classes/${id}`, data);
-    setAssetClasses((prev) =>
-      prev.map((c) => (c.id === id ? res.data : c))
-    );
+    setAssetClasses((prev) => { _cache = prev.map((c) => (c.id === id ? res.data : c)); return _cache; });
     return res.data;
   }, []);
 
   const deleteClass = useCallback(async (id: string) => {
     await api.delete(`/asset-classes/${id}`);
-    setAssetClasses((prev) => prev.filter((c) => c.id !== id));
+    setAssetClasses((prev) => { _cache = prev.filter((c) => c.id !== id); return _cache; });
   }, []);
 
   return { assetClasses, loading, error, createClass, updateClass, deleteClass, refresh: fetchClasses };
