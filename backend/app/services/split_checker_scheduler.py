@@ -52,7 +52,7 @@ class SplitCheckerScheduler:
         )
 
         today = date.today()
-        cutoff_date = today - timedelta(days=3 * 365)
+        cutoff_date = today - timedelta(days=2 * 365)
         from_date = cutoff_date.isoformat()
         to_date = today.isoformat()
 
