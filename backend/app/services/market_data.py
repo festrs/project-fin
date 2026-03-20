@@ -43,7 +43,7 @@ class MarketDataService:
     def _get_provider(self, country: str):
         return self._brapi if country == "BR" else self._finnhub
 
-    def get_stock_quote(self, symbol: str, country: str = "US", db: Session | None = None) -> dict:
+    def get_stock_quote(self, symbol: str, country: str = "US", db: Session | None = None, db_only: bool = False) -> dict:
         if symbol in self._quote_cache:
             return self._quote_cache[symbol]
 
@@ -64,6 +64,10 @@ class MarketDataService:
                 }
                 self._quote_cache[symbol] = result
                 return result
+
+        # In db_only mode, don't call live providers
+        if db_only:
+            raise LookupError(f"No cached quote for {symbol}")
 
         # Fallback to live provider
         provider = self._get_provider(country)
@@ -99,13 +103,16 @@ class MarketDataService:
         return result
 
     def get_quote_safe(
-        self, symbol_or_coin_id: str, is_crypto: bool = False, country: str = "US", db: Session | None = None
+        self, symbol_or_coin_id: str, is_crypto: bool = False, country: str = "US",
+        db: Session | None = None, db_only: bool = False,
     ) -> "Money | None":
         try:
             if is_crypto:
+                if db_only:
+                    return None
                 quote = self.get_crypto_quote(symbol_or_coin_id)
             else:
-                quote = self.get_stock_quote(symbol_or_coin_id, country=country, db=db)
+                quote = self.get_stock_quote(symbol_or_coin_id, country=country, db=db, db_only=db_only)
             return quote.get("current_price")
         except Exception:
             return None

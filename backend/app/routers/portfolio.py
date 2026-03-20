@@ -38,6 +38,7 @@ def _money_to_dict(m) -> dict | None:
 def portfolio_summary(
     request: Request,
     x_user_id: str = Header(),
+    live: bool = True,
     db: Session = Depends(get_db),
 ):
     service = PortfolioService(db)
@@ -54,7 +55,7 @@ def portfolio_summary(
             weight_map[aw.symbol] = aw.target_weight
 
     market_data = get_market_data_service()
-    enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data, db=db)
+    enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data, db=db, db_only=not live)
     enriched_serialized = []
     for h in enriched:
         enriched_serialized.append({
