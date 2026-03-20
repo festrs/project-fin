@@ -294,9 +294,14 @@ class PortfolioService:
                 })
             else:
                 price = prices.get(h["symbol"])
-                if price is not None:
+                if price is not None and price.currency == h["avg_price"].currency:
                     current_value = price * Decimal(str(h["quantity"]))  # Money * scalar -> Money
                     gain_loss = (price - h["avg_price"]) * Decimal(str(h["quantity"]))  # Money - Money -> Money, then * scalar
+                    actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
+                elif price is not None:
+                    # Currency mismatch between market data and transaction — use price currency
+                    current_value = price * Decimal(str(h["quantity"]))
+                    gain_loss = None  # Can't compute gain/loss across currencies
                     actual_weight = float(current_value.amount / total_value * 100) if total_value > 0 else 0.0
                 else:
                     current_value = None

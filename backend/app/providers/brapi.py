@@ -43,7 +43,7 @@ class BrapiProvider:
             "name": data.get("shortName", ""),
             "current_price": Money(Decimal(str(data.get("regularMarketPrice", 0))), currency),
             "currency": currency,
-            "market_cap": Money(Decimal(str(data.get("marketCap", 0))), currency),
+            "market_cap": Money(Decimal(str(data["marketCap"])) if data.get("marketCap") else Decimal("0"), currency),
         }
 
     def get_dividend_data(self, symbol: str) -> dict:
