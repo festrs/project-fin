@@ -126,6 +126,32 @@ def apply_split(
             if tx.unit_price is not None:
                 tx.unit_price = tx.unit_price / Decimal(str(ratio))
 
+        # Create audit transaction so the split is visible in transaction history
+        tx_currency = (
+            db.query(Transaction.currency)
+            .filter(
+                Transaction.user_id == x_user_id,
+                Transaction.asset_symbol == split.symbol,
+                Transaction.type == "buy",
+            )
+            .order_by(Transaction.date.desc())
+            .first()
+        )
+        currency = tx_currency[0] if tx_currency else "BRL"
+        db.add(Transaction(
+            user_id=x_user_id,
+            asset_class_id=split.asset_class_id,
+            asset_symbol=split.symbol,
+            type="buy",
+            quantity=0,
+            unit_price=0,
+            total_value=0,
+            currency=currency,
+            tax_amount=0,
+            date=split.split_date,
+            notes=f"Desdobramento {split.from_factor}:{split.to_factor}",
+        ))
+
     split.status = "applied"
     split.resolved_at = datetime.utcnow()
     db.commit()
