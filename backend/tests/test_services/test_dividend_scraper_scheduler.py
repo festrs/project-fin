@@ -106,6 +106,7 @@ class TestDividendScheduler:
         assert records[0].value == 0.25
         assert records[0].dividend_type == "Dividend"
         assert records[0].payment_date is None
+        assert records[0].currency == "USD"
 
     def test_stores_br_dividends(self, scheduler, dados_provider, yfinance_provider, db):
         _setup_holdings(db)
@@ -123,6 +124,7 @@ class TestDividendScheduler:
 
         records = db.query(DividendHistory).filter_by(symbol="PETR4.SA").all()
         assert len(records) == 1
+        assert records[0].currency == "BRL"
 
     def test_skips_existing_duplicates(self, scheduler, dados_provider, yfinance_provider, db):
         _setup_holdings(db)

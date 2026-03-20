@@ -41,9 +41,11 @@ class DividendScheduler:
                 if country == "US" or class_name in self._YFINANCE_CLASS_NAMES:
                     records = self._yfinance.get_dividends(symbol)
                     delay = self._us_delay
+                    currency = "USD"
                 else:
                     records = self._dados.scrape_dividends(symbol)
                     delay = self._br_delay
+                    currency = "BRL"
 
                 new_count = 0
                 seen = set()
@@ -74,6 +76,7 @@ class DividendScheduler:
                         record_date=rec.record_date,
                         ex_date=rec.ex_date,
                         payment_date=rec.payment_date,
+                        currency=currency,
                     )
                     db.add(entry)
                     new_count += 1
