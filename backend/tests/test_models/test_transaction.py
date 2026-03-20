@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 
 from app.models.user import User
 from app.models.asset_class import AssetClass
@@ -22,8 +23,8 @@ def test_create_buy_transaction(db):
         asset_symbol="AAPL",
         type="buy",
         quantity=10.0,
-        unit_price=150.0,
-        total_value=1500.0,
+        unit_price=Decimal("150.0"),
+        total_value=Decimal("1500.0"),
         currency="USD",
         date=date(2025, 1, 15),
     )
@@ -35,8 +36,8 @@ def test_create_buy_transaction(db):
     assert len(tx.id) == 36
     assert tx.type == "buy"
     assert tx.quantity == 10.0
-    assert tx.unit_price == 150.0
-    assert tx.total_value == 1500.0
+    assert tx.unit_price == Decimal("150.0")
+    assert tx.total_value == Decimal("1500.0")
     assert tx.currency == "USD"
     assert tx.tax_amount is None
     assert tx.notes is None
@@ -61,8 +62,8 @@ def test_create_dividend_transaction(db):
         asset_symbol="AAPL",
         type="dividend",
         quantity=0.0,
-        unit_price=0.0,
-        total_value=25.50,
+        unit_price=Decimal("0.0"),
+        total_value=Decimal("25.50"),
         currency="USD",
         date=date(2025, 3, 1),
         notes="Q1 dividend",
@@ -73,8 +74,8 @@ def test_create_dividend_transaction(db):
 
     assert tx.type == "dividend"
     assert tx.quantity == 0.0
-    assert tx.unit_price == 0.0
-    assert tx.total_value == 25.50
+    assert tx.unit_price == Decimal("0.0")
+    assert tx.total_value == Decimal("25.50")
     assert tx.notes == "Q1 dividend"
 
 
@@ -91,17 +92,17 @@ def test_filter_by_type(db):
 
     tx1 = Transaction(
         user_id=user.id, asset_class_id=ac.id, asset_symbol="AAPL",
-        type="buy", quantity=10, unit_price=150, total_value=1500,
+        type="buy", quantity=10, unit_price=Decimal("150"), total_value=Decimal("1500"),
         currency="USD", date=date(2025, 1, 1),
     )
     tx2 = Transaction(
         user_id=user.id, asset_class_id=ac.id, asset_symbol="AAPL",
-        type="sell", quantity=5, unit_price=160, total_value=800,
+        type="sell", quantity=5, unit_price=Decimal("160"), total_value=Decimal("800"),
         currency="USD", date=date(2025, 2, 1),
     )
     tx3 = Transaction(
         user_id=user.id, asset_class_id=ac.id, asset_symbol="AAPL",
-        type="buy", quantity=3, unit_price=155, total_value=465,
+        type="buy", quantity=3, unit_price=Decimal("155"), total_value=Decimal("465"),
         currency="USD", date=date(2025, 3, 1),
     )
     db.add_all([tx1, tx2, tx3])
