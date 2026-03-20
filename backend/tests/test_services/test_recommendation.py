@@ -1,9 +1,11 @@
 from datetime import date, timedelta
+from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
 import pytest
 
 from app.models import User, AssetClass, AssetWeight, Transaction
+from app.money import Money, Currency
 from app.services.recommendation import RecommendationService
 
 
@@ -34,14 +36,16 @@ def _create_asset_weight(db, asset_class_id, symbol, target_weight):
 def _create_buy(db, user_id, asset_class_id, symbol, quantity, unit_price, buy_date=None):
     if buy_date is None:
         buy_date = date.today() - timedelta(days=5)
+    qty = Decimal(str(quantity))
+    price = Decimal(str(unit_price))
     tx = Transaction(
         user_id=user_id,
         asset_class_id=asset_class_id,
         asset_symbol=symbol,
         type="buy",
-        quantity=quantity,
-        unit_price=unit_price,
-        total_value=quantity * unit_price,
+        quantity=qty,
+        unit_price=price,
+        total_value=qty * price,
         currency="USD",
         date=buy_date,
     )
@@ -56,12 +60,16 @@ def _mock_market_data():
     mock = MagicMock()
 
     def stock_quote(symbol, country="US", db=None):
-        prices = {"AAPL": 150.0, "GOOG": 200.0, "PETR4.SA": 40.0}
-        return {"symbol": symbol, "current_price": prices.get(symbol, 100.0)}
+        prices = {
+            "AAPL": Money(Decimal("150.0"), Currency.USD),
+            "GOOG": Money(Decimal("200.0"), Currency.USD),
+            "PETR4.SA": Money(Decimal("40.0"), Currency.USD),
+        }
+        return {"symbol": symbol, "current_price": prices.get(symbol, Money(Decimal("100.0"), Currency.USD))}
 
     def crypto_quote(coin_id):
-        prices = {"bitcoin": 50000.0}
-        return {"coin_id": coin_id, "current_price": prices.get(coin_id, 100.0)}
+        prices = {"bitcoin": Money(Decimal("50000.0"), Currency.USD)}
+        return {"coin_id": coin_id, "current_price": prices.get(coin_id, Money(Decimal("100.0"), Currency.USD))}
 
     mock.get_stock_quote.side_effect = stock_quote
     mock.get_crypto_quote.side_effect = crypto_quote
@@ -138,7 +146,7 @@ class TestRecommendationService:
         _create_buy(db, user.id, ac_br.id, "PETR4.SA", 100, 38.0)
 
         mock_market = MagicMock()
-        mock_market.get_stock_quote.return_value = {"current_price": 40.0}
+        mock_market.get_stock_quote.return_value = {"current_price": Money(Decimal("40.0"), Currency.USD)}
 
         svc = RecommendationService(db, market_data_service=mock_market)
         recs = svc.get_recommendations(user.id, count=1)

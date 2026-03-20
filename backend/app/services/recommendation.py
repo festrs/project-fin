@@ -1,7 +1,10 @@
+from decimal import Decimal
+
 from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
+from app.money import Money
 from app.services.market_data import MarketDataService, CRYPTO_COINGECKO_MAP, CRYPTO_CLASS_NAMES
 from app.services.portfolio import PortfolioService
 from app.services.quarantine import QuarantineService
@@ -14,7 +17,7 @@ class RecommendationService:
         self.portfolio_service = PortfolioService(db)
         self.quarantine_service = QuarantineService(db)
 
-    def _get_current_price(self, symbol: str, class_name: str, country: str = "US", db: Session | None = None) -> float:
+    def _get_current_price(self, symbol: str, class_name: str, country: str = "US", db: Session | None = None) -> Money:
         if class_name in CRYPTO_CLASS_NAMES:
             coin_id = CRYPTO_COINGECKO_MAP.get(symbol)
             if coin_id:
@@ -57,13 +60,17 @@ class RecommendationService:
                 }
 
         # Calculate current values using market prices
-        asset_values: dict[str, float] = {}
+        asset_values: dict[str, Decimal] = {}
         for h in holdings:
             ac = class_map.get(h["asset_class_id"])
             class_name = ac.name if ac else ""
             country = ac.country if ac else "US"
+            if h["quantity"] is None:
+                # Value-based holding: use total_cost (now a Money object)
+                asset_values[h["symbol"]] = h["total_cost"].amount
+                continue
             price = self._get_current_price(h["symbol"], class_name, country=country, db=self.db)
-            asset_values[h["symbol"]] = h["quantity"] * price
+            asset_values[h["symbol"]] = price.amount * Decimal(str(h["quantity"]))
 
         total_value = sum(asset_values.values())
         if total_value == 0:
@@ -83,7 +90,7 @@ class RecommendationService:
             effective_target = (
                 info["class_target_weight"] * info["asset_target_weight"] / 100
             )
-            actual_weight = (asset_values.get(symbol, 0) / total_value) * 100
+            actual_weight = float(asset_values.get(symbol, Decimal("0")) / total_value * 100)
             diff = effective_target - actual_weight
 
             recommendations.append(
