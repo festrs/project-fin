@@ -15,13 +15,13 @@ import api from "../services/api";
 interface DividendClassData {
   asset_class_id: string;
   class_name: string;
-  annual_income: number;
+  annual_income: { amount: string; currency: string };
   currency: string;
 }
 
 interface DividendsResponse {
   dividends: DividendClassData[];
-  total_annual_income: number;
+  total_annual_income: { amount: string; currency: string };
 }
 
 export default function Dashboard() {
@@ -71,7 +71,8 @@ export default function Dashboard() {
   }, [fetchManualDividends, fetchEstimatedDividends, fetchExchangeRate]);
 
   const loading = portfolioLoading || classesLoading;
-  const classSummaries = computeClassSummaries(holdings, assetClasses, usdToBrl).map((s) => ({
+  const { regular: regularSummaries } = computeClassSummaries(holdings, assetClasses, usdToBrl);
+  const classSummaries = regularSummaries.map((s) => ({
     className: s.className,
     percentage: s.percentage,
     targetWeight: s.targetWeight,
@@ -122,8 +123,8 @@ export default function Dashboard() {
             onUpdateTargetWeight={handleUpdateTargetWeight}
             onScrapeDividends={handleScrapeDividends}
             scrapingDividends={scrapingDividends}
-            onCreateClass={async (name, weight, type) => {
-              await createClass(name, weight, type);
+            onCreateClass={async (name, weight, type, isEmergencyReserve) => {
+              await createClass(name, weight, type, isEmergencyReserve);
               refreshPortfolio();
             }}
             onDeleteClass={async (classId) => {
