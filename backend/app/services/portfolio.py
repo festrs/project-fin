@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
-from app.models.stock_split import SplitEventType
+
 from app.models.transaction import Transaction
 from app.money import Money, Currency
 from app.services.market_data import MarketDataService, CRYPTO_COINGECKO_MAP, CRYPTO_CLASS_NAMES
@@ -17,8 +17,6 @@ class PortfolioService:
         self.db = db
 
     def get_holdings(self, user_id: str) -> list[dict]:
-        from app.models.stock_split import StockSplit
-
         # Get all distinct symbols with their asset_class_id
         symbols = (
             self.db.query(Transaction.asset_symbol, Transaction.asset_class_id)
@@ -26,16 +24,6 @@ class PortfolioService:
             .distinct()
             .all()
         )
-
-        # Pre-load all applied splits for this user
-        applied_splits = (
-            self.db.query(StockSplit)
-            .filter(StockSplit.user_id == user_id, StockSplit.status == "applied")
-            .all()
-        )
-        splits_by_symbol: dict[str, list] = {}
-        for s in applied_splits:
-            splits_by_symbol.setdefault(s.symbol, []).append(s)
 
         holdings = []
         for symbol, asset_class_id in symbols:
@@ -93,69 +81,25 @@ class PortfolioService:
                     }
                 )
             else:
-                # Quantity-based: split-aware calculation
-                symbol_splits = [
-                    s for s in splits_by_symbol.get(symbol, [])
-                    if s.event_type != SplitEventType.BONIFICACAO
-                ]
-
-                if not symbol_splits:
-                    # Fast path: no splits, use original aggregate logic
-                    buy_qty = buy_qty or 0
-                    buy_value_raw = buy_agg.total_value or Decimal("0")
-                    sell_agg = (
-                        self.db.query(func.sum(Transaction.quantity).label("total_qty"))
-                        .filter(
-                            Transaction.user_id == user_id,
-                            Transaction.asset_symbol == symbol,
-                            Transaction.type == "sell",
-                        )
-                        .first()
+                # Quantity-based: totals reflect transaction history directly
+                # (splits and bonificações are recorded as separate buy transactions)
+                buy_qty = buy_qty or 0
+                buy_value_raw = buy_agg.total_value or Decimal("0")
+                sell_agg = (
+                    self.db.query(func.sum(Transaction.quantity).label("total_qty"))
+                    .filter(
+                        Transaction.user_id == user_id,
+                        Transaction.asset_symbol == symbol,
+                        Transaction.type == "sell",
                     )
-                    sell_qty = sell_agg.total_qty or 0
-                    net_qty = buy_qty - sell_qty
-                    if net_qty <= 0:
-                        continue
-                    avg_price_raw = buy_value_raw / Decimal(str(buy_qty)) if buy_qty > 0 else Decimal("0")
-                    total_cost_raw = avg_price_raw * Decimal(str(net_qty))
-                else:
-                    # Slow path: per-transaction split adjustment
-                    transactions = (
-                        self.db.query(Transaction)
-                        .filter(
-                            Transaction.user_id == user_id,
-                            Transaction.asset_symbol == symbol,
-                            Transaction.type.in_(["buy", "sell"]),
-                        )
-                        .all()
-                    )
-
-                    adjusted_buy_qty = 0.0
-                    adjusted_buy_value = Decimal("0")
-                    adjusted_sell_qty = 0.0
-
-                    for tx in transactions:
-                        ratio = 1.0
-                        for sp in symbol_splits:
-                            # Only adjust for actual splits, not bonificações
-                            # (bonificação bonus shares are recorded as separate buy transactions)
-                            if sp.event_type == SplitEventType.BONIFICACAO:
-                                continue
-                            if sp.split_date > tx.date:
-                                ratio *= sp.to_factor / sp.from_factor
-                        adjusted_qty = (tx.quantity or 0) * ratio
-
-                        if tx.type == "buy":
-                            adjusted_buy_qty += adjusted_qty
-                            adjusted_buy_value += tx.total_value
-                        elif tx.type == "sell":
-                            adjusted_sell_qty += adjusted_qty
-
-                    net_qty = adjusted_buy_qty - adjusted_sell_qty
-                    if net_qty <= 0:
-                        continue
-                    avg_price_raw = adjusted_buy_value / Decimal(str(adjusted_buy_qty)) if adjusted_buy_qty > 0 else Decimal("0")
-                    total_cost_raw = avg_price_raw * Decimal(str(net_qty))
+                    .first()
+                )
+                sell_qty = sell_agg.total_qty or 0
+                net_qty = buy_qty - sell_qty
+                if net_qty <= 0:
+                    continue
+                avg_price_raw = buy_value_raw / Decimal(str(buy_qty)) if buy_qty > 0 else Decimal("0")
+                total_cost_raw = avg_price_raw * Decimal(str(net_qty))
 
                 tx_currency = (
                     self.db.query(Transaction.currency)

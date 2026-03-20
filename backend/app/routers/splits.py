@@ -110,23 +110,16 @@ def apply_split(
                 notes=f"Bonificação {split.from_factor}:{split.to_factor}",
             ))
     else:
-        # Stock split: adjust quantity and unit_price on existing transactions
-        ratio = split.to_factor / split.from_factor
-        txns = (
-            db.query(Transaction)
-            .filter(
-                Transaction.user_id == x_user_id,
-                Transaction.asset_symbol == split.symbol,
-                Transaction.type.in_(["buy", "sell"]),
-            )
-            .all()
+        # Stock split: create a buy transaction for the extra shares
+        # (same approach as bonificação — totals reflect transaction history)
+        service = PortfolioService(db)
+        holdings = service.get_holdings(x_user_id)
+        current_qty = next(
+            (h["quantity"] or 0 for h in holdings if h["symbol"] == split.symbol), 0
         )
-        for tx in txns:
-            tx.quantity = tx.quantity * ratio
-            if tx.unit_price is not None:
-                tx.unit_price = tx.unit_price / Decimal(str(ratio))
+        ratio = split.to_factor / split.from_factor
+        extra_shares = current_qty * (ratio - 1)
 
-        # Create audit transaction so the split is visible in transaction history
         tx_currency = (
             db.query(Transaction.currency)
             .filter(
@@ -138,19 +131,21 @@ def apply_split(
             .first()
         )
         currency = tx_currency[0] if tx_currency else "BRL"
-        db.add(Transaction(
-            user_id=x_user_id,
-            asset_class_id=split.asset_class_id,
-            asset_symbol=split.symbol,
-            type="buy",
-            quantity=0,
-            unit_price=0,
-            total_value=0,
-            currency=currency,
-            tax_amount=0,
-            date=split.split_date,
-            notes=f"Desdobramento {split.from_factor}:{split.to_factor}",
-        ))
+
+        if extra_shares > 0:
+            db.add(Transaction(
+                user_id=x_user_id,
+                asset_class_id=split.asset_class_id,
+                asset_symbol=split.symbol,
+                type="buy",
+                quantity=extra_shares,
+                unit_price=0,
+                total_value=0,
+                currency=currency,
+                tax_amount=0,
+                date=split.split_date,
+                notes=f"Desdobramento {split.from_factor}:{split.to_factor}",
+            ))
 
     split.status = "applied"
     split.resolved_at = datetime.utcnow()
