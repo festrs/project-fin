@@ -71,13 +71,11 @@ export default function Dashboard() {
   }, [fetchManualDividends, fetchEstimatedDividends, fetchExchangeRate]);
 
   const loading = portfolioLoading || classesLoading;
-  const classSummaries = !loading
-    ? computeClassSummaries(holdings, assetClasses, usdToBrl).map((s) => ({
-        className: s.className,
-        percentage: s.percentage,
-        targetWeight: s.targetWeight,
-      }))
-    : [];
+  const classSummaries = computeClassSummaries(holdings, assetClasses, usdToBrl).map((s) => ({
+    className: s.className,
+    percentage: s.percentage,
+    targetWeight: s.targetWeight,
+  }));
 
   const handleScrapeDividends = useCallback(async () => {
     try {
