@@ -30,6 +30,9 @@ export default function NewsCard() {
 
   return (
     <div className="bg-surface-low rounded-xl p-6 border border-[var(--glass-border)]">
+      <h4 className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4 font-body">
+        Market News
+      </h4>
       {news.length === 0 ? (
         <p className="text-text-muted text-sm font-body">
           No recent market news
