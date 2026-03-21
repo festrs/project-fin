@@ -4,6 +4,7 @@ import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Fundamentals from "./pages/Fundamentals";
 import AssetClassHoldings from "./pages/AssetClassHoldings";
+import Invest from "./pages/Invest";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <main className="ml-[220px] w-[calc(100%-220px)] px-10 py-8">
           <Routes>
             <Route path="/" element={<Dashboard />} />
+            <Route path="/invest" element={<Invest />} />
             <Route path="/portfolio/:assetClassId" element={<AssetClassHoldings />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/fundamentals/:symbol" element={<Fundamentals />} />
