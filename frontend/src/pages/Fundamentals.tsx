@@ -66,15 +66,9 @@ function ScoreBreakdownCard({ detail }: { detail: FundamentalsScore }) {
   ];
 
   return (
-    <div
-      className="p-6 rounded-[14px]"
-      style={{
-        background: "var(--glass-card-bg)",
-        border: "1px solid var(--glass-border)",
-      }}
-    >
+    <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-primary text-lg font-semibold">Score Breakdown</h2>
+        <h2 className="text-heading text-primary">Score Breakdown</h2>
         <span
           className="text-2xl font-bold"
           style={{ color: compositeColor(detail.composite_score) }}
@@ -86,7 +80,7 @@ function ScoreBreakdownCard({ detail }: { detail: FundamentalsScore }) {
         {criteria.map((c) => (
           <li key={c.label} className="flex items-center">
             <RatingDot rating={c.rating} />
-            <span className="text-secondary text-sm">{c.label}</span>
+            <span className="text-on-surface-variant text-sm">{c.label}</span>
           </li>
         ))}
       </ul>
@@ -112,16 +106,8 @@ export default function Fundamentals() {
   if (error) {
     return (
       <div className="text-center mt-20">
-        <p className="text-red-400 mb-4">{error}</p>
-        <button
-          onClick={refresh}
-          className="px-4 py-2 rounded-lg text-sm"
-          style={{
-            background: "var(--glass-card-bg)",
-            border: "1px solid var(--glass-border)",
-            color: "var(--color-text-primary)",
-          }}
-        >
+        <p className="text-error mb-4">{error}</p>
+        <button onClick={refresh} className="btn-ghost px-4 py-2 text-sm">
           Retry
         </button>
       </div>
@@ -130,7 +116,7 @@ export default function Fundamentals() {
 
   if (!detail) {
     return (
-      <div className="text-muted text-center mt-20">No data available.</div>
+      <div className="text-text-muted text-center mt-20">No data available.</div>
     );
   }
 
@@ -161,15 +147,10 @@ export default function Fundamentals() {
     color: d.net_income > 0 ? RATING_COLORS.green : RATING_COLORS.red,
   }));
 
-  const axisStyle = { stroke: "var(--color-text-secondary)", fontSize: 12 };
+  const axisStyle = { stroke: "var(--color-on-surface-variant)", fontSize: 12 };
   const gridStyle = {
     strokeDasharray: "3 3",
     stroke: "var(--glass-border)",
-  };
-
-  const cardStyle: React.CSSProperties = {
-    background: "var(--glass-card-bg)",
-    border: "1px solid var(--glass-border)",
   };
 
   return (
@@ -179,8 +160,7 @@ export default function Fundamentals() {
         <div className="flex items-center gap-3">
           <button
             onClick={() => navigate(-1)}
-            className="px-3 py-1.5 rounded-lg text-sm"
-            style={cardStyle}
+            className="btn-ghost px-3 py-1.5 text-sm"
           >
             ← Back
           </button>
@@ -190,8 +170,7 @@ export default function Fundamentals() {
         </div>
         <button
           onClick={refresh}
-          className="px-4 py-2 rounded-lg text-sm font-medium"
-          style={cardStyle}
+          className="btn-ghost px-4 py-2 text-sm font-medium"
         >
           Refresh
         </button>
@@ -202,8 +181,8 @@ export default function Fundamentals() {
 
       {/* EPS History */}
       {epsData.length > 0 && (
-        <div className="p-6 rounded-[14px]" style={cardStyle}>
-          <h2 className="text-primary text-lg font-semibold mb-4">
+        <div className="card">
+          <h2 className="text-heading text-primary mb-4">
             EPS History
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -224,8 +203,8 @@ export default function Fundamentals() {
 
       {/* Net Debt / EBITDA */}
       {debtData.length > 0 && (
-        <div className="p-6 rounded-[14px]" style={cardStyle}>
-          <h2 className="text-primary text-lg font-semibold mb-4">
+        <div className="card">
+          <h2 className="text-heading text-primary mb-4">
             Net Debt / EBITDA
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -258,8 +237,8 @@ export default function Fundamentals() {
 
       {/* Net Income (Profitability) */}
       {incomeData.length > 0 && (
-        <div className="p-6 rounded-[14px]" style={cardStyle}>
-          <h2 className="text-primary text-lg font-semibold mb-4">
+        <div className="card">
+          <h2 className="text-heading text-primary mb-4">
             Net Income
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -280,7 +259,7 @@ export default function Fundamentals() {
 
       {/* Updated at */}
       {detail.updated_at && (
-        <p className="text-muted text-xs text-right">
+        <p className="text-text-muted text-xs text-right">
           Updated at: {new Date(detail.updated_at).toLocaleString()}
         </p>
       )}
