@@ -1,4 +1,5 @@
 from app.models.asset_class import AssetClass
+from app.services.auth import create_access_token
 
 
 def _setup(db, user_id):
@@ -23,7 +24,8 @@ def _tx_body(asset_class_id):
 
 def test_create_buy(client, default_user, db):
     ac = _setup(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.post("/api/transactions", json=_tx_body(ac.id), headers=headers)
     assert resp.status_code == 201
     data = resp.json()
@@ -38,7 +40,8 @@ def test_create_buy(client, default_user, db):
 
 def test_list_with_filter(client, default_user, db):
     ac = _setup(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     client.post("/api/transactions", json=_tx_body(ac.id), headers=headers)
     sell_body = _tx_body(ac.id)
     sell_body["type"] = "sell"
@@ -55,7 +58,8 @@ def test_list_with_filter(client, default_user, db):
 
 def test_update(client, default_user, db):
     ac = _setup(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     create_resp = client.post("/api/transactions", json=_tx_body(ac.id), headers=headers)
     tx_id = create_resp.json()["id"]
     resp = client.put(f"/api/transactions/{tx_id}", json={"quantity": 20}, headers=headers)
@@ -65,7 +69,8 @@ def test_update(client, default_user, db):
 
 def test_delete(client, default_user, db):
     ac = _setup(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     create_resp = client.post("/api/transactions", json=_tx_body(ac.id), headers=headers)
     tx_id = create_resp.json()["id"]
     resp = client.delete(f"/api/transactions/{tx_id}", headers=headers)

@@ -10,6 +10,7 @@ from app.models.transaction import Transaction
 from app.models.user import User
 from app.providers.common import DividendRecord
 from app.services.dividend_scraper_scheduler import DividendScheduler
+from app.services.auth import hash_password
 
 
 @pytest.fixture
@@ -33,7 +34,7 @@ def scheduler(dados_provider, yfinance_provider):
 
 
 def _setup_holdings(db):
-    user = User(name="Test", email="test@test.com")
+    user = User(name="Test", email="test@test.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.flush()
 

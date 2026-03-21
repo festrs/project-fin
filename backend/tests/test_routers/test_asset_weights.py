@@ -1,4 +1,5 @@
 from app.models.asset_class import AssetClass
+from app.services.auth import create_access_token
 
 
 def _create_asset_class(db, user_id):
@@ -10,7 +11,8 @@ def _create_asset_class(db, user_id):
 
 def test_add_asset(client, default_user, db):
     ac = _create_asset_class(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.post(
         f"/api/asset-classes/{ac.id}/assets",
         json={"symbol": "AAPL", "target_weight": 50.0},
@@ -24,7 +26,8 @@ def test_add_asset(client, default_user, db):
 
 def test_list_assets(client, default_user, db):
     ac = _create_asset_class(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     client.post(f"/api/asset-classes/{ac.id}/assets", json={"symbol": "AAPL", "target_weight": 50.0}, headers=headers)
     client.post(f"/api/asset-classes/{ac.id}/assets", json={"symbol": "MSFT", "target_weight": 50.0}, headers=headers)
     resp = client.get(f"/api/asset-classes/{ac.id}/assets", headers=headers)
@@ -34,7 +37,8 @@ def test_list_assets(client, default_user, db):
 
 def test_update_weight(client, default_user, db):
     ac = _create_asset_class(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     create_resp = client.post(
         f"/api/asset-classes/{ac.id}/assets",
         json={"symbol": "AAPL", "target_weight": 50.0},
@@ -48,7 +52,8 @@ def test_update_weight(client, default_user, db):
 
 def test_delete_asset(client, default_user, db):
     ac = _create_asset_class(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     create_resp = client.post(
         f"/api/asset-classes/{ac.id}/assets",
         json={"symbol": "AAPL", "target_weight": 50.0},

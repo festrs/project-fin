@@ -4,10 +4,11 @@ import pytest
 
 from app.models import User, AssetClass, Transaction, QuarantineConfig
 from app.services.quarantine import QuarantineService
+from app.services.auth import hash_password
 
 
 def _create_user(db, name="Test User", email="test@example.com"):
-    user = User(name=name, email=email)
+    user = User(name=name, email=email, password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)

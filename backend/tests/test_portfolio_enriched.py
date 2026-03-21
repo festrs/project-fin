@@ -41,7 +41,7 @@ def test_enrich_holdings_adds_current_price():
     }
     weight_map = {"AAPL": 50.0, "GOOG": 50.0}
 
-    def mock_safe(symbol, is_crypto=False, country="US", db=None):
+    def mock_safe(symbol, is_crypto=False, country="US", db=None, db_only=False):
         prices = {"AAPL": Money(Decimal("150"), Currency.USD), "GOOG": Money(Decimal("300"), Currency.USD)}
         return prices.get(symbol)
 
@@ -81,7 +81,7 @@ def test_enrich_holdings_calculates_weights():
     class_map = {"cls-1": {"name": "Stocks US", "target_weight": 50.0}}
     weight_map = {"AAPL": 60.0, "GOOG": 40.0}
 
-    def mock_safe(symbol, is_crypto=False, country="US", db=None):
+    def mock_safe(symbol, is_crypto=False, country="US", db=None, db_only=False):
         return Money(Decimal("100"), Currency.USD)  # same price for both
 
     market_data = MarketDataService()
@@ -98,18 +98,22 @@ def test_enrich_holdings_calculates_weights():
 
 from fastapi.testclient import TestClient
 from app.main import app
+from app.services.auth import create_access_token
 
 client = TestClient(app)
 
 
 def test_portfolio_summary_returns_enriched_holdings():
     """Integration test: summary endpoint returns current_price field."""
+    token = create_access_token("test-user-enriched-id")
+    headers = {"Authorization": f"Bearer {token}"}
+
     with patch("app.routers.portfolio.get_market_data_service") as mock_get:
         mock_instance = MagicMock()
         mock_instance.get_quote_safe.return_value = Money(Decimal("150"), Currency.USD)
         mock_get.return_value = mock_instance
 
-        resp = client.get("/api/portfolio/summary", headers={"X-User-Id": "default-user-id"})
+        resp = client.get("/api/portfolio/summary", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
         assert "holdings" in data

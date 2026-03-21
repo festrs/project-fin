@@ -6,6 +6,7 @@ from app.money import Money, Currency
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.transaction import Transaction
+from app.services.auth import create_access_token
 
 
 def _setup(db, user_id):
@@ -40,7 +41,8 @@ def test_get_recommendations(MockMarketData, client, default_user, db):
     mock_instance = MockMarketData.return_value
     mock_instance.get_stock_quote.return_value = {"current_price": Money(Decimal("175"), Currency.USD)}
 
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/recommendations?count=2", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
@@ -55,7 +57,8 @@ def test_invest_plan_endpoint(mock_fx, MockMarketData, client, default_user, db)
     mock_instance = MockMarketData.return_value
     mock_instance.get_stock_quote.return_value = {"current_price": Money(Decimal("175"), Currency.USD)}
 
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.post(
         "/api/recommendations/invest",
         json={"amount": "1000", "currency": "USD", "count": 1},

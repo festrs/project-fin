@@ -7,10 +7,11 @@ import pytest
 from app.models import User, AssetClass, AssetWeight, Transaction
 from app.money import Money, Currency
 from app.services.recommendation import RecommendationService
+from app.services.auth import hash_password
 
 
 def _create_user(db):
-    user = User(name="Test User", email="test@example.com")
+    user = User(name="Test User", email="test@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)

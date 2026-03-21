@@ -1,9 +1,10 @@
 from app.models.user import User
 from app.models.quarantine_config import QuarantineConfig
+from app.services.auth import hash_password
 
 
 def test_create_with_defaults(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -23,7 +24,7 @@ def test_create_with_defaults(db):
 
 
 def test_create_with_custom_values(db):
-    user = User(name="Bob", email="bob@example.com")
+    user = User(name="Bob", email="bob@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)

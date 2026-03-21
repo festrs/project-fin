@@ -5,14 +5,16 @@ from unittest.mock import patch
 from app.money import Money, Currency
 from app.models.user import User
 from app.models.quarantine_config import QuarantineConfig
+from app.services.auth import hash_password, create_access_token
 
 
 def test_full_investment_flow(client, db):
     # 1. Create user
-    user = User(name="E2E User", email="e2e@projectfin.com")
+    user = User(name="E2E User", email="e2e@projectfin.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
-    headers = {"X-User-Id": user.id}
+    token = create_access_token(user.id)
+    headers = {"Authorization": f"Bearer {token}"}
 
     # Create quarantine config (threshold=2, period_days=180)
     config = QuarantineConfig(user_id=user.id, threshold=2, period_days=180)

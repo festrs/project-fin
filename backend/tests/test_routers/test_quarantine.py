@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from app.models.asset_class import AssetClass
 from app.models.transaction import Transaction
+from app.services.auth import create_access_token
 
 
 def test_get_quarantine_status(client, default_user, db):
@@ -26,7 +27,8 @@ def test_get_quarantine_status(client, default_user, db):
         db.add(tx)
     db.commit()
 
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/quarantine/status", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
@@ -36,7 +38,8 @@ def test_get_quarantine_status(client, default_user, db):
 
 
 def test_get_quarantine_config(client, default_user):
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/quarantine/config", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
@@ -45,7 +48,8 @@ def test_get_quarantine_config(client, default_user):
 
 
 def test_update_quarantine_config(client, default_user):
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.put(
         "/api/quarantine/config",
         json={"threshold": 5, "period_days": 365},
