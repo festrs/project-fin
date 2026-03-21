@@ -149,7 +149,7 @@ export default function AssetClassHoldings() {
   if (!assetClass) {
     return (
       <div className="space-y-4">
-        <Link to="/" className="text-primary hover:text-primary-hover text-base">
+        <Link to="/" className="text-primary hover:opacity-80 text-base">
           &lsaquo; Dashboard
         </Link>
         <p className="text-text-muted">Asset class not found.</p>
@@ -160,16 +160,16 @@ export default function AssetClassHoldings() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Link to="/" className="text-primary hover:text-primary-hover text-base">
+        <Link to="/" className="text-primary hover:opacity-80 text-base">
           &lsaquo; Dashboard
         </Link>
         <span className="text-text-muted">/</span>
-        <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">
+        <h1 className="text-display" style={{ fontSize: '2rem' }}>
           {assetClass.name}
         </h1>
         <span className="ml-auto text-text-muted text-base">
           Total: R${totalValueBRL.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          {isReserve && <span className="ml-2 text-xs bg-[var(--glass-primary-soft)] px-2 py-0.5 rounded">(Emergency Reserve)</span>}
+          {isReserve && <span className="ml-2 badge" style={{ backgroundColor: 'var(--glass-primary-soft)' }}>(Emergency Reserve)</span>}
         </span>
       </div>
 
@@ -181,7 +181,7 @@ export default function AssetClassHoldings() {
       />
 
       {fundamentalsLoading && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-[var(--glass-primary-soft)] border border-[var(--glass-border)] rounded-[10px] text-base text-primary">
+        <div className="insight-ribbon flex items-center gap-2" style={{ backgroundColor: 'var(--glass-primary-soft)', color: 'var(--color-primary)' }}>
           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
