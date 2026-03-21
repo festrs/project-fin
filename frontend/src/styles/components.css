@@ -1,0 +1,149 @@
+/* ── Cards ── */
+.card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-default);
+  padding: var(--space-card-padding);
+}
+
+.card-elevated {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-default);
+  padding: var(--space-card-padding);
+  box-shadow: var(--shadow-floating);
+}
+
+/* ── Surfaces ── */
+.surface-base {
+  background-color: var(--surface);
+}
+
+.surface-mid {
+  background-color: var(--surface-container-low);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  color: white;
+  border-radius: var(--radius-default);
+  padding: 0.625rem 1.5rem;
+  font-size: var(--body-md);
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-primary:hover {
+  opacity: 0.9;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-default);
+  padding: 0.625rem 1.5rem;
+  font-size: var(--body-md);
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background-color: var(--surface-container-high);
+}
+
+/* ── Inputs ── */
+.input-field {
+  width: 100%;
+  background: var(--surface-container-high);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.625rem 0.875rem;
+  font-size: var(--body-md);
+  color: var(--color-on-surface);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.input-field::placeholder {
+  color: var(--color-text-muted);
+}
+
+.input-field:focus {
+  border-bottom-color: var(--color-primary);
+  box-shadow: 0 2px 0 0 var(--glass-primary-ring);
+}
+
+/* ── Typography ── */
+.text-display {
+  font-size: var(--display-lg);
+  font-weight: 700;
+  letter-spacing: var(--display-lg-tracking);
+  color: var(--color-on-surface);
+  line-height: 1.1;
+}
+
+.text-heading {
+  font-size: var(--title-lg);
+  font-weight: 600;
+  letter-spacing: var(--title-lg-tracking);
+  color: var(--color-on-surface);
+}
+
+.text-label {
+  font-size: var(--label-md);
+  font-weight: 500;
+  letter-spacing: var(--label-md-tracking);
+  text-transform: uppercase;
+  color: var(--color-on-surface-variant);
+}
+
+/* ── Table ── */
+.table-row {
+  transition: background-color 0.1s ease;
+}
+
+.table-row:nth-child(even) {
+  background-color: var(--glass-row-alt);
+}
+
+.table-row:hover {
+  background-color: var(--glass-hover);
+}
+
+/* ── Insight Ribbon ── */
+.insight-ribbon {
+  width: 100%;
+  background-color: var(--color-secondary-container);
+  padding: 0.75rem var(--space-card-padding);
+  font-size: var(--body-md);
+  color: var(--color-on-surface);
+  border-radius: var(--radius-sm);
+}
+
+/* ── Badge ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--label-md);
+  font-weight: 600;
+}
+
+.badge-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  color: #b45309;
+}
