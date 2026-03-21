@@ -1,9 +1,7 @@
 import logging
-import time
 from datetime import date
 from decimal import Decimal
 
-import httpx
 from fastapi import APIRouter, Depends, Header, Request
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
@@ -13,16 +11,13 @@ from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.dividend_history import DividendHistory
+from app.services.exchange_rate import fetch_exchange_rate as _fetch_exchange_rate
 from app.services.market_data import get_market_data_service, CRYPTO_CLASS_NAMES
 from app.services.portfolio import PortfolioService
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/portfolio", tags=["portfolio"])
-
-# Simple in-memory cache for exchange rate
-_fx_cache: dict[str, tuple[float, float]] = {}  # pair -> (rate, timestamp)
-_FX_CACHE_TTL = 600  # 10 minutes
 
 
 def _money_to_dict(m) -> dict | None:
@@ -111,31 +106,6 @@ def portfolio_allocation(
         for asset in ac_data["assets"]:
             asset["total_cost"] = _money_to_dict(asset["total_cost"])
     return {"allocation": allocation}
-
-
-def _fetch_exchange_rate(pair: str) -> float:
-    """Fetch exchange rate with caching. pair e.g. 'USD-BRL'."""
-    now = time.time()
-    cached = _fx_cache.get(pair)
-    if cached and (now - cached[1]) < _FX_CACHE_TTL:
-        return cached[0]
-
-    try:
-        resp = httpx.get(
-            f"https://economia.awesomeapi.com.br/last/{pair}",
-            timeout=10,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        key = pair.replace("-", "")
-        rate = float(data[key]["bid"])
-        _fx_cache[pair] = (rate, now)
-        return rate
-    except Exception:
-        logger.exception("Failed to fetch exchange rate for %s", pair)
-        if cached:
-            return cached[0]
-        raise
 
 
 @router.get("/dividends")

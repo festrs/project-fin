@@ -3,10 +3,8 @@ import { PerformanceChart } from "../components/PerformanceChart";
 import { AllocationChart } from "../components/AllocationChart";
 import { PortfolioCompositionChart } from "../components/PortfolioCompositionChart";
 import { ClassSummaryTable, computeClassSummaries } from "../components/ClassSummaryTable";
-import { RecommendationCard } from "../components/RecommendationCard";
 import { usePortfolio } from "../hooks/usePortfolio";
 import { useAssetClasses } from "../hooks/useAssetClasses";
-import { useRecommendations } from "../hooks/useRecommendations";
 import { useSplits } from "../hooks/useSplits";
 import { SPLIT_EVENT_TYPE } from "../types";
 import type { Transaction } from "../types";
@@ -27,9 +25,6 @@ interface DividendsResponse {
 export default function Dashboard() {
   const { holdings, allocation, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolio();
   const { assetClasses, loading: classesLoading, updateClass, createClass, deleteClass } = useAssetClasses();
-  const savedCount = localStorage.getItem("recommendationCount");
-  const count = savedCount ? parseInt(savedCount, 10) : 2;
-  const { recommendations, loading: recsLoading } = useRecommendations(count);
   const { pendingSplits, actionLoading, applySplit, dismissSplit } = useSplits();
 
   const [manualDividends, setManualDividends] = useState<Transaction[]>([]);
@@ -144,13 +139,6 @@ export default function Dashboard() {
       {/* Allocation bar chart */}
       {!portfolioLoading && (
         <AllocationChart allocation={allocation} />
-      )}
-
-      {/* Recommendations */}
-      {recsLoading ? (
-        <p className="text-text-muted text-base">Loading recommendations...</p>
-      ) : (
-        <RecommendationCard recommendations={recommendations} />
       )}
 
       {/* Pending splits / bonificações */}
