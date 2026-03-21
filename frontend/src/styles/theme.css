@@ -1,0 +1,61 @@
+:root {
+  /* ── Colors (from DESIGN_SYSTEM.md) ── */
+  --color-primary: #004E59;
+  --color-primary-container: #006876;
+  --color-primary-fixed: #a2efff;
+  --color-tertiary: #1d4f40;
+  --color-outline-variant: #bec8cb;
+
+  /* ── Colors (supplementary — app needs beyond design system) ── */
+  --color-secondary: #10b981;
+  --color-secondary-container: #d5e3fd;
+  --color-error: #ba1a1a;
+  --color-warning: #f59e0b;
+
+  /* ── Text ── */
+  --color-on-surface: #191c1e;
+  --color-on-surface-variant: #3f484b;
+  --color-text-muted: #94a3b8;
+
+  /* ── Surfaces ── */
+  --surface: #f7f9fb;
+  --surface-container-low: #f2f4f6;
+  --surface-container-lowest: #ffffff;
+  --surface-container-high: #e6e8ea;
+
+  /* ── Typography ── */
+  --font-family: 'Manrope Variable', 'Manrope', sans-serif;
+  --display-lg: 3.5rem;
+  --display-lg-tracking: -0.02em;
+  --title-lg: 1.375rem;
+  --title-lg-tracking: -0.01em;
+  --body-md: 0.875rem;
+  --body-md-lh: 1.5;
+  --label-md: 0.75rem;
+  --label-md-tracking: 0.05em;
+
+  /* ── Spacing ── */
+  --space-section: 5.5rem;
+  --space-section-lg: 7rem;
+  --space-card-padding: 1.5rem;
+  --space-list-gap: 1rem;
+
+  /* ── Radii ── */
+  --radius-default: 1rem;
+  --radius-sm: 0.5rem;
+
+  /* ── Elevation ── */
+  --shadow-floating: 0px 12px 40px rgba(25, 28, 30, 0.12);
+
+  /* ── Glass ── */
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-blur: 20px;
+  --glass-border: rgba(190, 200, 203, 0.15);
+  --glass-border-input: rgba(190, 200, 203, 0.3);
+  --glass-row-alt: rgba(242, 244, 246, 0.5);
+  --glass-hover: rgba(0, 0, 0, 0.03);
+  --glass-primary-soft: rgba(0, 78, 89, 0.08);
+  --glass-primary-ring: rgba(0, 78, 89, 0.15);
+  --glass-positive-soft: rgba(16, 185, 129, 0.08);
+  --glass-negative-soft: rgba(186, 26, 26, 0.08);
+}
