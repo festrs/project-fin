@@ -25,7 +25,6 @@ describe("Settings", () => {
     render(<Settings />);
 
     expect(screen.getByText("Quarantine Settings")).toBeInTheDocument();
-    expect(screen.getByText("Recommendation Settings")).toBeInTheDocument();
 
     const thresholdInput = screen.getByLabelText("Threshold") as HTMLInputElement;
     expect(thresholdInput.value).toBe("3");

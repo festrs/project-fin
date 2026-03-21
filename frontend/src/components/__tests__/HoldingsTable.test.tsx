@@ -6,7 +6,7 @@ import { HoldingsTable } from "../HoldingsTable";
 import { AssetClass, Holding, QuarantineStatus, Transaction } from "../../types";
 
 const mockAssetClasses: AssetClass[] = [
-  { id: "c1", user_id: "u1", name: "Stocks", target_weight: 60, country: "US", type: "stock", created_at: "2024-01-01", updated_at: "2024-01-01" },
+  { id: "c1", user_id: "u1", name: "Stocks", target_weight: 60, country: "US", type: "stock", is_emergency_reserve: false, created_at: "2024-01-01", updated_at: "2024-01-01" },
 ];
 
 const mockHoldings: Holding[] = [
@@ -14,27 +14,25 @@ const mockHoldings: Holding[] = [
     symbol: "AAPL",
     asset_class_id: "c1",
     quantity: 10,
-    avg_price: 150,
-    total_cost: 1500,
-    current_price: 170,
-    current_value: 1700,
-    gain_loss: 200,
+    avg_price: { amount: "150", currency: "USD" },
+    total_cost: { amount: "1500", currency: "USD" },
+    current_price: { amount: "170", currency: "USD" },
+    current_value: { amount: "1700", currency: "USD" },
+    gain_loss: { amount: "200", currency: "USD" },
     target_weight: 30,
     actual_weight: 35.5,
-    currency: "USD",
   },
   {
     symbol: "TSLA",
     asset_class_id: "c1",
     quantity: 5,
-    avg_price: 200,
-    total_cost: 1000,
-    current_price: 180,
-    current_value: 900,
-    gain_loss: -100,
+    avg_price: { amount: "200", currency: "USD" },
+    total_cost: { amount: "1000", currency: "USD" },
+    current_price: { amount: "180", currency: "USD" },
+    current_value: { amount: "900", currency: "USD" },
+    gain_loss: { amount: "-100", currency: "USD" },
     target_weight: 20,
     actual_weight: 18.8,
-    currency: "USD",
   },
 ];
 
@@ -55,10 +53,9 @@ const mockTransactions: Transaction[] = [
     asset_symbol: "AAPL",
     type: "buy",
     quantity: 10,
-    unit_price: 150,
-    total_value: 1500,
-    currency: "USD",
-    tax_amount: 0,
+    unit_price: { amount: "150", currency: "USD" },
+    total_value: { amount: "1500", currency: "USD" },
+    tax_amount: { amount: "0", currency: "USD" },
     date: "2024-01-15",
     notes: null,
     created_at: "2024-01-15",
@@ -153,6 +150,6 @@ describe("HoldingsTable", () => {
 
     expect(screen.getByText("Transaction History")).toBeInTheDocument();
     expect(screen.getByText("2024-01-15")).toBeInTheDocument();
-    expect(screen.getByText("$1500.00")).toBeInTheDocument();
+    expect(screen.getByText("$1,500.00")).toBeInTheDocument();
   });
 });
