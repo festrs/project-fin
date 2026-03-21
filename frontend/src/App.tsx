@@ -15,13 +15,25 @@ const ROUTE_TITLES: Record<string, string> = {
   "/settings": "Settings",
 };
 
+function getTitle(pathname: string): string {
+  if (ROUTE_TITLES[pathname]) return ROUTE_TITLES[pathname];
+
+  const portfolioMatch = pathname.match(/^\/portfolio\/(.+)$/);
+  if (portfolioMatch) return "Portfolio Holdings";
+
+  const fundamentalsMatch = pathname.match(/^\/fundamentals\/(.+)$/);
+  if (fundamentalsMatch) return `Fundamentals — ${fundamentalsMatch[1]}`;
+
+  return "Project Fin";
+}
+
 function ProtectedLayout() {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
   if (!isAuthenticated) return <Navigate to="/login" replace />;
 
-  const title = ROUTE_TITLES[location.pathname] ?? "Project Fin";
+  const title = getTitle(location.pathname);
 
   return (
     <div className="min-h-screen bg-surface flex">

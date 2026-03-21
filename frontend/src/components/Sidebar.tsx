@@ -30,7 +30,7 @@ export default function Sidebar() {
         <h1 className="text-2xl font-extrabold text-on-surface uppercase tracking-tighter">
           Project Fin
         </h1>
-        <p className="text-xs text-text-muted tracking-widest uppercase mt-1" style={{ fontFamily: "var(--font-family-body)" }}>
+        <p className="text-xs text-text-muted tracking-widest uppercase mt-1 font-body">
           Wealth Management
         </p>
       </div>
@@ -50,7 +50,7 @@ export default function Sidebar() {
               style={isActive ? { background: "var(--glass-primary-soft)" } : { }}
             >
               <span className="material-symbols-outlined text-[20px]">{link.icon}</span>
-              <span className="text-sm font-medium" style={{ fontFamily: "var(--font-family-body)" }}>{link.label}</span>
+              <span className="text-sm font-medium font-body">{link.label}</span>
             </Link>
           );
         })}
@@ -60,10 +60,9 @@ export default function Sidebar() {
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-on-surface transition-all duration-200 w-full"
-          style={{ }}
         >
           <span className="material-symbols-outlined text-[20px]">logout</span>
-          <span className="text-sm font-medium" style={{ fontFamily: "var(--font-family-body)" }}>Logout</span>
+          <span className="text-sm font-medium font-body">Logout</span>
         </button>
       </div>
     </aside>

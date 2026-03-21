@@ -14,7 +14,7 @@ interface AllocationDonutChartProps {
 export default function AllocationDonutChart({ classSummaries }: AllocationDonutChartProps) {
   if (classSummaries.length === 0) {
     return (
-      <div className="rounded-xl p-6" style={{ background: "var(--surface-container-low)" }}>
+      <div className="rounded-xl p-6" style={{ background: "var(--color-surface-low)" }}>
         <p className="text-text-muted text-sm">No allocation data</p>
       </div>
     );
@@ -26,10 +26,9 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
     .map((s) => ({ name: s.className, value: s.targetWeight, color: s.color }));
 
   return (
-    <div className="rounded-xl p-6" style={{ background: "var(--surface-container-low)" }}>
+    <div className="rounded-xl p-6" style={{ background: "var(--color-surface-low)" }}>
       <h4
-        className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4"
-        style={{ fontFamily: "var(--font-family-body)" }}
+        className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4 font-body"
       >
         Allocation Comparison (Actual vs Target)
       </h4>
@@ -69,7 +68,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           <Tooltip
             formatter={(value) => `${Number(value).toFixed(1)}%`}
             contentStyle={{
-              background: "var(--surface-container-high)",
+              background: "var(--color-surface-high)",
               border: "1px solid var(--glass-border)",
               borderRadius: "var(--radius-sm)",
               color: "var(--color-on-surface)",
@@ -78,14 +77,14 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           />
           <Legend
             formatter={(value) => (
-              <span className="text-xs text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
+              <span className="text-xs text-on-surface-variant font-body">
                 {value}
               </span>
             )}
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="text-center text-xs text-text-muted -mt-2 tabular-nums" style={{ fontFamily: "var(--font-family-body)" }}>
+      <div className="text-center text-xs text-text-muted -mt-2 tabular-nums font-body">
         Outer: Actual &middot; Inner: Target
       </div>
     </div>

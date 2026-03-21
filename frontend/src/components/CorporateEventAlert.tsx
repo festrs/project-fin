@@ -23,7 +23,7 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
             className={`rounded-xl p-4 flex items-center justify-between border-l-4 border-primary ${
               isLoading ? "opacity-60" : ""
             }`}
-            style={{ background: "var(--surface-container-high)" }}
+            style={{ background: "var(--color-surface-high)" }}
           >
             <div className="flex items-center gap-4">
               <div
@@ -36,7 +36,7 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
                 <h4 className="text-sm font-bold text-on-surface">
                   Pending Corporate Event: {split.symbol} {label}
                 </h4>
-                <p className="text-xs text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
+                <p className="text-xs text-on-surface-variant font-body">
                   Ratio {split.from_factor}:{split.to_factor} — {split.current_quantity} shares → {split.new_quantity.toFixed(0)} shares
                 </p>
               </div>

@@ -10,20 +10,8 @@ import CorporateEventAlert from "../components/CorporateEventAlert";
 import { usePortfolio } from "../hooks/usePortfolio";
 import { useAssetClasses } from "../hooks/useAssetClasses";
 import { useSplits } from "../hooks/useSplits";
-import type { Transaction, AssetClass } from "../types";
+import type { Transaction, AssetClass, DividendsResponse } from "../types";
 import api from "../services/api";
-
-interface DividendClassData {
-  asset_class_id: string;
-  class_name: string;
-  annual_income: { amount: string; currency: string };
-  currency: string;
-}
-
-interface DividendsResponse {
-  dividends: DividendClassData[];
-  total_annual_income: { amount: string; currency: string };
-}
 
 // Color mapping for donut chart segments
 const CLASS_COLORS: Record<string, string> = {

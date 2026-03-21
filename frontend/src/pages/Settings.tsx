@@ -60,7 +60,7 @@ export default function Settings() {
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">light_mode</span>
-              <span className="text-sm" style={{ fontFamily: "var(--font-family-body)" }}>Light</span>
+              <span className="text-sm font-body">Light</span>
             </button>
             <button
               onClick={() => setTheme("dark")}
@@ -71,7 +71,7 @@ export default function Settings() {
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">dark_mode</span>
-              <span className="text-sm" style={{ fontFamily: "var(--font-family-body)" }}>Dark</span>
+              <span className="text-sm font-body">Dark</span>
             </button>
           </div>
         </div>

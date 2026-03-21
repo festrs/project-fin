@@ -10,16 +10,15 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
   });
 
   return (
-    <div className="rounded-xl p-6 relative overflow-hidden" style={{ background: "var(--surface-container-low)" }}>
+    <div className="rounded-xl p-6 relative overflow-hidden" style={{ background: "var(--color-surface-low)" }}>
       <div className="flex justify-between items-start mb-6">
         <div>
-          <p className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-1"
-            style={{ fontFamily: "var(--font-family-body)" }}
+          <p className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-1 font-body"
           >
             Portfolio Value
           </p>
           {loading ? (
-            <div className="h-10 w-64 rounded animate-pulse" style={{ background: "var(--surface-container-high)" }} />
+            <div className="h-10 w-64 rounded animate-pulse" style={{ background: "var(--color-surface-high)" }} />
           ) : (
             <h3 className="text-4xl font-extrabold text-on-surface tracking-tighter tabular-nums">
               R$ {formattedValue}
@@ -30,10 +29,11 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
           {["1D", "1W", "1M", "1Y", "ALL"].map((period, i) => (
             <span
               key={period}
+              title={i !== 2 ? "Coming soon" : undefined}
               className={`px-3 py-1 rounded text-[10px] font-bold cursor-default ${
-                i === 2 ? "text-primary" : "text-on-surface-variant"
+                i === 2 ? "text-primary" : "text-on-surface-variant opacity-50"
               }`}
-              style={i === 2 ? { background: "var(--surface-container-high)" } : {}}
+              style={i === 2 ? { background: "var(--color-surface-high)" } : {}}
             >
               {period}
             </span>

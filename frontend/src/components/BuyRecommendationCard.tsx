@@ -33,27 +33,26 @@ export default function BuyRecommendationCard() {
         >
           <span className="material-symbols-outlined">account_balance_wallet</span>
         </div>
-        <h5 className="text-sm font-bold text-on-surface mb-1" style={{ fontFamily: "var(--font-family-body)" }}>
+        <h5 className="text-sm font-bold text-on-surface mb-1 font-body">
           Buy Order Recommendation
         </h5>
         {loading ? (
-          <div className="h-4 w-48 rounded animate-pulse" style={{ background: "var(--surface-container-high)" }} />
+          <div className="h-4 w-48 rounded animate-pulse" style={{ background: "var(--color-surface-high)" }} />
         ) : rec ? (
-          <p className="text-xs text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
+          <p className="text-xs text-on-surface-variant font-body">
             Your <span className="text-primary font-medium">{rec.class_name}</span> is under-allocated by{" "}
             <span className="text-secondary font-medium">{Math.abs(rec.diff).toFixed(1)}%</span>.
             Consider buying <span className="text-on-surface font-medium">{rec.symbol}</span>.
           </p>
         ) : (
-          <p className="text-xs text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
+          <p className="text-xs text-on-surface-variant font-body">
             Portfolio is balanced. No buy recommendations.
           </p>
         )}
       </div>
       <Link
         to="/invest"
-        className="mt-4 text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1 self-start"
-        style={{ fontFamily: "var(--font-family-body)" }}
+        className="mt-4 text-xs font-bold text-primary uppercase tracking-wider flex items-center gap-1 self-start font-body"
       >
         View Details <span className="material-symbols-outlined text-sm">chevron_right</span>
       </Link>

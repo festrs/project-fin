@@ -15,11 +15,11 @@
   --color-on-surface-variant: #3f484b;
   --color-text-muted: #94a3b8;
 
-  --surface: #f7f9fb;
-  --surface-container-low: #f2f4f6;
-  --surface-container-lowest: #ffffff;
-  --surface-container-high: #e6e8ea;
-  --surface-container-highest: #d9dbdd;
+  --color-surface: #f7f9fb;
+  --color-surface-low: #f2f4f6;
+  --color-surface-lowest: #ffffff;
+  --color-surface-high: #e6e8ea;
+  --color-surface-highest: #d9dbdd;
 
   /* ── Typography ── */
   --font-family: 'Manrope', sans-serif;
@@ -79,11 +79,11 @@
   --color-on-surface-variant: #bac9cc;
   --color-text-muted: #849396;
 
-  --surface: #131314;
-  --surface-container-low: #1c1b1c;
-  --surface-container-lowest: #0e0e0f;
-  --surface-container-high: #2a2a2b;
-  --surface-container-highest: #353436;
+  --color-surface: #131314;
+  --color-surface-low: #1c1b1c;
+  --color-surface-lowest: #0e0e0f;
+  --color-surface-high: #2a2a2b;
+  --color-surface-highest: #353436;
 
   --shadow-floating: 0px 12px 40px rgba(0, 0, 0, 0.4);
 

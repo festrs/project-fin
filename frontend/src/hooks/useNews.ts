@@ -12,7 +12,14 @@ export interface NewsItem {
   image: string;
 }
 
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
 let _cache: NewsItem[] | null = null;
+let _cacheTime = 0;
+
+function isCacheFresh(): boolean {
+  return _cache !== null && Date.now() - _cacheTime < CACHE_TTL_MS;
+}
 
 export function useNews() {
   const [news, setNews] = useState<NewsItem[]>(_cache ?? []);
@@ -20,10 +27,13 @@ export function useNews() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isCacheFresh()) return;
+
     api
       .get<{ news: NewsItem[] }>("/news")
       .then((res) => {
         _cache = res.data.news;
+        _cacheTime = Date.now();
         setNews(_cache);
       })
       .catch((err) => {

@@ -37,15 +37,4 @@
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
 
-/*
- * Runtime color overrides — Tailwind @theme is static, so we override
- * the generated utility colors at runtime using the CSS variables from theme.css.
- * This ensures dark mode works with the same Tailwind classes.
- */
-:root {
-  --color-surface: var(--surface);
-  --color-surface-low: var(--surface-container-low);
-  --color-surface-lowest: var(--surface-container-lowest);
-  --color-surface-high: var(--surface-container-high);
-  --color-surface-highest: var(--surface-container-highest);
-}
+/* Theme vars now use --color-* prefix consistently in theme.css and @theme block */

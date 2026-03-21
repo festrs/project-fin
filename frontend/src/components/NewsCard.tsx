@@ -31,7 +31,7 @@ export default function NewsCard() {
   return (
     <div className="bg-surface-low rounded-xl p-6 border border-[var(--glass-border)]">
       {news.length === 0 ? (
-        <p className="text-text-muted text-sm" style={{ fontFamily: "var(--font-family-body)" }}>
+        <p className="text-text-muted text-sm font-body">
           No recent market news
         </p>
       ) : (
@@ -46,21 +46,18 @@ export default function NewsCard() {
                 idx < Math.min(news.length, 4) - 1 ? "border-b border-[var(--glass-border)]" : ""
               } hover:opacity-80 transition-opacity`}
             >
-              <p className="text-[9px] font-bold text-secondary uppercase tracking-widest mb-1"
-                style={{ fontFamily: "var(--font-family-body)" }}
+              <p className="text-[9px] font-bold text-secondary uppercase tracking-widest mb-1 font-body"
               >
                 {item.category || item.source}
               </p>
               <h6 className="text-sm font-bold text-on-surface mb-1 line-clamp-1">
                 {item.headline}
               </h6>
-              <p className="text-xs text-on-surface-variant mb-2 leading-relaxed line-clamp-2"
-                style={{ fontFamily: "var(--font-family-body)" }}
+              <p className="text-xs text-on-surface-variant mb-2 leading-relaxed line-clamp-2 font-body"
               >
                 {item.summary}
               </p>
-              <p className="text-[10px] text-on-surface-variant font-medium"
-                style={{ fontFamily: "var(--font-family-body)" }}
+              <p className="text-[10px] text-on-surface-variant font-medium font-body"
               >
                 {timeAgo(item.datetime)}
               </p>

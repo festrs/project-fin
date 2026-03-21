@@ -1,21 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Holding, AssetClass, Transaction } from "../types";
+import type { Holding, AssetClass, Transaction, DividendsResponse } from "../types";
 import { moneyToNumber } from "../utils/money";
 import { computeClassSummaries, type ClassSummary } from "./ClassSummaryTable";
 import { DividendHistoryModal } from "./DividendHistoryModal";
-
-interface DividendClassData {
-  asset_class_id: string;
-  class_name: string;
-  annual_income: { amount: string; currency: string };
-  currency: string;
-}
-
-interface DividendsResponse {
-  dividends: DividendClassData[];
-  total_annual_income: { amount: string; currency: string };
-}
 
 interface AssetDistributionTableProps {
   holdings: Holding[];
@@ -187,7 +175,7 @@ export default function AssetDistributionTable({
       <div className="px-6 py-4 flex justify-between items-center border-b border-[var(--glass-border)]">
         <div className="flex items-center gap-3">
           <h3 className="font-bold text-on-surface">Asset Distribution</h3>
-          <span className="text-xs text-text-muted" style={{ fontFamily: "var(--font-family-body)" }}>
+          <span className="text-xs text-text-muted font-body">
             USD/BRL: {usdToBrl.toFixed(2)}
           </span>
         </div>
@@ -195,8 +183,7 @@ export default function AssetDistributionTable({
           {onUpdateTargetWeight && !isEditing && (
             <button
               onClick={handleStartEditing}
-              className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-1"
-              style={{ fontFamily: "var(--font-family-body)" }}
+              className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-1 font-body"
             >
               <span className="material-symbols-outlined text-sm">edit</span> Edit Targets
             </button>
@@ -204,8 +191,7 @@ export default function AssetDistributionTable({
           {onCreateClass && (
             <button
               onClick={() => setShowCreateForm((v) => !v)}
-              className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-1"
-              style={{ fontFamily: "var(--font-family-body)" }}
+              className="text-primary text-xs font-bold uppercase tracking-widest flex items-center gap-1 font-body"
             >
               <span className="material-symbols-outlined text-sm">add</span> Add Class
             </button>
@@ -217,8 +203,7 @@ export default function AssetDistributionTable({
                   await onCreateClass("Emergency Reserve", 0, "fixed_income", true, "BR");
                 }
               }}
-              className="text-xs text-text-muted hover:text-primary transition-colors"
-              style={{ fontFamily: "var(--font-family-body)" }}
+              className="text-xs text-text-muted hover:text-primary transition-colors font-body"
             >
               + Reserve
             </button>
@@ -257,7 +242,7 @@ export default function AssetDistributionTable({
       <div className="overflow-x-auto">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="text-on-surface-variant text-[10px] uppercase tracking-widest" style={{ fontFamily: "var(--font-family-body)" }}>
+            <tr className="text-on-surface-variant text-[10px] uppercase tracking-widest font-body">
               <th className="px-6 py-4 font-semibold">Asset Class</th>
               <th className="px-6 py-4 font-semibold text-right">Total Value</th>
               <th className="px-6 py-4 font-semibold text-right">Value (BRL)</th>
@@ -298,20 +283,20 @@ export default function AssetDistributionTable({
                       <div className={`w-8 h-8 rounded ${iconInfo.bgClass} flex items-center justify-center ${iconInfo.colorClass}`}>
                         <span className="material-symbols-outlined text-lg">{iconInfo.icon}</span>
                       </div>
-                      <span className="text-sm font-medium" style={{ fontFamily: "var(--font-family-body)" }}>{s.className}</span>
+                      <span className="text-sm font-medium font-body">{s.className}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-right tabular-nums text-sm" style={{ fontFamily: "var(--font-family-body)" }}>
+                  <td className="px-6 py-5 text-right tabular-nums text-sm font-body">
                     {formatValue(s.totalValue, s.currency)}
                   </td>
-                  <td className="px-6 py-5 text-right tabular-nums text-sm" style={{ fontFamily: "var(--font-family-body)" }}>
+                  <td className="px-6 py-5 text-right tabular-nums text-sm font-body">
                     {formatValue(s.totalValueBRL || s.totalValue, "BRL")}
                   </td>
                   <td className="px-6 py-5 text-center">
                     {s.isEmergencyReserve ? (
                       <span className="text-on-surface-variant text-sm">—</span>
                     ) : (
-                      <span className="px-2 py-1 rounded bg-surface-high text-[11px] font-bold tabular-nums" style={{ fontFamily: "var(--font-family-body)" }}>
+                      <span className="px-2 py-1 rounded bg-surface-high text-[11px] font-bold tabular-nums font-body">
                         {s.percentage.toFixed(1)}%
                       </span>
                     )}
@@ -325,8 +310,7 @@ export default function AssetDistributionTable({
                         step="0.5"
                         min="0"
                         max="100"
-                        className="w-14 bg-transparent border-none text-center p-0 text-sm font-bold text-secondary focus:ring-0"
-                        style={{ fontFamily: "var(--font-family-body)" }}
+                        className="w-14 bg-transparent border-none text-center p-0 text-sm font-bold text-secondary focus:ring-0 font-body"
                         value={editedWeight ?? ""}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -335,8 +319,7 @@ export default function AssetDistributionTable({
                     ) : (
                       <input
                         type="number"
-                        className="w-14 bg-transparent border-none text-center p-0 text-sm font-bold text-secondary focus:ring-0 cursor-pointer"
-                        style={{ fontFamily: "var(--font-family-body)" }}
+                        className="w-14 bg-transparent border-none text-center p-0 text-sm font-bold text-secondary focus:ring-0 cursor-pointer font-body"
                         value={s.targetWeight}
                         readOnly
                         tabIndex={-1}
@@ -344,8 +327,7 @@ export default function AssetDistributionTable({
                     )}
                   </td>
                   <td
-                    className="px-6 py-5 text-right tabular-nums text-sm"
-                    style={{ fontFamily: "var(--font-family-body)" }}
+                    className="px-6 py-5 text-right tabular-nums text-sm font-body"
                     onClick={(e) => {
                       e.stopPropagation();
                       const hasDiv = estimatedDivByClass.has(s.classId) || manualDivByClass.has(s.classId);
@@ -385,8 +367,7 @@ export default function AssetDistributionTable({
                             style={{ width: `${Math.min(totalTargetWeight, 100)}%` }}
                           />
                         </div>
-                        <span className={`text-sm font-medium ${Math.abs(totalTargetWeight - 100) < 0.5 ? "text-secondary" : "text-warning"}`}
-                          style={{ fontFamily: "var(--font-family-body)" }}>
+                        <span className={`text-sm font-medium font-body ${Math.abs(totalTargetWeight - 100) < 0.5 ? "text-secondary" : "text-warning"}`}>
                           {totalTargetWeight.toFixed(0)}%
                         </span>
                       </div>
@@ -398,15 +379,15 @@ export default function AssetDistributionTable({
               </tr>
             )}
             <tr className="bg-surface-highest/30">
-              <td className="px-6 py-6 font-bold text-sm" style={{ fontFamily: "var(--font-family-body)" }}>Grand Total</td>
+              <td className="px-6 py-6 font-bold text-sm font-body">Grand Total</td>
               <td className="px-6 py-6 text-right font-extrabold text-xl text-primary tabular-nums" colSpan={2}>
                 {formatValue(grandTotalWithReserve, "BRL")}
               </td>
-              <td className="px-6 py-6 text-center text-sm font-bold tabular-nums" style={{ fontFamily: "var(--font-family-body)" }}>100%</td>
-              <td className="px-6 py-6 text-center text-sm font-bold tabular-nums" style={{ fontFamily: "var(--font-family-body)" }}>
+              <td className="px-6 py-6 text-center text-sm font-bold tabular-nums font-body">100%</td>
+              <td className="px-6 py-6 text-center text-sm font-bold tabular-nums font-body">
                 {(isEditing ? totalTargetWeight : summaries.reduce((sum, s) => sum + s.targetWeight, 0)).toFixed(0)}%
               </td>
-              <td className="px-6 py-6 text-right text-sm font-bold tabular-nums text-secondary" style={{ fontFamily: "var(--font-family-body)" }}>
+              <td className="px-6 py-6 text-right text-sm font-bold tabular-nums text-secondary font-body">
                 {totalDivBRL > 0 ? formatValue(totalDivBRL, "BRL") : "—"}
               </td>
               {onDeleteClass && <td className="px-3 py-6" />}

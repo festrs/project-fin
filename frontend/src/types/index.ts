@@ -161,3 +161,15 @@ export interface LoginResponse {
   token_type: string;
   user: UserInfo;
 }
+
+export interface DividendClassData {
+  asset_class_id: string;
+  class_name: string;
+  annual_income: { amount: string; currency: string };
+  currency: string;
+}
+
+export interface DividendsResponse {
+  dividends: DividendClassData[];
+  total_annual_income: { amount: string; currency: string };
+}

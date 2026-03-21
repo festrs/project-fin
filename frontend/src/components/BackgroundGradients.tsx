@@ -1,6 +1,6 @@
 export default function BackgroundGradients() {
   return (
-    <div className="fixed top-0 left-0 w-full h-full pointer-events-none -z-10 overflow-hidden">
+    <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
       <div
         className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full blur-[120px]"
         style={{ background: "var(--glass-primary-soft)" }}

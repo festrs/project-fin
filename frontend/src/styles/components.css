@@ -18,11 +18,11 @@
 
 /* ── Surfaces ── */
 .surface-base {
-  background-color: var(--surface);
+  background-color: var(--color-surface);
 }
 
 .surface-mid {
-  background-color: var(--surface-container-low);
+  background-color: var(--color-surface-low);
 }
 
 /* ── Buttons ── */
@@ -65,13 +65,13 @@
 }
 
 .btn-ghost:hover {
-  background-color: var(--surface-container-high);
+  background-color: var(--color-surface-high);
 }
 
 /* ── Inputs ── */
 .input-field {
   width: 100%;
-  background: var(--surface-container-high);
+  background: var(--color-surface-high);
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: var(--radius-sm);
@@ -135,7 +135,7 @@
 /* ── Insight Ribbon ── */
 .insight-ribbon {
   width: 100%;
-  background-color: var(--surface-container-high);
+  background-color: var(--color-surface-high);
   padding: 0.75rem var(--space-card-padding);
   font-size: var(--body-md);
   color: var(--color-on-surface);
