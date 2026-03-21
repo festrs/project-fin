@@ -12,7 +12,7 @@ function ProtectedRoute() {
   const { isAuthenticated } = useAuth();
   if (!isAuthenticated) return <Navigate to="/login" replace />;
   return (
-    <div className="min-h-screen bg-bg-page flex">
+    <div className="min-h-screen bg-surface flex">
       <Sidebar />
       <main className="ml-[220px] w-[calc(100%-220px)] px-10 py-8">
         <Outlet />

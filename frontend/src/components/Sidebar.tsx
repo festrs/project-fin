@@ -19,9 +19,9 @@ export default function Sidebar() {
   }
 
   return (
-    <nav className="fixed left-0 top-0 w-[220px] min-h-screen bg-[var(--glass-sidebar-bg)] border-r border-[var(--glass-border)] p-6 flex flex-col gap-1">
-      <Link to="/" className="text-2xl font-bold text-text-primary px-3 mb-6 tracking-[-0.3px]">
-        Project <span className="text-primary">Fin</span>
+    <nav className="fixed left-0 top-0 w-[220px] min-h-screen bg-surface-low p-6 flex flex-col gap-1" style={{ backdropFilter: `blur(var(--glass-blur))` }}>
+      <Link to="/" className="text-2xl font-bold text-on-surface px-3 mb-6 tracking-[-0.3px]">
+        Project <span className="text-primary-container">Fin</span>
       </Link>
       {links.map((link) => {
         const isActive = location.pathname === link.to;
@@ -29,10 +29,10 @@ export default function Sidebar() {
           <Link
             key={link.to}
             to={link.to}
-            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-base font-medium transition-colors ${
+            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-DEFAULT text-base font-medium transition-colors ${
               isActive
-                ? "bg-[var(--glass-primary-soft)] text-primary font-semibold"
-                : "text-text-tertiary hover:bg-[var(--glass-hover)] hover:text-text-primary"
+                ? "bg-primary-fixed/10 text-primary font-semibold"
+                : "text-on-surface-variant hover:bg-[var(--glass-hover)] hover:text-on-surface"
             }`}
           >
             <link.icon size={18} strokeWidth={1.8} />
@@ -42,7 +42,7 @@ export default function Sidebar() {
       })}
       <button
         onClick={handleLogout}
-        className="flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-base font-medium text-text-tertiary hover:bg-[var(--glass-hover)] hover:text-text-primary transition-colors mt-auto"
+        className="flex items-center gap-2.5 px-3 py-2.5 rounded-DEFAULT text-base font-medium text-on-surface-variant hover:bg-[var(--glass-hover)] hover:text-on-surface transition-colors mt-auto"
       >
         <LogOut size={18} strokeWidth={1.8} />
         Logout
