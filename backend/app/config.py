@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     dividend_us_delay: float = 1.0
     enable_split_checker: bool = True
     split_checker_hour: int = 10
+    jwt_secret_key: str = "change-me-in-production"
+    jwt_expiration_days: int = 30
+    default_user_password: str = "changeme"
 
     class Config:
         env_file = ".env"
