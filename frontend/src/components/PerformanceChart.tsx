@@ -47,7 +47,7 @@ export function PerformanceChart() {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#4f46e5"
+              stroke="#004E59"
               strokeWidth={2}
               dot={false}
             />
