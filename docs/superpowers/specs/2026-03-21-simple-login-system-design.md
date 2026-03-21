@@ -9,7 +9,7 @@ Add email + password authentication to the portfolio management app. Users are s
 ### 1. Dependencies
 
 Add to `requirements.txt`:
-- `python-jose[cryptography]` — JWT encoding/decoding
+- `PyJWT[crypto]` — JWT encoding/decoding (actively maintained alternative to python-jose)
 - `passlib[bcrypt]` — password hashing
 
 ### 2. User Model Update
@@ -44,16 +44,18 @@ Responsibilities:
 
 ### 5. Auth Dependency
 
-New FastAPI dependency to replace the `X-User-Id` header pattern:
+New file: `backend/app/dependencies.py`
+
+FastAPI dependency to replace the `X-User-Id` header pattern. Lives in its own module to keep services free of FastAPI imports:
 
 ```python
 def get_current_user_id(authorization: str = Header()) -> str:
     # Extract "Bearer <token>" from Authorization header
-    # Decode JWT, return user_id
+    # Decode JWT via auth service, return user_id
     # Raise HTTPException(401) on invalid/expired token
 ```
 
-This replaces all existing `x_user_id: str = Header()` parameters across every router.
+This replaces all existing `x_user_id: str = Header()` parameters across affected routers.
 
 ### 6. Auth Router
 
@@ -66,6 +68,7 @@ POST /api/auth/login
 Body: { "email": str, "password": str }
 Response: { "access_token": str, "token_type": "bearer", "user": { "id": str, "name": str, "email": str } }
 Errors: 401 if email not found or password wrong
+Rate limit: stricter than general CRUD (e.g., 5/minute) to mitigate brute-force
 ```
 
 ### 7. Auth Schemas
@@ -90,25 +93,28 @@ class UserInfo(BaseModel):
 
 ### 8. Seed Update
 
-Update `backend/app/seed.py` to hash the default password when creating the seeded user:
+Update `backend/app/seed.py` in the `_seed_from_json` function where the user is created from `data["user"]`. Add `password_hash` using the configured default password:
 
 ```python
 from app.services.auth import hash_password
 
+# In _seed_from_json, after reading user_data from JSON:
 user = User(
-    id="ec92fcc7-1a95-4fa5-9911-7b88857cc524",
-    name="Felipe",
-    email="felipe@example.com",
+    id=user_data["id"],
+    name=user_data["name"],
+    email=user_data["email"],
     password_hash=hash_password(settings.default_user_password),
 )
 ```
+
+The password comes from `settings.default_user_password` (not the JSON file).
 
 ### 9. Router Migration
 
 All routers currently use `x_user_id: str = Header()`. Replace with:
 
 ```python
-from app.services.auth import get_current_user_id
+from app.dependencies import get_current_user_id
 
 # Before
 async def get_portfolio(x_user_id: str = Header(), ...):
@@ -117,7 +123,18 @@ async def get_portfolio(x_user_id: str = Header(), ...):
 async def get_portfolio(user_id: str = Depends(get_current_user_id), ...):
 ```
 
-Affected routers: all files in `backend/app/routers/`.
+Affected routers (those using `x_user_id: str = Header()`):
+- `asset_classes.py`
+- `asset_weights.py`
+- `transactions.py`
+- `portfolio.py`
+- `recommendations.py`
+- `quarantine.py`
+- `fundamentals.py`
+- `splits.py`
+- `dividends.py`
+
+**Not affected** (no user context): `stocks.py`, `crypto.py`, health endpoint.
 
 ## Frontend Changes
 
@@ -129,22 +146,27 @@ Add to `frontend/src/services/api.ts`:
 - Store user info in localStorage under key `auth_user`
 - Configure Axios interceptor to read token from localStorage and set `Authorization: Bearer <token>` header
 - Remove the hardcoded `X-User-Id` header
-- Add response interceptor: on 401, clear localStorage and redirect to `/login`
+- Add response interceptor: on 401, clear localStorage and redirect to `/login` (skip this for `/api/auth/login` requests to avoid redirect loops on bad credentials)
 
-### 2. Auth Hook
+### 2. Auth Context & Hook
 
-New file: `frontend/src/hooks/useAuth.ts`
+New file: `frontend/src/contexts/AuthContext.tsx`
+
+React Context provider wrapping the app so auth state is shared reactively across components (ProtectedRoute, Sidebar logout, etc.):
 
 ```typescript
-function useAuth() {
-  return {
-    user: UserInfo | null,      // from localStorage
-    isAuthenticated: boolean,    // token exists
-    login(email, password),      // call API, store token
-    logout(),                    // clear localStorage, redirect
-  }
+// AuthProvider wraps <App /> in main.tsx
+// useAuth() hook reads from context
+
+interface AuthContextValue {
+  user: UserInfo | null;
+  isAuthenticated: boolean;
+  login(email: string, password: string): Promise<void>;
+  logout(): void;
 }
 ```
+
+Add `UserInfo` and `LoginResponse` types to `frontend/src/types/index.ts`.
 
 ### 3. Login Page
 
@@ -188,11 +210,12 @@ Logout:
 
 ## Database Migration
 
-Since the app uses `Base.metadata.create_all()` on startup and SQLite, adding the `password_hash` column requires either:
-- **Option A:** Delete and recreate the DB (acceptable for dev — seed recreates data)
-- **Option B:** Add an alembic migration
+The codebase already has a migration system in `backend/app/migrations/__init__.py` with a `_MIGRATIONS` list. Add a new migration function (e.g., `_002_add_password_hash`) that:
 
-Recommendation: Option A for simplicity. The seed script recreates all data anyway.
+1. `ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''`
+2. Backfills existing users with a hashed version of `settings.default_user_password`
+
+This is consistent with the existing migration approach and avoids data loss.
 
 ## Testing
 
@@ -212,3 +235,4 @@ Recommendation: Option A for simplicity. The seed script recreates all data anyw
 - No sensitive data in JWT payload (only user_id and expiry)
 - 401 on all endpoints if token missing/invalid/expired
 - This is appropriate for a personal/small-team tool, not a public-facing production auth system
+- 30-day token expiry with no refresh — user will need to re-login after 30 days (acceptable for this use case)
