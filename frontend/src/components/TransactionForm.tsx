@@ -62,15 +62,15 @@ export function TransactionForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px]">
-      <h3 className="font-semibold text-base text-text-primary">
+      <h3 className="font-semibold text-base text-on-surface">
         New Transaction - {symbol}
       </h3>
 
       <div className="flex gap-2">
-        <label className="text-base text-text-muted">
+        <label className="text-base text-on-surface-variant">
           Type:
           <select
-            className="ml-1 bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="ml-1 input-field"
             value={type}
             onChange={(e) => setType(e.target.value as TransactionType)}
           >
@@ -84,32 +84,32 @@ export function TransactionForm({
       {!hideQuantityFields && (
         <div className="flex gap-3">
           <div>
-            <label className="block text-base text-text-muted mb-1">Quantity</label>
+            <label className="block text-base text-on-surface-variant mb-1">Quantity</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              className="input-field w-28"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Unit Price</label>
+            <label className="block text-base text-on-surface-variant mb-1">Unit Price</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              className="input-field w-28"
               value={unitPrice}
               onChange={(e) => setUnitPrice(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Total</label>
+            <label className="block text-base text-on-surface-variant mb-1">Total</label>
             <input
               type="text"
-              className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] rounded-[10px] px-3.5 py-2.5 text-base w-28 text-text-muted"
+              className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] rounded-sm px-3.5 py-2.5 text-base w-28 text-on-surface-variant"
               value={computedTotal}
               readOnly
             />
@@ -119,11 +119,11 @@ export function TransactionForm({
 
       {hideQuantityFields && (
         <div>
-          <label className="block text-base text-text-muted mb-1">Total Value</label>
+          <label className="block text-base text-on-surface-variant mb-1">Total Value</label>
           <input
             type="number"
             step="any"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+            className="input-field w-28"
             value={totalValue}
             onChange={(e) => setTotalValue(e.target.value)}
             required
@@ -133,9 +133,9 @@ export function TransactionForm({
 
       <div className="flex gap-3">
         <div>
-          <label className="block text-base text-text-muted mb-1">Currency</label>
+          <label className="block text-base text-on-surface-variant mb-1">Currency</label>
           <select
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="input-field"
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
           >
@@ -146,21 +146,21 @@ export function TransactionForm({
         </div>
         {!isFixedIncome && (
           <div>
-            <label className="block text-base text-text-muted mb-1">Tax Amount</label>
+            <label className="block text-base text-on-surface-variant mb-1">Tax Amount</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              className="input-field w-28"
               value={taxAmount}
               onChange={(e) => setTaxAmount(e.target.value)}
             />
           </div>
         )}
         <div>
-          <label className="block text-base text-text-muted mb-1">Date</label>
+          <label className="block text-base text-on-surface-variant mb-1">Date</label>
           <input
             type="date"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="input-field"
             value={date}
             onChange={(e) => setDate(e.target.value)}
             required
@@ -169,10 +169,10 @@ export function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-base text-text-muted mb-1">Notes</label>
+        <label className="block text-base text-on-surface-variant mb-1">Notes</label>
         <input
           type="text"
-          className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+          className="input-field w-full"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional notes"
@@ -183,14 +183,14 @@ export function TransactionForm({
         <button
           type="submit"
           disabled={submitting}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
+          className="btn-primary disabled:opacity-50"
         >
           {submitting ? "Saving..." : "Save"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
+          className="btn-ghost"
         >
           Cancel
         </button>
