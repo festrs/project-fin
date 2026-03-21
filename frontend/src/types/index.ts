@@ -62,6 +62,26 @@ export interface Recommendation {
   diff: number;
 }
 
+export interface InvestmentRecommendation {
+  symbol: string;
+  class_name: string;
+  effective_target: number;
+  actual_weight: number;
+  diff: number;
+  price: Money;
+  quantity: number;
+  invest_amount: Money;
+}
+
+export interface InvestmentPlan {
+  recommendations: InvestmentRecommendation[];
+  total_invested: Money;
+  exchange_rate: number | null;
+  exchange_rate_pair: string | null;
+  remainder: Money;
+  empty_reason: "no_holdings" | "all_quarantined" | "amount_too_small" | null;
+}
+
 export interface QuarantineStatus {
   asset_symbol: string;
   buy_count_in_period: number;
