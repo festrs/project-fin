@@ -324,10 +324,10 @@ function HoldingRows({
   const sym = CURRENCY_SYMBOLS[cur] ?? `${cur} `;
   const scoreColor = (v: number) =>
     v >= 90
-      ? "var(--color-positive)"
+      ? "var(--color-secondary)"
       : v >= 60
       ? "var(--color-warning)"
-      : "var(--color-negative)";
+      : "var(--color-error)";
 
   const colCount = 4 + (showQty ? 1 : 0) + (showAvgPrice ? 1 : 0) + (showCurrentPrice ? 1 : 0) + (showValueBRL ? 1 : 0) + (showGainLoss ? 1 : 0) + (showDiv ? 1 : 0) + (showScore ? 1 : 0);
 

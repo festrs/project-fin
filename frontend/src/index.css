@@ -22,14 +22,6 @@
   --radius-DEFAULT: 1rem;
   --radius-sm: 0.5rem;
 
-  /* ── Backward-compatible aliases (removed in Task 19 after full migration) ── */
-  --color-primary-hover: #003d45;
-  --color-positive: #10b981;
-  --color-negative: #ba1a1a;
-  --color-text-primary: #191c1e;
-  --color-text-secondary: #3f484b;
-  --color-text-tertiary: #3f484b;
-  --color-bg-page: #f7f9fb;
 }
 
 @import './styles/components.css';

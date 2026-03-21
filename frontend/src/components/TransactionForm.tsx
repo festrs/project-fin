@@ -61,7 +61,7 @@ export function TransactionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px]">
+    <form onSubmit={handleSubmit} className="card space-y-4 p-6">
       <h3 className="font-semibold text-base text-on-surface">
         New Transaction - {symbol}
       </h3>
