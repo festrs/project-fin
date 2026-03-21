@@ -25,10 +25,10 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-bg-page flex items-center justify-center">
-      <div className="glass-card p-8 w-full max-w-sm">
-        <h1 className="text-2xl font-bold text-text-primary mb-6 text-center">
-          Project <span className="text-primary">Fin</span>
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="card w-full max-w-sm" style={{ padding: '2rem' }}>
+        <h1 className="text-2xl font-bold text-on-surface mb-6 text-center">
+          Project <span className="text-primary-container">Fin</span>
         </h1>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <input
@@ -37,7 +37,7 @@ export default function Login() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="glass-input px-3 py-2 rounded-lg text-text-primary bg-[var(--glass-input-bg)] border border-[var(--glass-border)] outline-none focus:border-primary"
+            className="input-field"
           />
           <input
             type="password"
@@ -45,15 +45,15 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="glass-input px-3 py-2 rounded-lg text-text-primary bg-[var(--glass-input-bg)] border border-[var(--glass-border)] outline-none focus:border-primary"
+            className="input-field"
           />
           {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
+            <p className="text-error text-sm text-center">{error}</p>
           )}
           <button
             type="submit"
             disabled={loading}
-            className="bg-primary text-white py-2 rounded-lg font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+            className="btn-primary"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
