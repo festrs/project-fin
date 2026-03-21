@@ -8,6 +8,8 @@ from sqlalchemy import text, inspect
 
 from app.database import SessionLocal
 from app.models.user import User
+from app.services.auth import hash_password
+from app.config import settings
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.transaction import Transaction
@@ -58,7 +60,12 @@ def _seed_from_json(db):
         data = json.load(f)
 
     user_data = data["user"]
-    user = User(id=user_data["id"], name=user_data["name"], email=user_data["email"])
+    user = User(
+        id=user_data["id"],
+        name=user_data["name"],
+        email=user_data["email"],
+        password_hash=hash_password(settings.default_user_password),
+    )
     db.add(user)
     db.flush()
 
