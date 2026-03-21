@@ -69,8 +69,12 @@ class RecommendationService:
                 # Value-based holding: use total_cost (now a Money object)
                 asset_values[h["symbol"]] = h["total_cost"].amount
                 continue
-            price = self._get_current_price(h["symbol"], class_name, country=country, db=self.db)
-            asset_values[h["symbol"]] = price.amount * Decimal(str(h["quantity"]))
+            try:
+                price = self._get_current_price(h["symbol"], class_name, country=country, db=self.db)
+                asset_values[h["symbol"]] = price.amount * Decimal(str(h["quantity"]))
+            except Exception:
+                # Skip assets whose price can't be fetched
+                continue
 
         total_value = sum(asset_values.values())
         if total_value == 0:
@@ -172,7 +176,10 @@ class RecommendationService:
             if is_fixed_income:
                 price = None
             else:
-                price = self._get_current_price(symbol, ac.name, country=country, db=self.db)
+                try:
+                    price = self._get_current_price(symbol, ac.name, country=country, db=self.db)
+                except Exception:
+                    continue  # Skip assets whose price can't be fetched
 
             asset_data.append({
                 **rec,
