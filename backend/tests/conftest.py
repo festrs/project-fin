@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base, get_db
 from app.main import app
 from app.models.user import User
+from app.services.auth import hash_password, create_access_token
 
 from fastapi.testclient import TestClient
 
@@ -46,7 +47,17 @@ def client(db):
 
 @pytest.fixture
 def default_user(db):
-    user = User(name="Default User", email="default@example.com")
+    user = User(
+        name="Default User",
+        email="default@example.com",
+        password_hash=hash_password("testpass"),
+    )
     db.add(user)
     db.commit()
     return user
+
+
+@pytest.fixture
+def auth_headers(default_user):
+    token = create_access_token(default_user.id)
+    return {"Authorization": f"Bearer {token}"}
