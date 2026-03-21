@@ -148,3 +148,15 @@ export interface FundamentalsDetail extends FundamentalsScore {
     net_debt_ebitda: number;
   }> | null;
 }
+
+export interface UserInfo {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user: UserInfo;
+}

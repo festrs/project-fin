@@ -2,9 +2,31 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "/api",
-  headers: {
-    "X-User-Id": "ec92fcc7-1a95-4fa5-9911-7b88857cc524",
-  },
 });
+
+// Request interceptor: attach JWT token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Response interceptor: redirect to login on 401 (skip for login requests)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (
+      error.response?.status === 401 &&
+      !error.config?.url?.includes("/auth/login")
+    ) {
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("auth_user");
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
