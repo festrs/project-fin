@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.schemas.asset_class import AssetClassCreate, AssetClassUpdate, AssetClassResponse
@@ -13,10 +14,10 @@ router = APIRouter(prefix="/api/asset-classes", tags=["asset-classes"])
 @limiter.limit(CRUD_LIMIT)
 def list_asset_classes(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    return db.query(AssetClass).filter(AssetClass.user_id == x_user_id).all()
+    return db.query(AssetClass).filter(AssetClass.user_id == user_id).all()
 
 
 @router.post("", response_model=AssetClassResponse, status_code=201)
@@ -24,10 +25,10 @@ def list_asset_classes(
 def create_asset_class(
     request: Request,
     body: AssetClassCreate,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    ac = AssetClass(user_id=x_user_id, name=body.name, target_weight=body.target_weight, country=body.country, type=body.type)
+    ac = AssetClass(user_id=user_id, name=body.name, target_weight=body.target_weight, country=body.country, type=body.type)
     db.add(ac)
     db.commit()
     db.refresh(ac)
@@ -40,12 +41,12 @@ def update_asset_class(
     request: Request,
     ac_id: str,
     body: AssetClassUpdate,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     ac = (
         db.query(AssetClass)
-        .filter(AssetClass.id == ac_id, AssetClass.user_id == x_user_id)
+        .filter(AssetClass.id == ac_id, AssetClass.user_id == user_id)
         .first()
     )
     if not ac:
@@ -68,12 +69,12 @@ def update_asset_class(
 def delete_asset_class(
     request: Request,
     ac_id: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     ac = (
         db.query(AssetClass)
-        .filter(AssetClass.id == ac_id, AssetClass.user_id == x_user_id)
+        .filter(AssetClass.id == ac_id, AssetClass.user_id == user_id)
         .first()
     )
     if not ac:

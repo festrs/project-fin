@@ -2,10 +2,11 @@ import math
 from datetime import datetime
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.stock_split import StockSplit, SplitEventType
 from app.models.transaction import Transaction
@@ -19,17 +20,17 @@ router = APIRouter(prefix="/api/splits", tags=["splits"])
 @limiter.limit(CRUD_LIMIT)
 def get_pending_splits(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     splits = (
         db.query(StockSplit)
-        .filter(StockSplit.user_id == x_user_id, StockSplit.status == "pending")
+        .filter(StockSplit.user_id == user_id, StockSplit.status == "pending")
         .all()
     )
 
     service = PortfolioService(db)
-    holdings = service.get_holdings(x_user_id)
+    holdings = service.get_holdings(user_id)
     qty_map = {h["symbol"]: h["quantity"] or 0 for h in holdings}
 
     result = []
@@ -63,11 +64,11 @@ def get_pending_splits(
 def apply_split(
     split_id: str,
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     split = db.query(StockSplit).filter(
-        StockSplit.id == split_id, StockSplit.user_id == x_user_id
+        StockSplit.id == split_id, StockSplit.user_id == user_id
     ).first()
     if not split:
         raise HTTPException(status_code=404, detail="Split not found")
@@ -77,7 +78,7 @@ def apply_split(
     if split.event_type == SplitEventType.BONIFICACAO:
         # Bonificação: create a buy transaction for the bonus shares
         service = PortfolioService(db)
-        holdings = service.get_holdings(x_user_id)
+        holdings = service.get_holdings(user_id)
         current_qty = next(
             (h["quantity"] or 0 for h in holdings if h["symbol"] == split.symbol), 0
         )
@@ -87,7 +88,7 @@ def apply_split(
             tx_currency = (
                 db.query(Transaction.currency)
                 .filter(
-                    Transaction.user_id == x_user_id,
+                    Transaction.user_id == user_id,
                     Transaction.asset_symbol == split.symbol,
                     Transaction.type == "buy",
                 )
@@ -97,7 +98,7 @@ def apply_split(
             currency = tx_currency[0] if tx_currency else "BRL"
 
             db.add(Transaction(
-                user_id=x_user_id,
+                user_id=user_id,
                 asset_class_id=split.asset_class_id,
                 asset_symbol=split.symbol,
                 type="buy",
@@ -115,7 +116,7 @@ def apply_split(
         txns = (
             db.query(Transaction)
             .filter(
-                Transaction.user_id == x_user_id,
+                Transaction.user_id == user_id,
                 Transaction.asset_symbol == split.symbol,
                 Transaction.type.in_(["buy", "sell"]),
             )
@@ -137,11 +138,11 @@ def apply_split(
 def dismiss_split(
     split_id: str,
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     split = db.query(StockSplit).filter(
-        StockSplit.id == split_id, StockSplit.user_id == x_user_id
+        StockSplit.id == split_id, StockSplit.user_id == user_id
     ).first()
     if not split:
         raise HTTPException(status_code=404, detail="Split not found")

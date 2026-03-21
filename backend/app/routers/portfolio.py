@@ -2,11 +2,12 @@ import logging
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
@@ -32,15 +33,15 @@ def _money_to_dict(m) -> dict | None:
 @limiter.limit(CRUD_LIMIT)
 def portfolio_summary(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     live: bool = True,
     db: Session = Depends(get_db),
 ):
     service = PortfolioService(db)
-    holdings = service.get_holdings(x_user_id)
+    holdings = service.get_holdings(user_id)
 
     # Build class_map and weight_map for enrichment
-    asset_classes = db.query(AssetClass).filter(AssetClass.user_id == x_user_id).all()
+    asset_classes = db.query(AssetClass).filter(AssetClass.user_id == user_id).all()
     class_map = {}
     weight_map = {}
     for ac in asset_classes:
@@ -72,11 +73,11 @@ def portfolio_summary(
 @limiter.limit(CRUD_LIMIT)
 def portfolio_performance(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     service = PortfolioService(db)
-    holdings = service.get_holdings(x_user_id)
+    holdings = service.get_holdings(user_id)
     total_cost = sum((h["total_cost"].amount for h in holdings), Decimal("0"))
     holdings_serialized = []
     for h in holdings:
@@ -92,11 +93,11 @@ def portfolio_performance(
 @limiter.limit(CRUD_LIMIT)
 def portfolio_allocation(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     service = PortfolioService(db)
-    allocation = service.get_allocation(x_user_id)
+    allocation = service.get_allocation(user_id)
     for ac_data in allocation:
         for asset in ac_data["assets"]:
             asset["total_cost"] = _money_to_dict(asset["total_cost"])
@@ -107,14 +108,14 @@ def portfolio_allocation(
 @limiter.limit(CRUD_LIMIT)
 def portfolio_dividends(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Get estimated annual dividends per holding from dividend_history table."""
     service = PortfolioService(db)
-    holdings = service.get_holdings(x_user_id)
+    holdings = service.get_holdings(user_id)
 
-    asset_classes = db.query(AssetClass).filter(AssetClass.user_id == x_user_id).all()
+    asset_classes = db.query(AssetClass).filter(AssetClass.user_id == user_id).all()
     class_map = {ac.id: ac for ac in asset_classes}
 
     current_year = date.today().year
