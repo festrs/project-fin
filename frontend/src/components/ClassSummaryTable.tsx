@@ -122,60 +122,6 @@ function computeManualDividendsByClass(dividends: Transaction[]): Map<string, { 
   return result;
 }
 
-function getRecommendationCount(): number {
-  const saved = localStorage.getItem("recommendationCount");
-  return saved ? parseInt(saved, 10) : 2;
-}
-
-function computeWhereToInvest(
-  summaries: ClassSummary[],
-  investAmount: number,
-  maxClasses: number
-): Map<string, number> {
-  const result = new Map<string, number>();
-  if (investAmount <= 0) return result;
-
-  const grandTotal = summaries.reduce((sum, s) => sum + s.totalValueBRL, 0);
-  const newTotal = grandTotal + investAmount;
-
-  const needs: { classId: string; needed: number }[] = [];
-  for (const s of summaries) {
-    if (s.targetWeight <= 0) continue;
-    const idealValue = (s.targetWeight / 100) * newTotal;
-    const needed = idealValue - s.totalValueBRL;
-    if (needed > 0) {
-      needs.push({ classId: s.classId, needed });
-    }
-  }
-
-  // Limit to top N most underweight classes
-  needs.sort((a, b) => b.needed - a.needed);
-  const topNeeds = needs.slice(0, maxClasses);
-
-  const totalNeeded = topNeeds.reduce((sum, n) => sum + n.needed, 0);
-  if (totalNeeded <= 0) return result;
-
-  for (const n of topNeeds) {
-    const share = totalNeeded > investAmount
-      ? (n.needed / totalNeeded) * investAmount
-      : n.needed;
-    result.set(n.classId, Math.round(share * 100) / 100);
-  }
-
-  return result;
-}
-
-function computeTopUnderweightClasses(
-  summaries: ClassSummary[],
-  maxClasses: number
-): Set<string> {
-  const underweight = summaries
-    .filter((s) => s.targetWeight > 0 && s.diff < -1)
-    .sort((a, b) => a.diff - b.diff) // most underweight first
-    .slice(0, maxClasses);
-  return new Set(underweight.map((s) => s.classId));
-}
-
 export function ClassSummaryTable({
   holdings,
   assetClasses,
@@ -192,7 +138,6 @@ export function ClassSummaryTable({
   const navigate = useNavigate();
   const [editingWeights, setEditingWeights] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
-  const [investAmount, setInvestAmount] = useState<string>("");
   const [dividendModal, setDividendModal] = useState<{ classId: string; className: string; currency: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState("");
@@ -235,11 +180,6 @@ export function ClassSummaryTable({
       totalDivBRL += estimated.currency === "USD" ? estimated.annual_income * usdToBrl : estimated.annual_income;
     }
   }
-
-  const parsedInvest = parseFloat(investAmount) || 0;
-  const recCount = getRecommendationCount();
-  const whereToInvest = computeWhereToInvest(summaries, parsedInvest, recCount);
-  const topUnderweight = computeTopUnderweightClasses(summaries, recCount);
 
   const isEditing = editingWeights.size > 0;
   const totalTargetWeight = summaries.reduce((sum, s) => {
@@ -312,16 +252,6 @@ export function ClassSummaryTable({
               </svg>
             </button>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="text-base text-text-muted">Invest (R$):</label>
-          <input
-            type="number"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base w-28 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
-            placeholder="Amount"
-            value={investAmount}
-            onChange={(e) => setInvestAmount(e.target.value)}
-          />
         </div>
       </div>
       {showCreateForm && onCreateClass && (
@@ -404,7 +334,6 @@ export function ClassSummaryTable({
                   )}
                 </div>
               </th>
-              <th className="text-center py-2 px-2">Where to Invest</th>
               <th className="text-right py-2 px-2">
                 <div className="flex items-center justify-end gap-1">
                   Dividends ({new Date().getFullYear()})
@@ -429,13 +358,8 @@ export function ClassSummaryTable({
             {summaries.map((s) => {
               const manualDiv = manualDivByClass.get(s.classId);
               const estimatedDiv = estimatedDivByClass.get(s.classId);
-              const investSuggestion = whereToInvest.get(s.classId) ?? 0;
 
               const editedWeight = editingWeights.get(s.classId);
-              const displayWeight = editedWeight !== undefined ? parseFloat(editedWeight) || 0 : s.targetWeight;
-              const displayDiff = s.percentage - displayWeight;
-
-              const isOver = displayDiff > 1;
 
               // Dividend display: show estimated if available, manual if available, or both
               let divDisplay: React.ReactNode = "-";
@@ -485,24 +409,6 @@ export function ClassSummaryTable({
                       <span>{s.targetWeight.toFixed(0)}%</span>
                     )}
                   </td>
-                  <td className="py-2 px-2">
-                    <div className="flex items-center justify-center gap-1.5">
-                      {parsedInvest > 0 && investSuggestion > 0 ? (
-                        <>
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--glass-positive-soft)] text-positive text-xs font-bold">+</span>
-                          <span className="text-positive text-base font-medium">
-                            {formatValue(investSuggestion, "BRL")}
-                          </span>
-                        </>
-                      ) : topUnderweight.has(s.classId) ? (
-                        <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[var(--glass-positive-soft)] text-positive text-xs font-bold">+</span>
-                      ) : isOver ? (
-                        <div className="w-12 h-4 bg-negative rounded" title={`Overweight by ${Math.abs(displayDiff).toFixed(1)}%`} />
-                      ) : (
-                        <span className="text-text-muted text-base">-</span>
-                      )}
-                    </div>
-                  </td>
                   <td
                     className={`py-2 px-2 text-right text-text-muted ${divDisplay !== "-" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
                     onClick={(e) => {
@@ -539,7 +445,7 @@ export function ClassSummaryTable({
           <tfoot>
             {isEditing && (
               <tr className="border-b">
-                <td colSpan={onDeleteClass ? 8 : 7} className="py-2 px-2">
+                <td colSpan={onDeleteClass ? 7 : 6} className="py-2 px-2">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -584,9 +490,6 @@ export function ClassSummaryTable({
               <td className="py-2 px-2 text-right">100%</td>
               <td className="py-2 px-2 text-right">
                 {(isEditing ? totalTargetWeight : summaries.reduce((sum, s) => sum + s.targetWeight, 0)).toFixed(0)}%
-              </td>
-              <td className="py-2 px-2 text-center text-positive text-base font-medium">
-                {parsedInvest > 0 ? formatValue(parsedInvest, "BRL") : ""}
               </td>
               <td className="py-2 px-2 text-right">
                 {totalDivBRL > 0 ? formatValue(totalDivBRL, "BRL") : "-"}
