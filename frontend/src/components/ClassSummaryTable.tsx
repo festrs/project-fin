@@ -184,7 +184,7 @@ export function ClassSummaryTable({
 
   if (loading) {
     return (
-      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+      <div className="card">
         <p className="text-text-muted text-base">Loading summary...</p>
       </div>
     );
@@ -262,19 +262,19 @@ export function ClassSummaryTable({
 
   if (summaries.length === 0) {
     return (
-      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
-        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px] mb-3">Consolidated Portfolio</h2>
+      <div className="card">
+        <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px] mb-3">Consolidated Portfolio</h2>
         <p className="text-text-muted text-base">No holdings data available</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+    <div className="card">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Consolidated Portfolio</h2>
+            <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px]">Consolidated Portfolio</h2>
             <span className="text-base text-text-muted">USD/BRL: {usdToBrl.toFixed(2)}</span>
           </div>
           {onCreateClass && (
@@ -308,12 +308,12 @@ export function ClassSummaryTable({
           <input
             type="text"
             placeholder="Class name"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="input-field"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
           />
           <select
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="input-field"
             value={newType}
             onChange={(e) => setNewType(e.target.value as "stock" | "crypto" | "fixed_income")}
           >
@@ -324,7 +324,7 @@ export function ClassSummaryTable({
           <input
             type="number"
             placeholder="Target %"
-            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base w-24 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+            className="input-field w-24"
             value={newWeight}
             onChange={(e) => setNewWeight(e.target.value)}
           />
@@ -342,7 +342,7 @@ export function ClassSummaryTable({
                 setCreating(false);
               }
             }}
-            className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
+            className="btn-primary disabled:opacity-50"
           >
             {creating ? "Saving..." : "Save"}
           </button>
@@ -353,7 +353,7 @@ export function ClassSummaryTable({
               setNewWeight("");
               setNewType("stock");
             }}
-            className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
+            className="btn-ghost"
           >
             Cancel
           </button>
@@ -431,7 +431,7 @@ export function ClassSummaryTable({
               return (
                 <tr
                   key={s.classId}
-                  className="even:bg-[var(--glass-row-alt)] rounded-lg cursor-pointer hover:bg-[var(--glass-hover)] transition-colors"
+                  className="table-row cursor-pointer hover:bg-[var(--glass-hover)] transition-colors"
                   onClick={() => navigate(`/portfolio/${s.classId}`)}
                 >
                   <td className="py-2 px-2 font-medium text-primary">{s.className}</td>
@@ -449,7 +449,7 @@ export function ClassSummaryTable({
                         step="0.5"
                         min="0"
                         max="100"
-                        className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-2.5 py-1.5 text-base w-20 text-right focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+                        className="input-field w-20 text-right"
                         value={editedWeight ?? ""}
                         onClick={(e) => e.stopPropagation()}
                         onMouseDown={(e) => e.stopPropagation()}
@@ -473,7 +473,7 @@ export function ClassSummaryTable({
                   {onDeleteClass && (
                     <td className="py-2 px-2 text-center">
                       <button
-                        className="text-text-muted hover:text-negative transition-colors"
+                        className="text-text-muted hover:text-error transition-colors"
                         title="Delete class"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -508,7 +508,7 @@ export function ClassSummaryTable({
                           />
                         </div>
                         <span className={`text-base font-medium ${
-                          Math.abs(totalTargetWeight - 100) < 0.5 ? "text-positive" : "text-warning"
+                          Math.abs(totalTargetWeight - 100) < 0.5 ? "text-tertiary" : "text-warning"
                         }`}>
                           {totalTargetWeight.toFixed(0)}%
                         </span>
@@ -517,13 +517,13 @@ export function ClassSummaryTable({
                     <button
                       onClick={handleSave}
                       disabled={saving}
-                      className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
+                      className="btn-primary disabled:opacity-50"
                     >
                       {saving ? "Saving..." : "Save"}
                     </button>
                     <button
                       onClick={handleCancel}
-                      className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
+                      className="btn-ghost"
                     >
                       Cancel
                     </button>
@@ -534,12 +534,12 @@ export function ClassSummaryTable({
             {reserveSummary && (
               <tr className="border-t border-[var(--glass-border)]">
                 <td
-                  className="py-2 px-2 font-medium text-text-secondary cursor-pointer hover:text-primary transition-colors"
+                  className="py-2 px-2 font-medium text-on-surface-variant cursor-pointer hover:text-primary transition-colors"
                   onClick={() => navigate(`/portfolio/${reserveSummary.classId}`)}
                 >
                   {reserveSummary.className}
                 </td>
-                <td className="py-2 px-2 text-right text-text-secondary">
+                <td className="py-2 px-2 text-right text-on-surface-variant">
                   {formatValue(reserveSummary.totalValue, reserveSummary.currency)}
                 </td>
                 <td className="py-2 px-2 text-right text-text-muted">
@@ -554,7 +554,7 @@ export function ClassSummaryTable({
                 {onDeleteClass && (
                   <td className="py-2 px-2 text-center">
                     <button
-                      className="text-text-muted hover:text-negative transition-colors"
+                      className="text-text-muted hover:text-error transition-colors"
                       title="Delete emergency reserve"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -587,7 +587,7 @@ export function ClassSummaryTable({
               {onDeleteClass && <td className="py-2 px-2" />}
             </tr>
             {reserveSummary && reserveSummary.totalValueBRL > 0 && (
-              <tr className="font-semibold text-text-secondary">
+              <tr className="font-semibold text-on-surface-variant">
                 <td className="py-2 px-2">Total + Reserve</td>
                 <td className="py-2 px-2" />
                 <td className="py-2 px-2 text-right">
