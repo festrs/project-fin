@@ -91,10 +91,6 @@ class RecommendationService:
             if not info:
                 continue
 
-            # Skip assets whose price couldn't be fetched
-            if symbol not in asset_values:
-                continue
-
             effective_target = (
                 info["class_target_weight"] * info["asset_target_weight"] / 100
             )
@@ -177,13 +173,15 @@ class RecommendationService:
             is_fixed_income = asset_type == "fixed_income"
             is_crypto = asset_type == "crypto"
 
+            price_unavailable = False
             if is_fixed_income:
                 price = None
             else:
                 try:
                     price = self._get_current_price(symbol, ac.name, country=country, db=self.db)
                 except Exception:
-                    continue  # Skip assets whose price can't be fetched
+                    price = None
+                    price_unavailable = True
 
             asset_data.append({
                 **rec,
@@ -192,6 +190,7 @@ class RecommendationService:
                 "is_fixed_income": is_fixed_income,
                 "is_crypto": is_crypto,
                 "country": country,
+                "price_unavailable": price_unavailable,
             })
 
         # Step 4: Distribute amount proportionally by gap
@@ -209,6 +208,20 @@ class RecommendationService:
         # Step 5: Calculate quantities
         for ad in asset_data:
             allocated = ad["allocated"]
+
+            if ad.get("price_unavailable"):
+                # Price couldn't be fetched — include with zero quantity
+                results.append({
+                    "symbol": ad["symbol"],
+                    "class_name": ad["class_name"],
+                    "effective_target": ad["effective_target"],
+                    "actual_weight": ad["actual_weight"],
+                    "diff": ad["diff"],
+                    "price": Money(Decimal("0"), input_currency),
+                    "quantity": 0,
+                    "invest_amount": Money(Decimal("0"), input_currency),
+                })
+                continue
 
             if ad["is_fixed_income"]:
                 invest_amount = allocated
@@ -288,7 +301,7 @@ class RecommendationService:
             return _empty_result("amount_too_small")
 
         return {
-            "recommendations": [r for r in results if r["quantity"] > 0],
+            "recommendations": results,
             "total_invested": Money(amount - remaining.quantize(Decimal("0.01")), input_currency),
             "exchange_rate": float(exchange_rate) if exchange_rate else None,
             "exchange_rate_pair": "USD-BRL" if exchange_rate else None,
