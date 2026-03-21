@@ -130,9 +130,9 @@ export function HoldingsTable({
   }
 
   return (
-    <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+    <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px]">Holdings</h2>
+        <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px]">Holdings</h2>
       </div>
 
       {transactionForm && (
@@ -374,7 +374,7 @@ function HoldingRows({
 
   return (
     <>
-      <tr className="even:bg-[var(--glass-row-alt)] hover:bg-[var(--glass-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
+      <tr className="table-row hover:bg-[var(--glass-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
         <td className="px-3 py-2">
           <span className="flex items-center gap-2">
             <span className="font-medium">{h.symbol}</span>
@@ -411,9 +411,9 @@ function HoldingRows({
               <span
                 className={
                   gainLossNum > 0
-                    ? "text-positive"
+                    ? "text-tertiary"
                     : gainLossNum < 0
-                    ? "text-negative"
+                    ? "text-error"
                     : ""
                 }
               >
@@ -438,7 +438,7 @@ function HoldingRows({
           {isEditingWeight ? (
             <input
               type="text"
-              className="border border-[var(--glass-border-input)] rounded-[10px] px-2 py-1 text-base w-16 text-right focus:border-primary focus:ring-2 focus:ring-[var(--glass-primary-ring)] outline-none"
+              className="input-field w-16 text-right"
               value={editWeightValue}
               onChange={(e) => onWeightChange(e.target.value)}
               onBlur={onCommitWeight}
@@ -481,7 +481,7 @@ function HoldingRows({
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center items-center relative">
             <button
-              className="text-positive hover:opacity-80 text-base px-2 font-medium"
+              className="text-tertiary hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onBuy();
@@ -490,7 +490,7 @@ function HoldingRows({
               Buy
             </button>
             <button
-              className="text-negative hover:opacity-80 text-base px-2 font-medium"
+              className="text-error hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onSell();
@@ -501,7 +501,7 @@ function HoldingRows({
             {(onDeleteHolding || onChangeAssetClass) && (
               <div className="relative">
                 <button
-                  className="text-text-muted hover:text-text-primary text-base px-1"
+                  className="text-text-muted hover:text-on-surface text-base px-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowHoldingMenu(!showHoldingMenu);
@@ -514,12 +514,12 @@ function HoldingRows({
                 </button>
                 {showHoldingMenu && (
                   <div
-                    className="absolute right-0 top-8 z-20 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[10px] shadow-lg py-1 min-w-[180px]"
+                    className="absolute right-0 top-8 z-20 card-elevated py-1 min-w-[180px]"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {onChangeAssetClass && !changingAssetClass && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-text-primary hover:bg-[var(--glass-hover)]"
+                        className="w-full text-left px-3 py-2 text-base text-on-surface hover:bg-[var(--glass-hover)]"
                         onClick={() => setChangingAssetClass(true)}
                       >
                         Change Asset Class
@@ -529,7 +529,7 @@ function HoldingRows({
                       <div className="px-3 py-2">
                         <label className="block text-xs text-text-muted mb-1">Move to:</label>
                         <select
-                          className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base"
+                          className="input-field w-full"
                           defaultValue={classId}
                           onChange={async (e) => {
                             await onChangeAssetClass!(h.symbol, e.target.value);
@@ -545,7 +545,7 @@ function HoldingRows({
                     )}
                     {onDeleteHolding && !confirmDelete && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-negative hover:bg-[var(--glass-hover)]"
+                        className="w-full text-left px-3 py-2 text-base text-error hover:bg-[var(--glass-hover)]"
                         onClick={() => setConfirmDelete(true)}
                       >
                         Delete Holding
@@ -553,10 +553,10 @@ function HoldingRows({
                     )}
                     {confirmDelete && (
                       <div className="px-3 py-2 space-y-1">
-                        <p className="text-xs text-negative">Delete all transactions for {h.symbol}?</p>
+                        <p className="text-xs text-error">Delete all transactions for {h.symbol}?</p>
                         <div className="flex gap-2">
                           <button
-                            className="bg-negative text-white px-3 py-1 rounded-[8px] text-xs font-semibold"
+                            className="bg-error text-white px-3 py-1 rounded-sm text-xs font-semibold"
                             onClick={async () => {
                               await onDeleteHolding!(h.symbol);
                               setShowHoldingMenu(false);
@@ -585,7 +585,7 @@ function HoldingRows({
       {isExpanded && (
         <tr>
           <td colSpan={colCount} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
-            <h4 className="font-semibold text-base text-text-primary mb-2">Transaction History</h4>
+            <h4 className="font-semibold text-base text-on-surface mb-2">Transaction History</h4>
             {transactions.length === 0 ? (
               <p className="text-text-muted text-base">No transactions found</p>
             ) : (
@@ -611,7 +611,7 @@ function HoldingRows({
                         <td className="py-1 px-2">
                           <input
                             type="date"
-                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-32"
+                            className="input-field w-32"
                             value={editTxData.date}
                             onChange={(e) => setEditTxData({ ...editTxData, date: e.target.value })}
                           />
@@ -624,7 +624,7 @@ function HoldingRows({
                             <input
                               type="number"
                               step="any"
-                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-20 text-right"
+                              className="input-field w-20 text-right"
                               value={editTxData.quantity}
                               onChange={(e) => setEditTxData({ ...editTxData, quantity: e.target.value })}
                             />
@@ -637,7 +637,7 @@ function HoldingRows({
                             <input
                               type="number"
                               step="any"
-                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-24 text-right"
+                              className="input-field w-24 text-right"
                               value={editTxData.unit_price}
                               onChange={(e) => setEditTxData({ ...editTxData, unit_price: e.target.value })}
                             />
@@ -648,7 +648,7 @@ function HoldingRows({
                             <input
                               type="number"
                               step="any"
-                              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-24 text-right"
+                              className="input-field w-24 text-right"
                               value={editTxData.total_value}
                               onChange={(e) => setEditTxData({ ...editTxData, total_value: e.target.value })}
                             />
@@ -663,7 +663,7 @@ function HoldingRows({
                           <input
                             type="number"
                             step="any"
-                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-20 text-right"
+                            className="input-field w-20 text-right"
                             value={editTxData.tax_amount}
                             onChange={(e) => setEditTxData({ ...editTxData, tax_amount: e.target.value })}
                           />
@@ -671,7 +671,7 @@ function HoldingRows({
                         <td className="py-1 px-2">
                           <input
                             type="text"
-                            className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[8px] px-2 py-1 text-base w-32"
+                            className="input-field w-32"
                             value={editTxData.notes}
                             onChange={(e) => setEditTxData({ ...editTxData, notes: e.target.value })}
                             placeholder="Notes"
@@ -726,7 +726,7 @@ function HoldingRows({
                               )}
                               {onDeleteTransaction && (
                                 <button
-                                  className="text-negative hover:opacity-80 text-xs font-medium"
+                                  className="text-error hover:opacity-80 text-xs font-medium"
                                   onClick={() => handleDeleteTx(t.id)}
                                 >
                                   Del
