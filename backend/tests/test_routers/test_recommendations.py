@@ -45,3 +45,29 @@ def test_get_recommendations(MockMarketData, client, default_user, db):
     assert resp.status_code == 200
     data = resp.json()
     assert "recommendations" in data
+
+
+@patch("app.services.recommendation.MarketDataService")
+@patch("app.routers.recommendations.fetch_exchange_rate", return_value=5.0)
+def test_invest_plan_endpoint(mock_fx, MockMarketData, client, default_user, db):
+    _setup(db, default_user.id)
+
+    mock_instance = MockMarketData.return_value
+    mock_instance.get_stock_quote.return_value = {"current_price": Money(Decimal("175"), Currency.USD)}
+
+    headers = {"X-User-Id": default_user.id}
+    resp = client.post(
+        "/api/recommendations/invest",
+        json={"amount": "1000", "currency": "USD", "count": 1},
+        headers=headers,
+    )
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "recommendations" in data
+    assert "total_invested" in data
+    assert "remainder" in data
+    if data["recommendations"]:
+        rec = data["recommendations"][0]
+        assert "price" in rec
+        assert "quantity" in rec
+        assert "invest_amount" in rec
