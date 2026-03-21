@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface ClassAllocation {
   className: string;
@@ -11,107 +11,82 @@ interface AllocationDonutChartProps {
   classSummaries: ClassAllocation[];
 }
 
-const CIRCUMFERENCE = 2 * Math.PI * 44; // outer ring radius
-const INNER_CIRCUMFERENCE = 2 * Math.PI * 32; // inner ring radius
-
 export default function AllocationDonutChart({ classSummaries }: AllocationDonutChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   if (classSummaries.length === 0) {
     return (
-      <div className="bg-surface-low rounded-xl p-6">
+      <div className="rounded-xl p-6" style={{ background: "var(--surface-container-low)" }}>
         <p className="text-text-muted text-sm">No allocation data</p>
       </div>
     );
   }
 
-  // Compute stroke-dasharray and offset for each segment
-  const outerSegments = classSummaries.map((s, i) => {
-    const dash = (s.percentage / 100) * CIRCUMFERENCE;
-    const offset = classSummaries
-      .slice(0, i)
-      .reduce((sum, prev) => sum + (prev.percentage / 100) * CIRCUMFERENCE, 0);
-    return { dash, offset, ...s };
-  });
-
-  const innerSegments = classSummaries.map((s, i) => {
-    const dash = (s.targetWeight / 100) * INNER_CIRCUMFERENCE;
-    const offset = classSummaries
-      .slice(0, i)
-      .reduce((sum, prev) => sum + (prev.targetWeight / 100) * INNER_CIRCUMFERENCE, 0);
-    return { dash, offset, ...s };
-  });
+  const actualData = classSummaries.map((s) => ({ name: s.className, value: s.percentage, color: s.color }));
+  const targetData = classSummaries
+    .filter((s) => s.targetWeight > 0)
+    .map((s) => ({ name: s.className, value: s.targetWeight, color: s.color }));
 
   return (
-    <div className="bg-surface-low rounded-xl p-6">
-      <h4 className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-8"
+    <div className="rounded-xl p-6" style={{ background: "var(--surface-container-low)" }}>
+      <h4
+        className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4"
         style={{ fontFamily: "var(--font-family-body)" }}
       >
-        Allocation Comparison
+        Allocation Comparison (Actual vs Target)
       </h4>
-      <div className="flex flex-col items-center">
-        {/* Donut Chart */}
-        <div className="relative w-64 h-64 mb-8">
-          <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-            {/* Inner ring background */}
-            <circle cx="50" cy="50" r="32" fill="transparent" stroke="var(--color-surface-highest)" strokeWidth="12" />
-            {/* Inner ring segments (target) */}
-            {innerSegments.map((seg, i) => (
-              <circle
-                key={`inner-${i}`}
-                cx="50" cy="50" r="32"
-                fill="transparent"
-                stroke={seg.color}
-                strokeWidth="12"
-                strokeDasharray={`${seg.dash} ${INNER_CIRCUMFERENCE - seg.dash}`}
-                strokeDashoffset={-seg.offset}
-                opacity={0.4}
-              />
+      <ResponsiveContainer width="100%" height={320}>
+        <PieChart>
+          {/* Outer ring: Actual allocation */}
+          <Pie
+            data={actualData}
+            cx="50%"
+            cy="50%"
+            innerRadius={85}
+            outerRadius={120}
+            paddingAngle={1}
+            dataKey="value"
+          >
+            {actualData.map((entry, index) => (
+              <Cell key={`actual-${index}`} fill={entry.color} />
             ))}
-            {/* Outer ring background */}
-            <circle cx="50" cy="50" r="44" fill="transparent" stroke="var(--color-surface-highest)" strokeWidth="12" />
-            {/* Outer ring segments (actual) */}
-            {outerSegments.map((seg, i) => (
-              <circle
-                key={`outer-${i}`}
-                cx="50" cy="50" r="44"
-                fill="transparent"
-                stroke={seg.color}
-                strokeWidth="12"
-                strokeDasharray={`${seg.dash} ${CIRCUMFERENCE - seg.dash}`}
-                strokeDashoffset={-seg.offset}
-                className="cursor-pointer transition-opacity"
-                opacity={hoveredIndex !== null && hoveredIndex !== i ? 0.4 : 1}
-                onMouseEnter={() => setHoveredIndex(i)}
-                onMouseLeave={() => setHoveredIndex(null)}
-              />
-            ))}
-          </svg>
-        </div>
-
-        {/* Legend */}
-        <div className="flex flex-wrap justify-center gap-x-6 gap-y-3">
-          {classSummaries.map((s, i) => (
-            <div
-              key={s.className}
-              className="flex items-center gap-2 cursor-default"
-              onMouseEnter={() => setHoveredIndex(i)}
-              onMouseLeave={() => setHoveredIndex(null)}
+          </Pie>
+          {/* Inner ring: Target allocation */}
+          {targetData.length > 0 && (
+            <Pie
+              data={targetData}
+              cx="50%"
+              cy="50%"
+              innerRadius={50}
+              outerRadius={80}
+              paddingAngle={1}
+              dataKey="value"
+              opacity={0.5}
             >
-              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: s.color }} />
-              <span className="text-xs font-medium text-on-surface" style={{ fontFamily: "var(--font-family-body)" }}>
-                {s.className}
+              {targetData.map((entry, index) => (
+                <Cell key={`target-${index}`} fill={entry.color} />
+              ))}
+            </Pie>
+          )}
+          <Tooltip
+            formatter={(value) => `${Number(value).toFixed(1)}%`}
+            contentStyle={{
+              background: "var(--surface-container-high)",
+              border: "1px solid var(--glass-border)",
+              borderRadius: "var(--radius-sm)",
+              color: "var(--color-on-surface)",
+              fontSize: "0.75rem",
+            }}
+          />
+          <Legend
+            formatter={(value) => (
+              <span className="text-xs text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
+                {value}
               </span>
-              {hoveredIndex === i && (
-                <span className="text-[10px] text-on-surface-variant" style={{ fontFamily: "var(--font-family-body)" }}>
-                  <span style={{ color: s.color }} className="font-bold">{s.percentage.toFixed(1)}%</span>
-                  {" / "}
-                  {s.targetWeight.toFixed(0)}%
-                </span>
-              )}
-            </div>
-          ))}
-        </div>
+            )}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+      <div className="text-center text-xs text-text-muted -mt-2 tabular-nums" style={{ fontFamily: "var(--font-family-body)" }}>
+        Outer: Actual &middot; Inner: Target
       </div>
     </div>
   );
