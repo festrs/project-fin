@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.quarantine_config import QuarantineConfig
 from app.schemas.quarantine import QuarantineConfigUpdate, QuarantineConfigResponse, QuarantineStatusResponse
@@ -14,24 +15,24 @@ router = APIRouter(prefix="/api/quarantine", tags=["quarantine"])
 @limiter.limit(CRUD_LIMIT)
 def get_all_statuses(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     service = QuarantineService(db)
-    return service.get_all_statuses(x_user_id)
+    return service.get_all_statuses(user_id)
 
 
 @router.get("/config", response_model=QuarantineConfigResponse)
 @limiter.limit(CRUD_LIMIT)
 def get_config(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    config = db.query(QuarantineConfig).filter(QuarantineConfig.user_id == x_user_id).first()
+    config = db.query(QuarantineConfig).filter(QuarantineConfig.user_id == user_id).first()
     if not config:
         # Create default config
-        config = QuarantineConfig(user_id=x_user_id)
+        config = QuarantineConfig(user_id=user_id)
         db.add(config)
         db.commit()
         db.refresh(config)
@@ -43,12 +44,12 @@ def get_config(
 def update_config(
     request: Request,
     body: QuarantineConfigUpdate,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    config = db.query(QuarantineConfig).filter(QuarantineConfig.user_id == x_user_id).first()
+    config = db.query(QuarantineConfig).filter(QuarantineConfig.user_id == user_id).first()
     if not config:
-        config = QuarantineConfig(user_id=x_user_id)
+        config = QuarantineConfig(user_id=user_id)
         db.add(config)
         db.flush()
     if body.threshold is not None:

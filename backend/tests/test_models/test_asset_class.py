@@ -1,9 +1,10 @@
 from app.models.user import User
 from app.models.asset_class import AssetClass
+from app.services.auth import hash_password
 
 
 def test_create_asset_class(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -22,7 +23,7 @@ def test_create_asset_class(db):
 
 
 def test_default_target_weight(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)

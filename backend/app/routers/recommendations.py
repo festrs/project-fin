@@ -1,9 +1,10 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Header, Query, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.schemas.recommendation import InvestmentPlanRequest, InvestmentPlanResponse, InvestmentRecommendationResponse
 from app.schemas.money import MoneyResponse
@@ -18,11 +19,11 @@ router = APIRouter(prefix="/api/recommendations", tags=["recommendations"])
 def get_recommendations(
     request: Request,
     count: int = Query(2),
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     service = RecommendationService(db)
-    recommendations = service.get_recommendations(x_user_id, count=count)
+    recommendations = service.get_recommendations(user_id, count=count)
     return {"recommendations": recommendations}
 
 
@@ -31,7 +32,7 @@ def get_recommendations(
 def invest_plan(
     request: Request,
     body: InvestmentPlanRequest,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     rate = fetch_exchange_rate("USD-BRL")
@@ -39,7 +40,7 @@ def invest_plan(
 
     service = RecommendationService(db)
     plan = service.get_investment_plan(
-        user_id=x_user_id,
+        user_id=user_id,
         amount=Decimal(body.amount),
         currency=body.currency,
         count=body.count,

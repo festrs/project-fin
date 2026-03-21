@@ -4,6 +4,7 @@ from decimal import Decimal
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.transaction import Transaction
+from app.services.auth import create_access_token
 
 
 def _setup_portfolio(db, user_id):
@@ -33,7 +34,8 @@ def _setup_portfolio(db, user_id):
 
 def test_portfolio_summary(client, default_user, db):
     _setup_portfolio(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/portfolio/summary", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
@@ -47,7 +49,8 @@ def test_portfolio_summary(client, default_user, db):
 
 def test_portfolio_performance(client, default_user, db):
     _setup_portfolio(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/portfolio/performance", headers=headers)
     assert resp.status_code == 200
     data = resp.json()
@@ -56,7 +59,8 @@ def test_portfolio_performance(client, default_user, db):
 
 def test_portfolio_allocation(client, default_user, db):
     _setup_portfolio(db, default_user.id)
-    headers = {"X-User-Id": default_user.id}
+    token = create_access_token(default_user.id)
+    headers = {"Authorization": f"Bearer {token}"}
     resp = client.get("/api/portfolio/allocation", headers=headers)
     assert resp.status_code == 200
     data = resp.json()

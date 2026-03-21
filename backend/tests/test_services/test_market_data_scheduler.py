@@ -9,6 +9,7 @@ from app.models.transaction import Transaction
 from app.models.user import User
 from app.money import Money, Currency
 from app.services.market_data_scheduler import MarketDataScheduler
+from app.services.auth import hash_password
 
 
 @pytest.fixture
@@ -19,7 +20,7 @@ def scheduler():
 
 
 def _setup_user_with_holdings(db):
-    user = User(name="Test", email="test@test.com")
+    user = User(name="Test", email="test@test.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.flush()
 

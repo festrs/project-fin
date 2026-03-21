@@ -4,10 +4,11 @@ from decimal import Decimal
 from app.models.user import User
 from app.models.asset_class import AssetClass
 from app.models.transaction import Transaction
+from app.services.auth import hash_password
 
 
 def test_create_buy_transaction(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -46,7 +47,7 @@ def test_create_buy_transaction(db):
 
 
 def test_create_dividend_transaction(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -80,7 +81,7 @@ def test_create_dividend_transaction(db):
 
 
 def test_filter_by_type(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)

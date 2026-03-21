@@ -2,10 +2,11 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user import User
+from app.services.auth import hash_password
 
 
 def test_create_user(db):
-    user = User(name="Alice", email="alice@example.com")
+    user = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.commit()
     db.refresh(user)
@@ -19,11 +20,11 @@ def test_create_user(db):
 
 
 def test_unique_email_constraint(db):
-    u1 = User(name="Alice", email="alice@example.com")
+    u1 = User(name="Alice", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(u1)
     db.commit()
 
-    u2 = User(name="Bob", email="alice@example.com")
+    u2 = User(name="Bob", email="alice@example.com", password_hash=hash_password("testpass"))
     db.add(u2)
     with pytest.raises(IntegrityError):
         db.commit()

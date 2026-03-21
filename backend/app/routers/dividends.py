@@ -2,12 +2,13 @@ import threading
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Header, Request
+from fastapi import APIRouter, Depends, Request
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.dividend_history import DividendHistory
 
@@ -58,7 +59,7 @@ def trigger_dividend_scrape(request: Request):
 def get_dividend_history(
     request: Request,
     asset_class_id: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Get dividend history for the current year filtered by asset class."""
@@ -70,7 +71,7 @@ def get_dividend_history(
 
     # Get holdings to know quantity per symbol
     service = PortfolioService(db)
-    holdings = service.get_holdings(x_user_id)
+    holdings = service.get_holdings(user_id)
     qty_map: dict[str, float] = {}
     symbol_list: list[str] = []
     for h in holdings:

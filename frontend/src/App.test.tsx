@@ -1,13 +1,15 @@
 import { render, screen } from "@testing-library/react";
 import App from "./App";
+import { AuthProvider } from "./contexts/AuthContext";
 
 describe("App", () => {
-  it("renders sidebar with Project Fin", () => {
-    render(<App />);
-    expect(
-      screen.getByText((content, element) => {
-        return element?.textContent === "Project Fin";
-      })
-    ).toBeInTheDocument();
+  it("renders login page when not authenticated", () => {
+    render(
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    );
+    expect(screen.getByPlaceholderText("Email")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Password")).toBeInTheDocument();
   });
 });

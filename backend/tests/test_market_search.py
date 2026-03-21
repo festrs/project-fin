@@ -21,7 +21,7 @@ def test_stock_quote_returns_price_field():
         mock_mds = MagicMock()
         mock_mds.get_stock_quote.return_value = mock_quote
         mock_get.return_value = mock_mds
-        resp = client.get("/api/stocks/us/AAPL", headers={"X-User-Id": "test"})
+        resp = client.get("/api/stocks/us/AAPL")
         assert resp.status_code == 200
         data = resp.json()
         assert "price" in data
@@ -44,7 +44,7 @@ def test_crypto_quote_returns_price_and_name_fields():
         mock_mds = MagicMock()
         mock_mds.get_crypto_quote.return_value = mock_quote
         mock_get.return_value = mock_mds
-        resp = client.get("/api/crypto/bitcoin", headers={"X-User-Id": "test"})
+        resp = client.get("/api/crypto/bitcoin")
         assert resp.status_code == 200
         data = resp.json()
         assert "price" in data

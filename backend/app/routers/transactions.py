@@ -3,10 +3,11 @@ import threading
 from datetime import date
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal, get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.models.fundamentals_score import FundamentalsScore
@@ -40,14 +41,14 @@ def _tx_to_response(tx: Transaction) -> dict:
 @limiter.limit(CRUD_LIMIT)
 def list_transactions(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     type: str | None = Query(None),
     symbol: str | None = Query(None),
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    q = db.query(Transaction).filter(Transaction.user_id == x_user_id)
+    q = db.query(Transaction).filter(Transaction.user_id == user_id)
     if type:
         q = q.filter(Transaction.type == type)
     if symbol:
@@ -80,11 +81,11 @@ def _trigger_fundamentals_refresh(symbol: str) -> None:
 def create_transaction(
     request: Request,
     body: TransactionCreate,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     tx = Transaction(
-        user_id=x_user_id,
+        user_id=user_id,
         asset_class_id=body.asset_class_id,
         asset_symbol=body.asset_symbol,
         type=body.type,
@@ -120,10 +121,10 @@ def update_transaction(
     request: Request,
     tx_id: str,
     body: TransactionUpdate,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == x_user_id).first()
+    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == user_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     updates = body.model_dump(exclude_unset=True)
@@ -146,10 +147,10 @@ def update_transaction(
 def delete_transaction(
     request: Request,
     tx_id: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == x_user_id).first()
+    tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == user_id).first()
     if not tx:
         raise HTTPException(status_code=404, detail="Transaction not found")
     db.delete(tx)
@@ -161,13 +162,13 @@ def delete_transaction(
 def delete_transactions_by_symbol(
     request: Request,
     symbol: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Delete all transactions for a symbol (removes the holding)."""
     count = (
         db.query(Transaction)
-        .filter(Transaction.user_id == x_user_id, Transaction.asset_symbol == symbol)
+        .filter(Transaction.user_id == user_id, Transaction.asset_symbol == symbol)
         .delete()
     )
     if count == 0:
@@ -181,13 +182,13 @@ def update_asset_class_for_symbol(
     request: Request,
     symbol: str,
     asset_class_id: str = Query(...),
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     """Move all transactions for a symbol to a different asset class."""
     txs = (
         db.query(Transaction)
-        .filter(Transaction.user_id == x_user_id, Transaction.asset_symbol == symbol)
+        .filter(Transaction.user_id == user_id, Transaction.asset_symbol == symbol)
         .all()
     )
     if not txs:

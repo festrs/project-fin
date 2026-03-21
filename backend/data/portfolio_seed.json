@@ -1,0 +1,83 @@
+{
+  "user": {
+    "id": "ec92fcc7-1a95-4fa5-9911-7b88857cc524",
+    "name": "Default User",
+    "email": "default@projectfin.com"
+  },
+  "asset_classes": [
+    {"name": "BR Stocks", "target_weight": 25.0, "country": "BR", "type": "stock"},
+    {"name": "US Stocks", "target_weight": 30.0, "country": "US", "type": "stock"},
+    {"name": "FIIs", "target_weight": 10.0, "country": "BR", "type": "stock"},
+    {"name": "REITs", "target_weight": 10.0, "country": "US", "type": "stock"},
+    {"name": "Crypto", "target_weight": 15.0, "country": "US", "type": "crypto"},
+    {"name": "Stablecoins", "target_weight": 0.0, "country": "US", "type": "crypto"},
+    {"name": "Bonds", "target_weight": 2.0, "country": "US", "type": "fixed_income"}
+  ],
+  "holdings": {
+    "BR Stocks": [
+      {"symbol": "AGRO3.SA", "quantity": 400, "unit_price": "21.82", "target_weight": 0.0, "currency": "BRL"},
+      {"symbol": "AZZA3.SA", "quantity": 552, "unit_price": "27.52", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "B3SA3.SA", "quantity": 2333, "unit_price": "18.11", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "EGIE3.SA", "quantity": 1000, "unit_price": "32.60", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "FLRY3.SA", "quantity": 2601, "unit_price": "16.27", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "HYPE3.SA", "quantity": 360, "unit_price": "22.02", "target_weight": 0.0, "currency": "BRL"},
+      {"symbol": "ITUB3.SA", "quantity": 1688, "unit_price": "41.68", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "KLBN11.SA", "quantity": 396, "unit_price": "19.72", "target_weight": 0.0, "currency": "BRL"},
+      {"symbol": "LREN3.SA", "quantity": 1683, "unit_price": "15.22", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "PSSA3.SA", "quantity": 860, "unit_price": "50.00", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "RADL3.SA", "quantity": 1956, "unit_price": "23.74", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "TAEE11.SA", "quantity": 799, "unit_price": "42.76", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "WEGE3.SA", "quantity": 1400, "unit_price": "47.19", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "ODPV3.SA", "quantity": 2692, "unit_price": "13.87", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "XPBR31.SA", "quantity": 12, "unit_price": "103.31", "target_weight": 0.0, "currency": "BRL"}
+    ],
+    "US Stocks": [
+      {"symbol": "AAPL", "quantity": 62, "unit_price": "260.83", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "BLK", "quantity": 7, "unit_price": "967.36", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "CVX", "quantity": 11, "unit_price": "186.29", "target_weight": 3.0, "currency": "USD"},
+      {"symbol": "DIS", "quantity": 48, "unit_price": "101.32", "target_weight": 3.0, "currency": "USD"},
+      {"symbol": "FAST", "quantity": 116, "unit_price": "46.30", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "GOOG", "quantity": 40, "unit_price": "306.93", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "MA", "quantity": 9, "unit_price": "514.72", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "NOW", "quantity": 5, "unit_price": "116.61", "target_weight": 0.0, "currency": "USD"},
+      {"symbol": "NVDA", "quantity": 350, "unit_price": "184.77", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "TSLA", "quantity": 12, "unit_price": "399.24", "target_weight": 0.0, "currency": "USD"},
+      {"symbol": "TXN", "quantity": 28, "unit_price": "197.46", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "WST", "quantity": 12, "unit_price": "233.83", "target_weight": 5.0, "currency": "USD"}
+    ],
+    "FIIs": [
+      {"symbol": "BCRI11.SA", "quantity": 300, "unit_price": "62.94", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "KNRI11.SA", "quantity": 550, "unit_price": "165.68", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "VRTA11.SA", "quantity": 27, "unit_price": "77.25", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "BTLG11.SA", "quantity": 256, "unit_price": "103.27", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "HGLG11.SA", "quantity": 200, "unit_price": "158.00", "target_weight": 5.0, "currency": "BRL"},
+      {"symbol": "RBRF11.SA", "quantity": 4410, "unit_price": "6.65", "target_weight": 0.0, "currency": "BRL"},
+      {"symbol": "MXRF11.SA", "quantity": 2402, "unit_price": "9.70", "target_weight": 5.0, "currency": "BRL"}
+    ],
+    "REITs": [
+      {"symbol": "AMT", "quantity": 30, "unit_price": "186.12", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "DLR", "quantity": 44, "unit_price": "180.86", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "NLOP", "quantity": 4, "unit_price": "14.15", "target_weight": 0.0, "currency": "USD"},
+      {"symbol": "O", "quantity": 97, "unit_price": "64.88", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "PSA", "quantity": 20, "unit_price": "305.99", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "STAG", "quantity": 120, "unit_price": "38.37", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "WPC", "quantity": 90, "unit_price": "72.26", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "REXR", "quantity": 122, "unit_price": "35.72", "target_weight": 5.0, "currency": "USD"}
+    ],
+    "Crypto": [
+      {"symbol": "BTC", "quantity": 0.35963512, "unit_price": "69578.35", "target_weight": 95.0, "currency": "USD"}
+    ],
+    "Stablecoins": [
+      {"symbol": "USDC", "quantity": 7492, "unit_price": "1.00", "target_weight": 5.0, "currency": "USD"},
+      {"symbol": "DAI", "quantity": 361.7517, "unit_price": "1.00", "target_weight": 0.0, "currency": "USD"},
+      {"symbol": "USDT", "quantity": 2863, "unit_price": "1.00", "target_weight": 5.0, "currency": "USD"}
+    ],
+    "Bonds": [
+      {"symbol": "91282CDZ1", "quantity": 14000, "unit_price": "96.16", "target_weight": 100.0, "currency": "USD"}
+    ]
+  },
+  "quarantine_configs": [
+    {"threshold": 2, "period_days": 180}
+  ],
+  "notes": "Data imported from Investimentos.numbers spreadsheet. Unit prices are snapshot prices at time of import (not original purchase prices). Date set to 2024-01-01 as placeholder."
+}

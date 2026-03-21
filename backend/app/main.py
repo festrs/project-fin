@@ -161,9 +161,10 @@ app.add_middleware(
 from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
-    fundamentals, splits, dividends,
+    fundamentals, splits, dividends, auth,
 )
 
+app.include_router(auth.router)
 app.include_router(asset_classes.router)
 app.include_router(asset_weights.router)
 app.include_router(transactions.router)

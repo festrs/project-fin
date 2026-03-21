@@ -2,10 +2,11 @@ import pytest
 
 from app.models.fundamentals_score import FundamentalsScore
 from app.models.user import User
+from app.services.auth import hash_password, create_access_token
 
 
 def _seed_scores(db):
-    user = User(name="Test", email="test@test.com")
+    user = User(name="Test", email="test@test.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.flush()
     scores = [
@@ -46,7 +47,8 @@ def _seed_scores(db):
 class TestGetScores:
     def test_returns_all_scores(self, client, db):
         user = _seed_scores(db)
-        headers = {"X-User-Id": user.id}
+        token = create_access_token(user.id)
+        headers = {"Authorization": f"Bearer {token}"}
         resp = client.get("/api/fundamentals/scores", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
@@ -54,7 +56,8 @@ class TestGetScores:
 
     def test_returns_score_fields(self, client, db):
         user = _seed_scores(db)
-        headers = {"X-User-Id": user.id}
+        token = create_access_token(user.id)
+        headers = {"Authorization": f"Bearer {token}"}
         resp = client.get("/api/fundamentals/scores", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
@@ -70,7 +73,8 @@ class TestGetScores:
 class TestGetDetail:
     def test_returns_score_with_raw_data(self, client, db):
         user = _seed_scores(db)
-        headers = {"X-User-Id": user.id}
+        token = create_access_token(user.id)
+        headers = {"Authorization": f"Bearer {token}"}
         resp = client.get("/api/fundamentals/AAPL", headers=headers)
         assert resp.status_code == 200
         data = resp.json()
@@ -80,7 +84,8 @@ class TestGetDetail:
 
     def test_returns_404_for_unknown(self, client, db):
         user = _seed_scores(db)
-        headers = {"X-User-Id": user.id}
+        token = create_access_token(user.id)
+        headers = {"Authorization": f"Bearer {token}"}
         resp = client.get("/api/fundamentals/UNKNOWN", headers=headers)
         assert resp.status_code == 404
 
@@ -88,7 +93,8 @@ class TestGetDetail:
 class TestRefresh:
     def test_returns_200_with_refreshed_score(self, client, db, monkeypatch):
         user = _seed_scores(db)
-        headers = {"X-User-Id": user.id}
+        token = create_access_token(user.id)
+        headers = {"Authorization": f"Bearer {token}"}
 
         monkeypatch.setattr(
             "app.routers.fundamentals._refresh_score",

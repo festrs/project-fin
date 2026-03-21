@@ -5,11 +5,12 @@ from app.models.asset_class import AssetClass
 from app.models.stock_split import StockSplit
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.services.auth import hash_password
 from app.services.split_checker_scheduler import SplitCheckerScheduler
 
 
 def _setup_holdings(db):
-    user = User(name="Test", email="test@test.com")
+    user = User(name="Test", email="test@test.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.flush()
 

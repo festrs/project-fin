@@ -8,6 +8,7 @@ from app.models.fundamentals_score import FundamentalsScore
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.services.fundamentals_scheduler import FundamentalsScoreScheduler
+from app.services.auth import hash_password
 
 
 @pytest.fixture
@@ -46,7 +47,7 @@ MOCK_FUNDAMENTALS = {
 
 
 def _setup_holdings(db):
-    user = User(name="Test", email="test@test.com")
+    user = User(name="Test", email="test@test.com", password_hash=hash_password("testpass"))
     db.add(user)
     db.flush()
 

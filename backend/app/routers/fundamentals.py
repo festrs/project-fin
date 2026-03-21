@@ -1,10 +1,11 @@
 import threading
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal, get_db
+from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import CRUD_LIMIT, limiter
 from app.models.fundamentals_score import FundamentalsScore
 
@@ -65,7 +66,7 @@ def _refresh_score(symbol: str, db: Session) -> None:
 @limiter.limit(CRUD_LIMIT)
 def refresh_all_scores(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
 ):
     from app.providers.brapi import BrapiProvider
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
@@ -96,7 +97,7 @@ def refresh_all_scores(
 @limiter.limit(CRUD_LIMIT)
 def get_scores(
     request: Request,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     scores = db.query(FundamentalsScore).all()
@@ -108,7 +109,7 @@ def get_scores(
 def get_score_detail(
     request: Request,
     symbol: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     score = db.query(FundamentalsScore).filter_by(symbol=symbol).first()
@@ -122,7 +123,7 @@ def get_score_detail(
 def refresh_score(
     request: Request,
     symbol: str,
-    x_user_id: str = Header(),
+    user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
     try:
