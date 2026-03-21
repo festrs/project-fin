@@ -298,11 +298,6 @@ class RecommendationService:
                         remaining -= cost
                         changed = True
 
-        # Check if all priced assets ended up with zero quantity (amount too small)
-        priced_results = [r for r in results if r["price"].amount > 0]
-        if priced_results and all(r["quantity"] <= 0 for r in priced_results):
-            return _empty_result("amount_too_small")
-
         return {
             "recommendations": results,
             "total_invested": Money(amount - remaining.quantize(Decimal("0.01")), input_currency),
