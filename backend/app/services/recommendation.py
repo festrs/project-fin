@@ -91,6 +91,10 @@ class RecommendationService:
             if not info:
                 continue
 
+            # Skip assets whose price couldn't be fetched
+            if symbol not in asset_values:
+                continue
+
             effective_target = (
                 info["class_target_weight"] * info["asset_target_weight"] / 100
             )
