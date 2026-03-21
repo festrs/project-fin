@@ -1,27 +1,29 @@
 @import './styles/theme.css';
 @import "tailwindcss";
 
-/* ── Tailwind theme bridge (hardcoded to match theme.css) ── */
+/* ── Tailwind theme bridge (light defaults — dark overrides via CSS vars) ── */
 @theme {
   --color-primary: #004E59;
   --color-primary-container: #006876;
   --color-primary-fixed: #a2efff;
   --color-secondary: #10b981;
+  --color-secondary-container: #d5e3fd;
   --color-tertiary: #1d4f40;
   --color-error: #ba1a1a;
   --color-warning: #f59e0b;
   --color-on-surface: #191c1e;
   --color-on-surface-variant: #3f484b;
   --color-text-muted: #94a3b8;
+  --color-outline-variant: #bec8cb;
   --color-surface: #f7f9fb;
   --color-surface-low: #f2f4f6;
   --color-surface-lowest: #ffffff;
   --color-surface-high: #e6e8ea;
-  --color-outline-variant: #bec8cb;
+  --color-surface-highest: #d9dbdd;
   --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --radius-DEFAULT: 1rem;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --radius-DEFAULT: 0.75rem;
   --radius-sm: 0.5rem;
-
 }
 
 @import './styles/components.css';
@@ -29,4 +31,21 @@
 /* ── Base resets ── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/*
+ * Runtime color overrides — Tailwind @theme is static, so we override
+ * the generated utility colors at runtime using the CSS variables from theme.css.
+ * This ensures dark mode works with the same Tailwind classes.
+ */
+:root {
+  --color-surface: var(--surface);
+  --color-surface-low: var(--surface-container-low);
+  --color-surface-lowest: var(--surface-container-lowest);
+  --color-surface-high: var(--surface-container-high);
+  --color-surface-highest: var(--surface-container-highest);
 }

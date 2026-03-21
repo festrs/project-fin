@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
+import TopAppBar from "./components/TopAppBar";
 import Dashboard from "./pages/Dashboard";
 import Settings from "./pages/Settings";
 import Fundamentals from "./pages/Fundamentals";
@@ -8,13 +9,25 @@ import Invest from "./pages/Invest";
 import Login from "./pages/Login";
 import { useAuth } from "./contexts/AuthContext";
 
-function ProtectedRoute() {
+const ROUTE_TITLES: Record<string, string> = {
+  "/": "Dashboard",
+  "/invest": "Where to Invest",
+  "/settings": "Settings",
+};
+
+function ProtectedLayout() {
   const { isAuthenticated } = useAuth();
+  const location = useLocation();
+
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+
+  const title = ROUTE_TITLES[location.pathname] ?? "Project Fin";
+
   return (
     <div className="min-h-screen bg-surface flex">
       <Sidebar />
-      <main className="ml-[220px] w-[calc(100%-220px)] px-10 py-8">
+      <TopAppBar title={title} />
+      <main className="ml-64 w-[calc(100%-16rem)] pt-24 pb-12 px-8">
         <Outlet />
       </main>
     </div>
@@ -26,7 +39,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route element={<ProtectedRoute />}>
+        <Route element={<ProtectedLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/invest" element={<Invest />} />
           <Route path="/portfolio/:assetClassId" element={<AssetClassHoldings />} />

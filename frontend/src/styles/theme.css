@@ -1,30 +1,29 @@
 :root {
-  /* ── Colors (from DESIGN_SYSTEM.md) ── */
+  /* ── Colors (light — default) ── */
   --color-primary: #004E59;
   --color-primary-container: #006876;
   --color-primary-fixed: #a2efff;
   --color-tertiary: #1d4f40;
   --color-outline-variant: #bec8cb;
 
-  /* ── Colors (supplementary — app needs beyond design system) ── */
   --color-secondary: #10b981;
   --color-secondary-container: #d5e3fd;
   --color-error: #ba1a1a;
   --color-warning: #f59e0b;
 
-  /* ── Text ── */
   --color-on-surface: #191c1e;
   --color-on-surface-variant: #3f484b;
   --color-text-muted: #94a3b8;
 
-  /* ── Surfaces ── */
   --surface: #f7f9fb;
   --surface-container-low: #f2f4f6;
   --surface-container-lowest: #ffffff;
   --surface-container-high: #e6e8ea;
+  --surface-container-highest: #d9dbdd;
 
   /* ── Typography ── */
-  --font-family: 'Manrope Variable', 'Manrope', sans-serif;
+  --font-family: 'Manrope', sans-serif;
+  --font-family-body: 'Inter', sans-serif;
   --display-lg: 3.5rem;
   --display-lg-tracking: -0.02em;
   --title-lg: 1.375rem;
@@ -41,7 +40,7 @@
   --space-list-gap: 1rem;
 
   /* ── Radii ── */
-  --radius-default: 1rem;
+  --radius-default: 0.75rem;
   --radius-sm: 0.5rem;
 
   /* ── Elevation ── */
@@ -58,4 +57,46 @@
   --glass-primary-ring: rgba(0, 78, 89, 0.15);
   --glass-positive-soft: rgba(16, 185, 129, 0.08);
   --glass-negative-soft: rgba(186, 26, 26, 0.08);
+
+  /* ── Chart colors (shared) ── */
+  --chart-line-stroke: #004E59;
+  --chart-gradient-start: #004E59;
+}
+
+/* ── Dark theme override ── */
+[data-theme="dark"] {
+  --color-primary: #c3f5ff;
+  --color-primary-container: #00e5ff;
+  --color-primary-fixed: #00e5ff;
+  --color-tertiary: #ffe7e5;
+  --color-outline-variant: #3b494c;
+
+  --color-secondary: #4ae176;
+  --color-secondary-container: #00b954;
+  --color-error: #ffb4ab;
+
+  --color-on-surface: #e5e2e3;
+  --color-on-surface-variant: #bac9cc;
+  --color-text-muted: #849396;
+
+  --surface: #131314;
+  --surface-container-low: #1c1b1c;
+  --surface-container-lowest: #0e0e0f;
+  --surface-container-high: #2a2a2b;
+  --surface-container-highest: #353436;
+
+  --shadow-floating: 0px 12px 40px rgba(0, 0, 0, 0.4);
+
+  --glass-bg: rgba(0, 218, 243, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.05);
+  --glass-border-input: rgba(255, 255, 255, 0.1);
+  --glass-row-alt: rgba(42, 42, 43, 0.5);
+  --glass-hover: rgba(255, 255, 255, 0.03);
+  --glass-primary-soft: rgba(0, 229, 255, 0.05);
+  --glass-primary-ring: rgba(0, 229, 255, 0.15);
+  --glass-positive-soft: rgba(74, 225, 118, 0.08);
+  --glass-negative-soft: rgba(255, 180, 171, 0.08);
+
+  --chart-line-stroke: #00E5FF;
+  --chart-gradient-start: #00E5FF;
 }

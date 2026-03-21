@@ -1,13 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import { PerformanceChart } from "../components/PerformanceChart";
-import { AllocationChart } from "../components/AllocationChart";
-import { PortfolioCompositionChart } from "../components/PortfolioCompositionChart";
-import { ClassSummaryTable, computeClassSummaries } from "../components/ClassSummaryTable";
+import { computeClassSummaries } from "../components/ClassSummaryTable";
+import BackgroundGradients from "../components/BackgroundGradients";
+import PortfolioHeroCard from "../components/PortfolioHeroCard";
+import AssetDistributionTable from "../components/AssetDistributionTable";
+import AllocationDonutChart from "../components/AllocationDonutChart";
+import BuyRecommendationCard from "../components/BuyRecommendationCard";
+import NewsCard from "../components/NewsCard";
+import CorporateEventAlert from "../components/CorporateEventAlert";
 import { usePortfolio } from "../hooks/usePortfolio";
 import { useAssetClasses } from "../hooks/useAssetClasses";
 import { useSplits } from "../hooks/useSplits";
-import { SPLIT_EVENT_TYPE } from "../types";
-import type { Transaction } from "../types";
+import type { Transaction, AssetClass } from "../types";
 import api from "../services/api";
 
 interface DividendClassData {
@@ -22,8 +25,25 @@ interface DividendsResponse {
   total_annual_income: { amount: string; currency: string };
 }
 
+// Color mapping for donut chart segments
+const CLASS_COLORS: Record<string, string> = {
+  US: "#00e5ff",
+  BR: "#22d3ee",
+  crypto: "#a78bfa",
+  fixed_income: "#34d399",
+  emergency_reserve: "#fbbf24",
+};
+
+function getClassColor(ac: AssetClass): string {
+  if (ac.is_emergency_reserve) return CLASS_COLORS.emergency_reserve;
+  if (ac.type === "crypto") return CLASS_COLORS.crypto;
+  if (ac.type === "fixed_income") return CLASS_COLORS.fixed_income;
+  if (ac.country === "US") return CLASS_COLORS.US;
+  return CLASS_COLORS.BR;
+}
+
 export default function Dashboard() {
-  const { holdings, allocation, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolio();
+  const { holdings, loading: portfolioLoading, refresh: refreshPortfolio } = usePortfolio();
   const { assetClasses, loading: classesLoading, updateClass, createClass, deleteClass } = useAssetClasses();
   const { pendingSplits, actionLoading, applySplit, dismissSplit } = useSplits();
 
@@ -36,27 +56,21 @@ export default function Dashboard() {
     try {
       const res = await api.get<Transaction[]>("/transactions");
       setManualDividends(res.data.filter((t) => t.type === "dividend"));
-    } catch {
-      // silently fail
-    }
+    } catch { /* silently fail */ }
   }, []);
 
   const fetchEstimatedDividends = useCallback(async () => {
     try {
       const res = await api.get<DividendsResponse>("/portfolio/dividends");
       setEstimatedDividends(res.data);
-    } catch {
-      // silently fail
-    }
+    } catch { /* silently fail */ }
   }, []);
 
   const fetchExchangeRate = useCallback(async () => {
     try {
       const res = await api.get<{ pair: string; rate: number }>("/portfolio/exchange-rate?pair=USD-BRL");
       setUsdToBrl(res.data.rate);
-    } catch {
-      // keep fallback
-    }
+    } catch { /* keep fallback */ }
   }, []);
 
   useEffect(() => {
@@ -66,18 +80,26 @@ export default function Dashboard() {
   }, [fetchManualDividends, fetchEstimatedDividends, fetchExchangeRate]);
 
   const loading = portfolioLoading || classesLoading;
-  const { regular: regularSummaries } = computeClassSummaries(holdings, assetClasses, usdToBrl);
-  const classSummaries = regularSummaries.map((s) => ({
-    className: s.className,
-    percentage: s.percentage,
-    targetWeight: s.targetWeight,
-  }));
+  const { regular: regularSummaries, reserve: reserveSummary, grandTotalBRL } = computeClassSummaries(holdings, assetClasses, usdToBrl);
+
+  const grandTotalWithReserve = grandTotalBRL + (reserveSummary?.totalValueBRL ?? 0);
+
+  // Build donut chart data
+  const classMap = new Map(assetClasses.map((ac) => [ac.id, ac]));
+  const donutData = regularSummaries.map((s) => {
+    const ac = classMap.get(s.classId);
+    return {
+      className: s.className,
+      percentage: s.percentage,
+      targetWeight: s.targetWeight,
+      color: ac ? getClassColor(ac) : "#666",
+    };
+  });
 
   const handleScrapeDividends = useCallback(async () => {
     try {
       setScrapingDividends(true);
       await api.post("/dividends/scrape");
-      // Poll for completion
       const poll = setInterval(async () => {
         try {
           const res = await api.get<{ running: boolean }>("/dividends/scrape/status");
@@ -86,14 +108,9 @@ export default function Dashboard() {
             setScrapingDividends(false);
             fetchEstimatedDividends();
           }
-        } catch {
-          clearInterval(poll);
-          setScrapingDividends(false);
-        }
+        } catch { clearInterval(poll); setScrapingDividends(false); }
       }, 5000);
-    } catch {
-      setScrapingDividends(false);
-    }
+    } catch { setScrapingDividends(false); }
   }, [fetchEstimatedDividends]);
 
   const handleUpdateTargetWeight = async (classId: string, weight: number) => {
@@ -102,89 +119,51 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-display" style={{ fontSize: '2rem' }}>Dashboard</h1>
+    <div className="relative">
+      <BackgroundGradients />
 
-      {/* Top row: Summary table + Donut chart side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <ClassSummaryTable
-            holdings={holdings}
-            assetClasses={assetClasses}
-            manualDividends={manualDividends}
-            estimatedDividends={estimatedDividends}
-            loading={loading}
-            usdToBrl={usdToBrl}
-            onUpdateTargetWeight={handleUpdateTargetWeight}
-            onScrapeDividends={handleScrapeDividends}
-            scrapingDividends={scrapingDividends}
-            onCreateClass={async (name, weight, type, isEmergencyReserve, country) => {
-              await createClass(name, weight, type, isEmergencyReserve, country);
-              refreshPortfolio();
-            }}
-            onDeleteClass={async (classId) => {
-              await deleteClass(classId);
-              refreshPortfolio();
-            }}
-          />
+      <div className="relative z-10 space-y-6">
+        {/* Row 1: Portfolio Value Hero */}
+        <PortfolioHeroCard grandTotalBRL={grandTotalWithReserve} loading={loading} />
+
+        {/* Row 2: Asset Distribution Table */}
+        <AssetDistributionTable
+          holdings={holdings}
+          assetClasses={assetClasses}
+          manualDividends={manualDividends}
+          estimatedDividends={estimatedDividends}
+          loading={loading}
+          usdToBrl={usdToBrl}
+          onUpdateTargetWeight={handleUpdateTargetWeight}
+          onScrapeDividends={handleScrapeDividends}
+          scrapingDividends={scrapingDividends}
+          onCreateClass={async (name, weight, type, isEmergencyReserve, country) => {
+            await createClass(name, weight, type, isEmergencyReserve, country);
+            refreshPortfolio();
+          }}
+          onDeleteClass={async (classId) => {
+            await deleteClass(classId);
+            refreshPortfolio();
+          }}
+        />
+
+        {/* Row 3: Donut chart + Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <AllocationDonutChart classSummaries={donutData} />
+          <div className="grid grid-cols-1 gap-6">
+            <BuyRecommendationCard />
+            <NewsCard />
+          </div>
         </div>
-        <div>
-          <PortfolioCompositionChart classSummaries={classSummaries} />
-        </div>
+
+        {/* Row 4: Corporate Events */}
+        <CorporateEventAlert
+          splits={pendingSplits}
+          actionLoading={actionLoading}
+          onApply={applySplit}
+          onDismiss={dismissSplit}
+        />
       </div>
-
-      {/* Performance chart */}
-      <PerformanceChart />
-
-      {/* Allocation bar chart */}
-      {!portfolioLoading && (
-        <AllocationChart allocation={allocation} />
-      )}
-
-      {/* Pending splits / bonificações */}
-      {pendingSplits.length > 0 && (
-        <div className="space-y-2">
-          <h2 className="text-heading">Pending Corporate Events</h2>
-          {pendingSplits.map((split) => {
-            const isLoading = actionLoading[split.id] ?? false;
-            return (
-              <div key={split.id} className={`card border border-warning/30 bg-warning/5 ${isLoading ? "opacity-60" : ""}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-on-surface font-medium">
-                      {split.event_type === SPLIT_EVENT_TYPE.BONIFICACAO ? "Bonificação" : "Stock split"} detected:{" "}
-                      {split.symbol} ({split.from_factor}:{split.to_factor} on{" "}
-                      {new Date(split.split_date).toLocaleDateString()})
-                    </p>
-                    <p className="text-text-muted text-sm mt-1">
-                      Your {split.current_quantity} shares will become {split.new_quantity.toFixed(0)} shares
-                      {split.event_type === SPLIT_EVENT_TYPE.BONIFICACAO
-                        ? ` (+${(split.new_quantity - split.current_quantity).toFixed(0)} bonus shares)`
-                        : ""}.
-                    </p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    <button
-                      onClick={() => applySplit(split.id)}
-                      disabled={isLoading}
-                      className="btn-primary px-3 py-1.5 text-sm"
-                    >
-                      {isLoading ? "Applying..." : "Apply"}
-                    </button>
-                    <button
-                      onClick={() => dismissSplit(split.id)}
-                      disabled={isLoading}
-                      className="btn-ghost px-3 py-1.5 text-sm"
-                    >
-                      {isLoading ? "..." : "Dismiss"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
     </div>
   );
 }

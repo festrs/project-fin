@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useQuarantine } from "../hooks/useQuarantine";
+import { useTheme } from "../contexts/ThemeContext";
 
 export default function Settings() {
   const { config, loading, updateConfig } = useQuarantine();
+  const { theme, setTheme } = useTheme();
 
   const [threshold, setThreshold] = useState(2);
   const [periodDays, setPeriodDays] = useState(180);
@@ -40,6 +42,40 @@ export default function Settings() {
       {saved && (
         <p className="text-secondary text-base">Settings saved successfully</p>
       )}
+
+      {/* Appearance Settings */}
+      <div className="card">
+        <h2 className="text-heading mb-4">Appearance</h2>
+        <div className="space-y-3">
+          <label className="block text-base font-medium text-on-surface-variant mb-2">
+            Theme
+          </label>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setTheme("light")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                theme === "light"
+                  ? "border-primary bg-[var(--glass-primary-soft)] text-primary font-semibold"
+                  : "border-[var(--glass-border)] text-on-surface-variant hover:border-primary/50"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[20px]">light_mode</span>
+              <span className="text-sm" style={{ fontFamily: "var(--font-family-body)" }}>Light</span>
+            </button>
+            <button
+              onClick={() => setTheme("dark")}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
+                theme === "dark"
+                  ? "border-primary bg-[var(--glass-primary-soft)] text-primary font-semibold"
+                  : "border-[var(--glass-border)] text-on-surface-variant hover:border-primary/50"
+              }`}
+            >
+              <span className="material-symbols-outlined text-[20px]">dark_mode</span>
+              <span className="text-sm" style={{ fontFamily: "var(--font-family-body)" }}>Dark</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* Quarantine Settings */}
       <div className="card">

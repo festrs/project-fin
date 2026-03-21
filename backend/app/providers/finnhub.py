@@ -186,6 +186,29 @@ class FinnhubProvider:
                         return float(val)
         return None
 
+    def get_market_news(self, category: str = "general") -> list[dict]:
+        """Fetch market news from Finnhub. Returns up to 10 items."""
+        resp = httpx.get(
+            f"{self._base_url}/news",
+            params={"category": category, "minId": 0, "token": self._api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        items = resp.json()
+        return [
+            {
+                "id": item.get("id", 0),
+                "category": item.get("category", ""),
+                "headline": item.get("headline", ""),
+                "summary": item.get("summary", ""),
+                "url": item.get("url", ""),
+                "source": item.get("source", ""),
+                "datetime": item.get("datetime", 0),
+                "image": item.get("image", ""),
+            }
+            for item in items[:10]
+        ]
+
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         now = datetime.now(timezone.utc)
         days = PERIOD_DAYS.get(period, 30)

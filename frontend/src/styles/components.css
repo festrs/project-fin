@@ -38,6 +38,11 @@
   border: none;
 }
 
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
+  color: #131314;
+}
+
 .btn-primary:hover {
   opacity: 0.9;
 }
@@ -86,6 +91,10 @@
   box-shadow: 0 2px 0 0 var(--glass-primary-ring);
 }
 
+[data-theme="dark"] .input-field:focus {
+  border-bottom-color: var(--color-primary-container);
+}
+
 /* ── Typography ── */
 .text-display {
   font-size: var(--display-lg);
@@ -126,7 +135,7 @@
 /* ── Insight Ribbon ── */
 .insight-ribbon {
   width: 100%;
-  background-color: var(--color-secondary-container);
+  background-color: var(--surface-container-high);
   padding: 0.75rem var(--space-card-padding);
   font-size: var(--body-md);
   color: var(--color-on-surface);
@@ -146,4 +155,9 @@
 .badge-warning {
   background-color: rgba(245, 158, 11, 0.1);
   color: #b45309;
+}
+
+[data-theme="dark"] .badge-warning {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
 }
