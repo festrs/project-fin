@@ -103,7 +103,7 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">Dashboard</h1>
+      <h1 className="text-display" style={{ fontSize: '2rem' }}>Dashboard</h1>
 
       {/* Top row: Summary table + Donut chart side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -144,14 +144,14 @@ export default function Dashboard() {
       {/* Pending splits / bonificações */}
       {pendingSplits.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-lg font-semibold text-text-primary">Pending Corporate Events</h2>
+          <h2 className="text-heading">Pending Corporate Events</h2>
           {pendingSplits.map((split) => {
             const isLoading = actionLoading[split.id] ?? false;
             return (
-              <div key={split.id} className={`glass-card p-4 border border-yellow-500/30 bg-yellow-500/5 ${isLoading ? "opacity-60" : ""}`}>
+              <div key={split.id} className={`card border border-warning/30 bg-warning/5 ${isLoading ? "opacity-60" : ""}`}>
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-text-primary font-medium">
+                    <p className="text-on-surface font-medium">
                       {split.event_type === SPLIT_EVENT_TYPE.BONIFICACAO ? "Bonificação" : "Stock split"} detected:{" "}
                       {split.symbol} ({split.from_factor}:{split.to_factor} on{" "}
                       {new Date(split.split_date).toLocaleDateString()})
@@ -167,14 +167,14 @@ export default function Dashboard() {
                     <button
                       onClick={() => applySplit(split.id)}
                       disabled={isLoading}
-                      className="px-3 py-1.5 text-sm rounded-lg bg-accent/20 text-accent hover:bg-accent/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-primary px-3 py-1.5 text-sm"
                     >
                       {isLoading ? "Applying..." : "Apply"}
                     </button>
                     <button
                       onClick={() => dismissSplit(split.id)}
                       disabled={isLoading}
-                      className="px-3 py-1.5 text-sm rounded-lg bg-surface-card text-text-muted hover:text-text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="btn-ghost px-3 py-1.5 text-sm"
                     >
                       {isLoading ? "..." : "Dismiss"}
                     </button>
