@@ -47,16 +47,16 @@ export function DividendHistoryModal({
       onClick={onClose}
     >
       <div
-        className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto shadow-xl"
+        className="card-elevated w-full max-w-lg max-h-[80vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-text-primary">
+          <h3 className="text-heading">
             {className} — Dividends {new Date().getFullYear()}
           </h3>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-text-primary transition-colors"
+            className="text-text-muted hover:text-on-surface transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -80,13 +80,13 @@ export function DividendHistoryModal({
                     <span className="text-base font-medium text-primary">
                       {symbol} <span className="text-text-muted text-sm">({quantity} shares)</span>
                     </span>
-                    <span className="text-base font-semibold text-text-primary">
+                    <span className="text-base font-semibold text-on-surface">
                       {formatMoney(symbolTotalMoney)}
                     </span>
                   </div>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-text-muted text-xs uppercase tracking-wide">
+                      <tr className="text-label">
                         <th className="text-left py-1 px-1">Type</th>
                         <th className="text-right py-1 px-1">Per Share</th>
                         <th className="text-right py-1 px-1">Total</th>
@@ -96,8 +96,8 @@ export function DividendHistoryModal({
                     </thead>
                     <tbody>
                       {records.map((r, i) => (
-                        <tr key={i} className="even:bg-[var(--glass-row-alt)]">
-                          <td className="py-1 px-1 text-text-secondary">{r.dividend_type}</td>
+                        <tr key={i} className="table-row">
+                          <td className="py-1 px-1 text-on-surface-variant">{r.dividend_type}</td>
                           <td className="py-1 px-1 text-right">{formatMoney(r.value, 4)}</td>
                           <td className="py-1 px-1 text-right">{formatMoney(r.total)}</td>
                           <td className="py-1 px-1 text-right text-text-muted">{formatDate(r.ex_date)}</td>
