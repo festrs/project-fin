@@ -96,7 +96,7 @@ export function DataTable<T extends Record<string, any>>({
       {filterKey && (
         <input
           type="text"
-          className="mb-3 w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+          className="mb-3 w-full input-field px-3.5 py-2.5 text-base placeholder:text-text-muted"
           placeholder={filterPlaceholder ?? "Filter..."}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
@@ -123,7 +123,7 @@ export function DataTable<T extends Record<string, any>>({
           {processed.map((row) => {
             const rowId = getRowId(row);
             return (
-              <tr key={rowId} className="even:bg-[var(--glass-row-alt)] rounded-lg">
+              <tr key={rowId} className="table-row rounded-lg">
                 {columns.map((col) => {
                   const isEditing =
                     editingCell?.rowId === rowId &&
@@ -132,14 +132,14 @@ export function DataTable<T extends Record<string, any>>({
                   return (
                     <td
                       key={col.key}
-                      className={`px-4 py-3.5 text-text-secondary ${onRowClick ? "cursor-pointer" : ""}`}
+                      className={`px-4 py-3.5 text-on-surface-variant ${onRowClick ? "cursor-pointer" : ""}`}
                       onClick={() => onRowClick?.(row)}
                       onDoubleClick={() => handleDoubleClick(row, col)}
                     >
                       {isEditing ? (
                         <input
                           type="text"
-                          className="border border-primary rounded-[10px] px-2.5 py-1.5 text-base w-full focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)]"
+                          className="input-field px-2.5 py-1.5 text-base w-full"
                           value={editValue}
                           onChange={(e) => setEditValue(e.target.value)}
                           onBlur={() => commitEdit(row, col)}
