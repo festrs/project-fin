@@ -137,23 +137,23 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4 p-6 bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] mb-4">
-      <h3 className="font-semibold text-base text-text-primary">Add New Asset</h3>
+    <form onSubmit={handleSubmit} className="space-y-4 p-6 card mb-4">
+      <h3 className="font-semibold text-base text-on-surface">Add New Asset</h3>
 
       <div className="flex gap-3 flex-wrap items-end">
         {/* Symbol search */}
         <div className="relative" ref={dropdownRef}>
-          <label className="block text-base text-text-muted mb-1">Symbol / Name</label>
+          <label className="block text-base text-on-surface-variant mb-1">Symbol / Name</label>
           {selectedSymbol ? (
             <div className="flex items-center gap-2">
-              <span className="bg-[var(--glass-primary-soft)] text-primary font-semibold px-3 py-2 rounded-[10px] text-base">
+              <span className="bg-[var(--glass-primary-soft)] text-primary font-semibold px-3 py-2 rounded-sm text-base">
                 {selectedSymbol}
-                {selectedName && <span className="text-text-muted font-normal ml-1.5">— {selectedName}</span>}
+                {selectedName && <span className="text-on-surface-variant font-normal ml-1.5">— {selectedName}</span>}
               </span>
               <button
                 type="button"
                 onClick={handleClearSymbol}
-                className="text-text-muted hover:text-negative text-base px-1"
+                className="text-on-surface-variant hover:text-error text-base px-1"
               >
                 ×
               </button>
@@ -163,7 +163,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
               <div className="flex gap-2 items-center">
                 <input
                   type="text"
-                  className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-64"
+                  className="input-field w-64"
                   value={query}
                   onChange={(e) => {
                     const val = useCustomSymbol ? e.target.value : e.target.value.toUpperCase();
@@ -183,17 +183,17 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                   <button
                     type="button"
                     onClick={handleConfirmCustom}
-                    className="bg-primary text-white px-3 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover whitespace-nowrap"
+                    className="btn-primary px-3 py-2 text-base font-semibold whitespace-nowrap"
                   >
                     Confirm
                   </button>
                 )}
               </div>
               {searching && (
-                <span className="absolute right-3 top-9 text-text-muted text-base">...</span>
+                <span className="absolute right-3 top-9 text-on-surface-variant text-base">...</span>
               )}
               {!useCustomSymbol && showDropdown && (
-                <ul className="absolute z-10 mt-1 w-80 max-h-60 overflow-y-auto bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[10px] shadow-lg">
+                <ul className="absolute z-10 mt-1 w-80 max-h-60 overflow-y-auto card-elevated rounded-sm shadow-lg">
                   {results.map((r) => (
                     <li
                       key={r.symbol}
@@ -201,7 +201,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                       onClick={() => handleSelect(r)}
                     >
                       <span className="font-medium text-primary">{r.symbol}</span>
-                      <span className="text-text-muted truncate ml-2">{r.name}</span>
+                      <span className="text-on-surface-variant truncate ml-2">{r.name}</span>
                     </li>
                   ))}
                 </ul>
@@ -229,20 +229,20 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       {isFixedIncome ? (
         <div className="flex gap-3 flex-wrap items-end">
           <div>
-            <label className="block text-base text-text-muted mb-1">Total Value</label>
+            <label className="block text-base text-on-surface-variant mb-1">Total Value</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-36"
+              className="input-field w-36"
               value={totalValue}
               onChange={(e) => setTotalValue(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Currency</label>
+            <label className="block text-base text-on-surface-variant mb-1">Currency</label>
             <select
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
@@ -252,10 +252,10 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             </select>
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Date</label>
+            <label className="block text-base text-on-surface-variant mb-1">Date</label>
             <input
               type="date"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
@@ -265,40 +265,40 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       ) : (
         <div className="flex gap-3 flex-wrap items-end">
           <div>
-            <label className="block text-base text-text-muted mb-1">Quantity</label>
+            <label className="block text-base text-on-surface-variant mb-1">Quantity</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              className="input-field w-28"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Unit Price</label>
+            <label className="block text-base text-on-surface-variant mb-1">Unit Price</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-28"
+              className="input-field w-28"
               value={unitPrice}
               onChange={(e) => setUnitPrice(e.target.value)}
               required
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Total</label>
+            <label className="block text-base text-on-surface-variant mb-1">Total</label>
             <input
               type="text"
-              className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] rounded-[10px] px-3.5 py-2.5 text-base w-28 text-text-muted"
+              className="input-field w-28 text-on-surface-variant"
               value={computedTotal}
               readOnly
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Currency</label>
+            <label className="block text-base text-on-surface-variant mb-1">Currency</label>
             <select
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
             >
@@ -308,20 +308,20 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             </select>
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Tax</label>
+            <label className="block text-base text-on-surface-variant mb-1">Tax</label>
             <input
               type="number"
               step="any"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary w-24"
+              className="input-field w-24"
               value={taxAmount}
               onChange={(e) => setTaxAmount(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-base text-text-muted mb-1">Date</label>
+            <label className="block text-base text-on-surface-variant mb-1">Date</label>
             <input
               type="date"
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field"
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
@@ -331,10 +331,10 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       )}
 
       <div>
-        <label className="block text-base text-text-muted mb-1">Notes</label>
+        <label className="block text-base text-on-surface-variant mb-1">Notes</label>
         <input
           type="text"
-          className="w-full bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+          className="input-field w-full"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Optional notes"
@@ -345,14 +345,14 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
         <button
           type="submit"
           disabled={submitting || !selectedSymbol}
-          className="bg-primary text-white px-4 py-2 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50"
+          className="btn-primary px-4 py-2 text-base font-semibold disabled:opacity-50"
         >
           {submitting ? "Adding..." : "Add Asset"}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] text-text-secondary px-4 py-2 rounded-[10px] text-base font-medium hover:bg-[rgba(0,0,0,0.06)]"
+          className="btn-ghost px-4 py-2 text-base font-medium"
         >
           Cancel
         </button>
