@@ -27,13 +27,13 @@ export default function Invest() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-[32px] font-bold text-text-primary tracking-[-0.5px]">Where to Invest</h1>
+      <h1 className="text-display" style={{ fontSize: '2rem' }}>Where to Invest</h1>
 
       {/* Input bar */}
-      <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+      <div className="card">
         <div className="flex items-end gap-4 flex-wrap">
           <div>
-            <label htmlFor="amount" className="block text-base font-medium text-text-secondary mb-1">
+            <label htmlFor="amount" className="block text-base font-medium text-on-surface-variant mb-1">
               Amount
             </label>
             <input
@@ -45,25 +45,25 @@ export default function Invest() {
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCalculate()}
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary w-40 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field w-40"
             />
           </div>
           <div>
-            <label htmlFor="currency" className="block text-base font-medium text-text-secondary mb-1">
+            <label htmlFor="currency" className="block text-base font-medium text-on-surface-variant mb-1">
               Currency
             </label>
             <select
               id="currency"
               value={currency}
               onChange={(e) => setCurrency(e.target.value)}
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field"
             >
               <option value="BRL">BRL</option>
               <option value="USD">USD</option>
             </select>
           </div>
           <div>
-            <label htmlFor="count" className="block text-base font-medium text-text-secondary mb-1">
+            <label htmlFor="count" className="block text-base font-medium text-on-surface-variant mb-1">
               # Recommendations
             </label>
             <input
@@ -72,13 +72,13 @@ export default function Invest() {
               min="1"
               value={count}
               onChange={(e) => setCount(parseInt(e.target.value, 10) || 1)}
-              className="bg-[var(--glass-card-bg)] border border-[var(--glass-border-input)] rounded-[10px] px-3.5 py-2.5 text-base text-text-primary w-24 focus:outline-none focus:ring-2 focus:ring-[var(--glass-primary-ring)] focus:border-primary"
+              className="input-field w-24"
             />
           </div>
           <button
             onClick={handleCalculate}
             disabled={loading || !amount}
-            className="bg-primary text-white px-6 py-2.5 rounded-[10px] text-base font-semibold hover:bg-primary-hover disabled:opacity-50 transition-colors"
+            className="btn-primary"
           >
             {loading ? "Calculating..." : "Calculate"}
           </button>
@@ -87,27 +87,27 @@ export default function Invest() {
 
       {/* Error */}
       {error && (
-        <div className="bg-negative/10 border border-negative/30 rounded-[14px] p-4">
-          <p className="text-negative text-base">{error}</p>
+        <div className="bg-error/10 border border-error/30 rounded-DEFAULT p-4">
+          <p className="text-error text-base">{error}</p>
         </div>
       )}
 
       {/* Results */}
       {!plan && !loading && !error && (
-        <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <div className="card">
           <p className="text-text-muted text-base">Enter an amount and click Calculate to get your investment plan.</p>
         </div>
       )}
 
       {loading && (
-        <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
+        <div className="card">
           <p className="text-text-muted text-base">Calculating investment plan...</p>
         </div>
       )}
 
       {plan && !loading && (
-        <div className="bg-[var(--glass-card-bg)] border border-[var(--glass-border)] rounded-[14px] p-6">
-          <h2 className="text-lg font-semibold text-text-primary tracking-[-0.3px] mb-4">Investment Plan</h2>
+        <div className="card">
+          <h2 className="text-heading mb-4">Investment Plan</h2>
 
           {plan.recommendations.length === 0 ? (
             <p className="text-text-muted text-base">
@@ -123,7 +123,7 @@ export default function Invest() {
             <div className="overflow-x-auto">
               <table className="w-full text-base">
                 <thead>
-                  <tr className="text-text-muted text-left border-b border-[var(--glass-border)]">
+                  <tr className="text-label text-left">
                     <th className="py-2 px-2">Asset</th>
                     <th className="py-2 px-2">Class</th>
                     <th className="py-2 px-2 text-right">Target</th>
@@ -136,12 +136,12 @@ export default function Invest() {
                 </thead>
                 <tbody>
                   {plan.recommendations.map((rec) => (
-                    <tr key={rec.symbol} className="border-b border-[var(--glass-border)] last:border-0 even:bg-[var(--glass-row-alt)]">
-                      <td className="py-2.5 px-2 font-semibold text-text-primary">{rec.symbol}</td>
+                    <tr key={rec.symbol} className="table-row">
+                      <td className="py-2.5 px-2 font-semibold text-on-surface">{rec.symbol}</td>
                       <td className="py-2.5 px-2 text-text-muted">{rec.class_name}</td>
                       <td className="py-2.5 px-2 text-right">{rec.effective_target.toFixed(1)}%</td>
                       <td className="py-2.5 px-2 text-right">{rec.actual_weight.toFixed(1)}%</td>
-                      <td className="py-2.5 px-2 text-right text-positive">+{rec.diff.toFixed(1)}%</td>
+                      <td className="py-2.5 px-2 text-right text-tertiary">+{rec.diff.toFixed(1)}%</td>
                       <td className="py-2.5 px-2 text-right">{formatMoney(rec.price)}</td>
                       <td className="py-2.5 px-2 text-right font-semibold">{formatQuantity(rec.quantity)}</td>
                       <td className="py-2.5 px-2 text-right font-semibold">{formatMoney(rec.invest_amount)}</td>
@@ -149,7 +149,7 @@ export default function Invest() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-[var(--glass-border)] font-bold">
+                  <tr className="border-t-2 border-outline-variant/15 font-bold">
                     <td colSpan={7} className="py-3 px-2">Total</td>
                     <td className="py-3 px-2 text-right">{formatMoney(plan.total_invested)}</td>
                   </tr>
