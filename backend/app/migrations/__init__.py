@@ -135,7 +135,26 @@ def _001_decimal_money(cur: sqlite3.Cursor) -> None:
     logger.info("  Converted %d dividend records to Decimal", len(rows))
 
 
+def _002_add_password_hash(cur: sqlite3.Cursor) -> None:
+    """Add password_hash column to users table."""
+    if not _table_exists(cur, "users"):
+        return
+
+    columns = _get_columns(cur, "users")
+    if "password_hash" in columns:
+        return
+
+    cur.execute("ALTER TABLE users ADD COLUMN password_hash TEXT NOT NULL DEFAULT ''")
+
+    # Backfill existing users with hashed default password
+    from app.services.auth import hash_password
+    from app.config import settings
+    default_hash = hash_password(settings.default_user_password)
+    cur.execute("UPDATE users SET password_hash = ?", (default_hash,))
+
+
 # Register migrations in order
 _MIGRATIONS = [
     _001_decimal_money,
+    _002_add_password_hash,
 ]
