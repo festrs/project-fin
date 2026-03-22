@@ -14,13 +14,13 @@ export default function NewsCard() {
 
   if (loading) {
     return (
-      <div className="rounded-xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}>
+      <div className="card">
+        <div className="card-title">Market News</div>
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-3 w-20 rounded mb-2" style={{ background: "var(--surface-hover)" }} />
-              <div className="h-4 w-full rounded mb-1" style={{ background: "var(--surface-hover)" }} />
-              <div className="h-3 w-3/4 rounded" style={{ background: "var(--surface-hover)" }} />
+              <div className="h-3 w-24 rounded mb-2" style={{ background: "var(--surface-hover)" }} />
+              <div className="h-4 w-full rounded" style={{ background: "var(--surface-hover)" }} />
             </div>
           ))}
         </div>
@@ -29,12 +29,10 @@ export default function NewsCard() {
   }
 
   return (
-    <div className="rounded-xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}>
-      <h4 className="text-xs font-medium uppercase tracking-widest mb-4 font-body" style={{ color: "var(--text-tertiary)" }}>
-        Market News
-      </h4>
+    <div className="card">
+      <div className="card-title">Market News</div>
       {news.length === 0 ? (
-        <p className="text-sm font-body" style={{ color: "var(--text-tertiary)" }}>
+        <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>
           No recent market news
         </p>
       ) : (
@@ -45,23 +43,35 @@ export default function NewsCard() {
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`block py-4 ${
-                idx < Math.min(news.length, 4) - 1 ? "border-b" : ""
-              } hover:opacity-80 transition-opacity`}
-              style={idx < Math.min(news.length, 4) - 1 ? { borderColor: "var(--card-border)" } : undefined}
+              className="block hover:opacity-80 transition-opacity"
+              style={{
+                padding: "14px 0",
+                borderBottom: idx < Math.min(news.length, 4) - 1 ? "1px solid var(--border)" : "none",
+              }}
             >
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-1 font-body" style={{ color: "var(--text-tertiary)" }}>
-                {item.source || item.category}
-              </p>
-              <h6 className="text-sm font-bold mb-1 line-clamp-1" style={{ color: "var(--text-primary)" }}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.06em",
+                  color: "var(--text-tertiary)",
+                  marginBottom: 4,
+                }}
+              >
+                {item.source || item.category} &middot; {timeAgo(item.datetime)}
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  lineHeight: 1.4,
+                  color: "var(--text-primary)",
+                }}
+                className="line-clamp-2"
+              >
                 {item.headline}
-              </h6>
-              <p className="text-xs mb-2 leading-relaxed line-clamp-2 font-body" style={{ color: "var(--text-secondary)" }}>
-                {item.summary}
-              </p>
-              <p className="text-[10px] font-medium font-body" style={{ color: "var(--text-tertiary)" }}>
-                {timeAgo(item.datetime)}
-              </p>
+              </div>
             </a>
           ))}
         </div>
