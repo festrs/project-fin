@@ -150,9 +150,8 @@ export default function AssetDistributionTable({
 
   const classMap = new Map(assetClasses.map((ac) => [ac.id, ac]));
 
-  // Combine all summaries for rendering (regular + reserve)
+  // Regular summaries only — reserve rendered separately as a static row
   const allSummaries: ClassSummary[] = [...summaries];
-  if (reserveSummary) allSummaries.push(reserveSummary);
 
   const grandTotalWithReserve = grandTotalBRL + (reserveSummary?.totalValueBRL ?? 0);
 
@@ -353,6 +352,51 @@ export default function AssetDistributionTable({
                 </tr>
               );
             })}
+            {reserveSummary && (
+              <tr
+                className="transition-colors cursor-pointer group hover:bg-[var(--row-hover)]"
+                style={{ borderTop: "1px solid var(--border)", opacity: 0.7 }}
+                onClick={() => navigate(`/portfolio/${reserveSummary.classId}`)}
+              >
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded flex items-center justify-center" style={{ background: "rgba(251, 191, 36, 0.1)", color: "var(--class-emergency)" }}>
+                      <span className="material-symbols-outlined text-lg">savings</span>
+                    </div>
+                    <span className="text-sm font-medium font-body" style={{ color: "var(--text-secondary)" }}>{reserveSummary.className}</span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right tabular-nums text-sm font-body" style={{ color: "var(--text-secondary)" }}>
+                  {formatValue(reserveSummary.totalValue, reserveSummary.currency)}
+                </td>
+                <td className="px-6 py-4 text-right tabular-nums text-sm font-body" style={{ color: "var(--text-secondary)" }}>
+                  {reserveSummary.currency === "BRL" ? "—" : formatValue(reserveSummary.totalValueBRL || reserveSummary.totalValue, "BRL")}
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className="text-sm" style={{ color: "var(--text-tertiary)" }}>—</span>
+                </td>
+                <td className="px-6 py-4 text-center">
+                  <span className="text-sm" style={{ color: "var(--text-tertiary)" }}>—</span>
+                </td>
+                <td className="px-6 py-4 text-right tabular-nums text-sm font-body" style={{ color: "var(--text-tertiary)" }}>
+                  —
+                </td>
+                {onDeleteClass && (
+                  <td className="px-3 py-4 text-center">
+                    <button
+                      className="text-text-tertiary hover:text-red transition-colors opacity-0 group-hover:opacity-100"
+                      title="Delete class"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (window.confirm(`Delete asset class "${reserveSummary.className}"?`)) onDeleteClass(reserveSummary.classId);
+                      }}
+                    >
+                      <span className="material-symbols-outlined text-lg">delete</span>
+                    </button>
+                  </td>
+                )}
+              </tr>
+            )}
           </tbody>
           <tfoot>
             {isEditing && (
