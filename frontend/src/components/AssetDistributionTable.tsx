@@ -380,7 +380,7 @@ export default function AssetDistributionTable({
             )}
             <tr style={{ background: "rgba(44, 44, 46, 0.3)" }}>
               <td className="px-6 py-6 font-bold text-sm font-body">Grand Total</td>
-              <td className="px-6 py-6 text-right font-extrabold text-xl tabular-nums" style={{ color: "var(--blue)" }} colSpan={2}>
+              <td className="px-6 py-6 text-right font-extrabold text-xl tabular-nums" style={{ color: "var(--text-primary)" }} colSpan={2}>
                 {formatValue(grandTotalWithReserve, "BRL")}
               </td>
               <td className="px-6 py-6 text-center text-sm font-bold tabular-nums font-body">100%</td>
