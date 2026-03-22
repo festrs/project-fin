@@ -96,14 +96,14 @@ export function DataTable<T extends Record<string, any>>({
       {filterKey && (
         <input
           type="text"
-          className="mb-3 w-full input-field px-3.5 py-2.5 text-base placeholder:text-text-muted"
+          className="mb-3 w-full input-field px-3.5 py-2.5 text-base placeholder:text-text-tertiary"
           placeholder={filterPlaceholder ?? "Filter..."}
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
         />
       )}
       <table className="w-full text-base text-left">
-        <thead className="text-text-muted uppercase text-base tracking-wide">
+        <thead className="text-text-tertiary uppercase text-base tracking-wide">
           <tr>
             {columns.map((col) => (
               <th
@@ -132,7 +132,7 @@ export function DataTable<T extends Record<string, any>>({
                   return (
                     <td
                       key={col.key}
-                      className={`px-4 py-3.5 text-on-surface-variant ${onRowClick ? "cursor-pointer" : ""}`}
+                      className={`px-4 py-3.5 ${onRowClick ? "cursor-pointer" : ""}`} style={{ color: "var(--text-secondary)" }}
                       onClick={() => onRowClick?.(row)}
                       onDoubleClick={() => handleDoubleClick(row, col)}
                     >

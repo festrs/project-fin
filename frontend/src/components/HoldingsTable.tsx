@@ -132,7 +132,7 @@ export function HoldingsTable({
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px]">Holdings</h2>
+        <h2 className="text-lg font-semibold tracking-[-0.3px]" style={{ color: "var(--text-primary)" }}>Holdings</h2>
       </div>
 
       {transactionForm && (
@@ -154,9 +154,9 @@ export function HoldingsTable({
       <div className="overflow-x-auto">
         <table className="w-full text-base">
           <thead>
-            <tr className="text-text-muted uppercase text-base tracking-wide">
+            <tr className="text-text-tertiary uppercase text-base tracking-wide">
               <th
-                className="text-left px-3 py-2 cursor-pointer select-none hover:text-primary transition-colors"
+                className="text-left px-3 py-2 cursor-pointer select-none hover:text-blue transition-colors"
                 onClick={toggleSort}
               >
                 {isFixedIncome ? "Name" : "Symbol"}
@@ -179,7 +179,7 @@ export function HoldingsTable({
                     Score
                     {onRefreshAllScores && (
                       <button
-                        className="text-[10px] text-text-muted hover:text-primary ml-1"
+                        className="text-[10px] text-text-tertiary hover:opacity-80 ml-1"
                         title="Fetch scores for all stocks"
                         onClick={onRefreshAllScores}
                       >
@@ -324,10 +324,10 @@ function HoldingRows({
   const sym = CURRENCY_SYMBOLS[cur] ?? `${cur} `;
   const scoreColor = (v: number) =>
     v >= 90
-      ? "var(--color-secondary)"
+      ? "var(--green)"
       : v >= 60
-      ? "var(--color-warning)"
-      : "var(--color-error)";
+      ? "var(--orange)"
+      : "var(--red)";
 
   const colCount = 4 + (showQty ? 1 : 0) + (showAvgPrice ? 1 : 0) + (showCurrentPrice ? 1 : 0) + (showValueBRL ? 1 : 0) + (showGainLoss ? 1 : 0) + (showDiv ? 1 : 0) + (showScore ? 1 : 0);
 
@@ -399,7 +399,7 @@ function HoldingRows({
             : h.current_value != null ? formatMoney(h.current_value) : "-"}
         </td>
         {showValueBRL && (
-          <td className="px-3 py-2 text-right text-text-muted">
+          <td className="px-3 py-2 text-right text-text-tertiary">
             {cur !== "BRL"
               ? formatCurrencyValue(toBRL(moneyToNumber(h.current_value ?? h.total_cost), cur), "BRL")
               : ""}
@@ -411,9 +411,9 @@ function HoldingRows({
               <span
                 className={
                   gainLossNum > 0
-                    ? "text-tertiary"
+                    ? "text-green"
                     : gainLossNum < 0
-                    ? "text-error"
+                    ? "text-red"
                     : ""
                 }
               >
@@ -457,7 +457,7 @@ function HoldingRows({
           {h.actual_weight != null ? `${h.actual_weight.toFixed(1)}%` : "-"}
         </td>
         {showDiv && (
-          <td className="px-3 py-2 text-right text-text-muted">
+          <td className="px-3 py-2 text-right text-text-tertiary">
             {dividendData && dividendData.income > 0
               ? formatCurrencyValue(dividendData.income, dividendData.currency)
               : "-"}
@@ -474,14 +474,14 @@ function HoldingRows({
                 {score.composite_score}%
               </span>
             ) : (
-              <span className="text-text-muted">\u2014</span>
+              <span className="text-text-tertiary">\u2014</span>
             )}
           </td>
         )}
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center items-center relative">
             <button
-              className="text-tertiary hover:opacity-80 text-base px-2 font-medium"
+              className="text-green hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onBuy();
@@ -490,7 +490,7 @@ function HoldingRows({
               Buy
             </button>
             <button
-              className="text-error hover:opacity-80 text-base px-2 font-medium"
+              className="text-red hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
                 e.stopPropagation();
                 onSell();
@@ -501,7 +501,7 @@ function HoldingRows({
             {(onDeleteHolding || onChangeAssetClass) && (
               <div className="relative">
                 <button
-                  className="text-text-muted hover:text-on-surface text-base px-1"
+                  className="text-text-tertiary hover:opacity-80 text-base px-1"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowHoldingMenu(!showHoldingMenu);
@@ -519,7 +519,7 @@ function HoldingRows({
                   >
                     {onChangeAssetClass && !changingAssetClass && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-on-surface hover:bg-[var(--row-hover)]"
+                        className="w-full text-left px-3 py-2 text-base hover:bg-[var(--row-hover)]" style={{ color: "var(--text-primary)" }}
                         onClick={() => setChangingAssetClass(true)}
                       >
                         Change Asset Class
@@ -527,7 +527,7 @@ function HoldingRows({
                     )}
                     {changingAssetClass && (
                       <div className="px-3 py-2">
-                        <label className="block text-xs text-text-muted mb-1">Move to:</label>
+                        <label className="block text-xs text-text-tertiary mb-1">Move to:</label>
                         <select
                           className="input-field w-full"
                           defaultValue={classId}
@@ -545,7 +545,7 @@ function HoldingRows({
                     )}
                     {onDeleteHolding && !confirmDelete && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-error hover:bg-[var(--row-hover)]"
+                        className="w-full text-left px-3 py-2 text-base text-red hover:bg-[var(--row-hover)]"
                         onClick={() => setConfirmDelete(true)}
                       >
                         Delete Holding
@@ -553,7 +553,7 @@ function HoldingRows({
                     )}
                     {confirmDelete && (
                       <div className="px-3 py-2 space-y-1">
-                        <p className="text-xs text-error">Delete all transactions for {h.symbol}?</p>
+                        <p className="text-xs text-red">Delete all transactions for {h.symbol}?</p>
                         <div className="flex gap-2">
                           <button
                             className="bg-error text-white px-3 py-1 rounded-sm text-xs font-semibold"
@@ -565,7 +565,7 @@ function HoldingRows({
                             Confirm
                           </button>
                           <button
-                            className="text-text-muted text-xs"
+                            className="text-text-tertiary text-xs"
                             onClick={() => setConfirmDelete(false)}
                           >
                             Cancel
@@ -585,13 +585,13 @@ function HoldingRows({
       {isExpanded && (
         <tr>
           <td colSpan={colCount} className="px-4 py-3 bg-[var(--row-alt)] rounded-lg">
-            <h4 className="font-semibold text-base text-on-surface mb-2">Transaction History</h4>
+            <h4 className="font-semibold text-base mb-2" style={{ color: "var(--text-primary)" }}>Transaction History</h4>
             {transactions.length === 0 ? (
-              <p className="text-text-muted text-base">No transactions found</p>
+              <p className="text-text-tertiary text-base">No transactions found</p>
             ) : (
               <table className="w-full text-base">
                 <thead>
-                  <tr className="text-text-muted">
+                  <tr className="text-text-tertiary">
                     <th className="text-left py-1 px-2">Date</th>
                     <th className="text-left py-1 px-2">Type</th>
                     <th className="text-right py-1 px-2">Qty</th>
@@ -653,7 +653,7 @@ function HoldingRows({
                               onChange={(e) => setEditTxData({ ...editTxData, total_value: e.target.value })}
                             />
                           ) : (
-                            <span className="text-text-muted">
+                            <span className="text-text-tertiary">
                               {CURRENCY_SYMBOLS[t.total_value.currency] ?? `${t.total_value.currency} `}
                               {((parseFloat(editTxData.quantity) || 0) * (parseFloat(editTxData.unit_price) || 0)).toFixed(2)}
                             </span>
@@ -680,13 +680,13 @@ function HoldingRows({
                         <td className="py-1 px-2 text-center">
                           <span className="flex gap-1 justify-center">
                             <button
-                              className="text-primary hover:opacity-80 text-xs font-medium"
+                              className="text-blue hover:opacity-80 text-xs font-medium"
                               onClick={() => saveEditTx(t)}
                             >
                               Save
                             </button>
                             <button
-                              className="text-text-muted hover:opacity-80 text-xs"
+                              className="text-text-tertiary hover:opacity-80 text-xs"
                               onClick={() => setEditingTx(null)}
                             >
                               Cancel
@@ -707,10 +707,10 @@ function HoldingRows({
                         <td className="py-1 px-2 text-right">
                           {formatMoney(t.total_value)}
                         </td>
-                        <td className="py-1 px-2 text-right text-text-muted">
+                        <td className="py-1 px-2 text-right text-text-tertiary">
                           {t.tax_amount != null && moneyToNumber(t.tax_amount) > 0 ? formatMoney(t.tax_amount) : "-"}
                         </td>
-                        <td className="py-1 px-2 text-text-muted truncate max-w-[150px]">
+                        <td className="py-1 px-2 text-text-tertiary truncate max-w-[150px]">
                           {t.notes || "-"}
                         </td>
                         {(onUpdateTransaction || onDeleteTransaction) && (
@@ -718,7 +718,7 @@ function HoldingRows({
                             <span className="flex gap-1 justify-center">
                               {onUpdateTransaction && (
                                 <button
-                                  className="text-primary hover:opacity-80 text-xs font-medium"
+                                  className="text-blue hover:opacity-80 text-xs font-medium"
                                   onClick={() => startEditTx(t)}
                                 >
                                   Edit
@@ -726,7 +726,7 @@ function HoldingRows({
                               )}
                               {onDeleteTransaction && (
                                 <button
-                                  className="text-error hover:opacity-80 text-xs font-medium"
+                                  className="text-red hover:opacity-80 text-xs font-medium"
                                   onClick={() => handleDeleteTx(t.id)}
                                 >
                                   Del
