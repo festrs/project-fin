@@ -20,23 +20,21 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
         return (
           <div
             key={split.id}
-            className={`rounded-xl p-4 flex items-center justify-between border-l-4 border-primary ${
-              isLoading ? "opacity-60" : ""
-            }`}
-            style={{ background: "var(--color-surface-high)" }}
+            className={`rounded-xl p-4 flex items-center justify-between border-l-4 ${isLoading ? "opacity-60" : ""}`}
+            style={{ background: "var(--surface-hover)", borderLeftColor: "var(--blue)" }}
           >
             <div className="flex items-center gap-4">
               <div
-                className="w-10 h-10 rounded-full flex items-center justify-center text-primary"
-                style={{ background: "var(--primary-soft)" }}
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: "var(--primary-soft)", color: "var(--blue)" }}
               >
                 <span className="material-symbols-outlined">event_note</span>
               </div>
               <div>
-                <h4 className="text-sm font-bold text-on-surface">
+                <h4 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
                   Pending Corporate Event: {split.symbol} {label}
                 </h4>
-                <p className="text-xs text-on-surface-variant font-body">
+                <p className="text-xs font-body" style={{ color: "var(--text-secondary)" }}>
                   Ratio {split.from_factor}:{split.to_factor} — {split.current_quantity} shares → {split.new_quantity.toFixed(0)} shares
                 </p>
               </div>
@@ -52,7 +50,7 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
               <button
                 onClick={() => onDismiss(split.id)}
                 disabled={isLoading}
-                className="px-4 py-1.5 text-xs font-bold text-on-surface-variant hover:text-on-surface transition-colors"
+                className="btn-ghost px-4 py-1.5 text-xs"
               >
                 {isLoading ? "..." : "Dismiss"}
               </button>

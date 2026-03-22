@@ -43,7 +43,8 @@ export function DividendHistoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      style={{ background: "rgba(0, 0, 0, 0.7)" }}
       onClick={onClose}
     >
       <div
@@ -56,7 +57,7 @@ export function DividendHistoryModal({
           </h3>
           <button
             onClick={onClose}
-            className="text-text-muted hover:text-on-surface transition-colors"
+            className="text-text-tertiary hover:opacity-80 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -65,9 +66,9 @@ export function DividendHistoryModal({
         </div>
 
         {loading ? (
-          <p className="text-text-muted text-base">Loading...</p>
+          <p className="text-text-tertiary text-base">Loading...</p>
         ) : items.length === 0 ? (
-          <p className="text-text-muted text-base">No dividend records found for this year.</p>
+          <p className="text-text-tertiary text-base">No dividend records found for this year.</p>
         ) : (
           <div className="space-y-4">
             {[...bySymbol.entries()].map(([symbol, records]) => {
@@ -77,10 +78,10 @@ export function DividendHistoryModal({
               return (
                 <div key={symbol}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-base font-medium text-primary">
-                      {symbol} <span className="text-text-muted text-sm">({quantity} shares)</span>
+                    <span className="text-base font-medium text-blue">
+                      {symbol} <span className="text-text-tertiary text-sm">({quantity} shares)</span>
                     </span>
-                    <span className="text-base font-semibold text-on-surface">
+                    <span className="text-base font-semibold" style={{ color: "var(--text-primary)" }}>
                       {formatMoney(symbolTotalMoney)}
                     </span>
                   </div>
@@ -97,11 +98,11 @@ export function DividendHistoryModal({
                     <tbody>
                       {records.map((r, i) => (
                         <tr key={i} className="table-row">
-                          <td className="py-1 px-1 text-on-surface-variant">{r.dividend_type}</td>
+                          <td className="py-1 px-1" style={{ color: "var(--text-secondary)" }}>{r.dividend_type}</td>
                           <td className="py-1 px-1 text-right">{formatMoney(r.value, 4)}</td>
                           <td className="py-1 px-1 text-right">{formatMoney(r.total)}</td>
-                          <td className="py-1 px-1 text-right text-text-muted">{formatDate(r.ex_date)}</td>
-                          <td className="py-1 px-1 text-right text-text-muted">
+                          <td className="py-1 px-1 text-right text-text-tertiary">{formatDate(r.ex_date)}</td>
+                          <td className="py-1 px-1 text-right text-text-tertiary">
                             {r.payment_date ? formatDate(r.payment_date) : "-"}
                           </td>
                         </tr>

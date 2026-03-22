@@ -62,12 +62,12 @@ export function TransactionForm({
 
   return (
     <form onSubmit={handleSubmit} className="card space-y-4 p-6">
-      <h3 className="font-semibold text-base text-on-surface">
+      <h3 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>
         New Transaction - {symbol}
       </h3>
 
       <div className="flex gap-2">
-        <label className="text-base text-on-surface-variant">
+        <label className="text-base text-text-tertiary">
           Type:
           <select
             className="ml-1 input-field"
@@ -84,7 +84,7 @@ export function TransactionForm({
       {!hideQuantityFields && (
         <div className="flex gap-3">
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Quantity</label>
+            <label className="block text-base text-text-tertiary mb-1">Quantity</label>
             <input
               type="number"
               step="any"
@@ -95,7 +95,7 @@ export function TransactionForm({
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Unit Price</label>
+            <label className="block text-base text-text-tertiary mb-1">Unit Price</label>
             <input
               type="number"
               step="any"
@@ -106,10 +106,10 @@ export function TransactionForm({
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Total</label>
+            <label className="block text-base text-text-tertiary mb-1">Total</label>
             <input
               type="text"
-              className="bg-[rgba(0,0,0,0.03)] border border-[var(--card-border)] rounded-sm px-3.5 py-2.5 text-base w-28 text-on-surface-variant"
+              className="bg-[rgba(0,0,0,0.03)] border border-[var(--card-border)] rounded-sm px-3.5 py-2.5 text-base w-28 text-text-tertiary"
               value={computedTotal}
               readOnly
             />
@@ -119,7 +119,7 @@ export function TransactionForm({
 
       {hideQuantityFields && (
         <div>
-          <label className="block text-base text-on-surface-variant mb-1">Total Value</label>
+          <label className="block text-base text-text-tertiary mb-1">Total Value</label>
           <input
             type="number"
             step="any"
@@ -133,7 +133,7 @@ export function TransactionForm({
 
       <div className="flex gap-3">
         <div>
-          <label className="block text-base text-on-surface-variant mb-1">Currency</label>
+          <label className="block text-base text-text-tertiary mb-1">Currency</label>
           <select
             className="input-field"
             value={currency}
@@ -146,7 +146,7 @@ export function TransactionForm({
         </div>
         {!isFixedIncome && (
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Tax Amount</label>
+            <label className="block text-base text-text-tertiary mb-1">Tax Amount</label>
             <input
               type="number"
               step="any"
@@ -157,7 +157,7 @@ export function TransactionForm({
           </div>
         )}
         <div>
-          <label className="block text-base text-on-surface-variant mb-1">Date</label>
+          <label className="block text-base text-text-tertiary mb-1">Date</label>
           <input
             type="date"
             className="input-field"
@@ -169,7 +169,7 @@ export function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-base text-on-surface-variant mb-1">Notes</label>
+        <label className="block text-base text-text-tertiary mb-1">Notes</label>
         <input
           type="text"
           className="input-field w-full"

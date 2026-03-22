@@ -185,7 +185,7 @@ export function ClassSummaryTable({
   if (loading) {
     return (
       <div className="card">
-        <p className="text-text-muted text-base">Loading summary...</p>
+        <p className="text-text-tertiary text-base">Loading summary...</p>
       </div>
     );
   }
@@ -263,8 +263,8 @@ export function ClassSummaryTable({
   if (summaries.length === 0) {
     return (
       <div className="card">
-        <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px] mb-3">Consolidated Portfolio</h2>
-        <p className="text-text-muted text-base">No holdings data available</p>
+        <h2 className="text-lg font-semibold tracking-[-0.3px] mb-3" style={{ color: "var(--text-primary)" }}>Consolidated Portfolio</h2>
+        <p className="text-text-tertiary text-base">No holdings data available</p>
       </div>
     );
   }
@@ -274,13 +274,13 @@ export function ClassSummaryTable({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <div>
-            <h2 className="text-lg font-semibold text-on-surface tracking-[-0.3px]">Consolidated Portfolio</h2>
-            <span className="text-base text-text-muted">USD/BRL: {usdToBrl.toFixed(2)}</span>
+            <h2 className="text-lg font-semibold tracking-[-0.3px]" style={{ color: "var(--text-primary)" }}>Consolidated Portfolio</h2>
+            <span className="text-base text-text-tertiary">USD/BRL: {usdToBrl.toFixed(2)}</span>
           </div>
           {onCreateClass && (
             <button
               onClick={() => setShowCreateForm((v) => !v)}
-              className="text-primary hover:text-primary-hover transition-colors"
+              className="text-blue hover:opacity-80 transition-colors"
               title="Add asset class"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -295,7 +295,7 @@ export function ClassSummaryTable({
                   await onCreateClass("Emergency Reserve", 0, "fixed_income", true, "BR");
                 }
               }}
-              className="text-xs text-text-muted hover:text-primary transition-colors border border-[var(--card-border)] rounded-lg px-2 py-1"
+              className="text-xs text-text-tertiary hover:text-blue transition-colors border border-[var(--card-border)] rounded-lg px-2 py-1"
               title="Add emergency reserve"
             >
               + Reserve
@@ -362,7 +362,7 @@ export function ClassSummaryTable({
       <div className="overflow-x-auto">
         <table className="w-full text-base">
           <thead>
-            <tr className="text-text-muted uppercase text-base tracking-wide">
+            <tr className="text-text-tertiary uppercase text-base tracking-wide">
               <th className="text-left py-2 px-2">Class</th>
               <th className="text-right py-2 px-2">Total Value</th>
               <th className="text-right py-2 px-2">Total R$</th>
@@ -373,7 +373,7 @@ export function ClassSummaryTable({
                   {onUpdateTargetWeight && !isEditing && (
                     <button
                       onClick={handleStartEditing}
-                      className="text-primary hover:text-primary-hover ml-1"
+                      className="text-blue hover:opacity-80 ml-1"
                       title="Edit targets"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -390,7 +390,7 @@ export function ClassSummaryTable({
                     <button
                       onClick={onScrapeDividends}
                       disabled={scrapingDividends}
-                      className="text-text-muted hover:text-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-text-tertiary hover:text-blue transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title={scrapingDividends ? "Scraping dividends..." : "Refresh dividends"}
                     >
                       <svg className={`w-3.5 h-3.5 ${scrapingDividends ? "animate-spin" : ""}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -416,7 +416,7 @@ export function ClassSummaryTable({
                 divDisplay = (
                   <span title="Estimated annual dividends (Finnhub)">
                     {formatValue(estimatedDiv.annual_income, estimatedDiv.currency)}
-                    <span className="text-text-muted text-base ml-0.5">~</span>
+                    <span className="text-text-tertiary text-base ml-0.5">~</span>
                   </span>
                 );
               }
@@ -434,9 +434,9 @@ export function ClassSummaryTable({
                   className="table-row cursor-pointer hover:bg-[var(--row-hover)] transition-colors"
                   onClick={() => navigate(`/portfolio/${s.classId}`)}
                 >
-                  <td className="py-2 px-2 font-medium text-primary">{s.className}</td>
+                  <td className="py-2 px-2 font-medium text-blue">{s.className}</td>
                   <td className="py-2 px-2 text-right">{formatValue(s.totalValue, s.currency)}</td>
-                  <td className="py-2 px-2 text-right text-text-muted">
+                  <td className="py-2 px-2 text-right text-text-tertiary">
                     {s.currency === "USD"
                       ? formatValue(s.totalValueBRL, "BRL")
                       : ""}
@@ -460,7 +460,7 @@ export function ClassSummaryTable({
                     )}
                   </td>
                   <td
-                    className={`py-2 px-2 text-right text-text-muted ${divDisplay !== "-" ? "cursor-pointer hover:text-primary transition-colors" : ""}`}
+                    className={`py-2 px-2 text-right text-text-tertiary ${divDisplay !== "-" ? "cursor-pointer hover:text-blue transition-colors" : ""}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (divDisplay !== "-") {
@@ -473,7 +473,7 @@ export function ClassSummaryTable({
                   {onDeleteClass && (
                     <td className="py-2 px-2 text-center">
                       <button
-                        className="text-text-muted hover:text-error transition-colors"
+                        className="text-text-tertiary hover:text-red transition-colors"
                         title="Delete class"
                         onClick={(e) => {
                           e.stopPropagation();
@@ -501,15 +501,14 @@ export function ClassSummaryTable({
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-2 bg-[rgba(0,0,0,0.06)] rounded overflow-hidden">
                           <div
-                            className={`h-full rounded transition-all ${
-                              Math.abs(totalTargetWeight - 100) < 0.5 ? "bg-positive" : "bg-warning"
-                            }`}
-                            style={{ width: `${Math.min(totalTargetWeight, 100)}%` }}
+                            className="h-full rounded transition-all"
+                            style={{
+                              width: `${Math.min(totalTargetWeight, 100)}%`,
+                              background: Math.abs(totalTargetWeight - 100) < 0.5 ? "var(--green)" : "var(--orange)"
+                            }}
                           />
                         </div>
-                        <span className={`text-base font-medium ${
-                          Math.abs(totalTargetWeight - 100) < 0.5 ? "text-tertiary" : "text-warning"
-                        }`}>
+                        <span className="text-base font-medium" style={{ color: Math.abs(totalTargetWeight - 100) < 0.5 ? "var(--green)" : "var(--orange)" }}>
                           {totalTargetWeight.toFixed(0)}%
                         </span>
                       </div>
@@ -534,27 +533,27 @@ export function ClassSummaryTable({
             {reserveSummary && (
               <tr className="border-t border-[var(--card-border)]">
                 <td
-                  className="py-2 px-2 font-medium text-on-surface-variant cursor-pointer hover:text-primary transition-colors"
+                  className="py-2 px-2 font-medium cursor-pointer hover:text-blue transition-colors" style={{ color: "var(--text-secondary)" }}
                   onClick={() => navigate(`/portfolio/${reserveSummary.classId}`)}
                 >
                   {reserveSummary.className}
                 </td>
-                <td className="py-2 px-2 text-right text-on-surface-variant">
+                <td className="py-2 px-2 text-right" style={{ color: "var(--text-secondary)" }}>
                   {formatValue(reserveSummary.totalValue, reserveSummary.currency)}
                 </td>
-                <td className="py-2 px-2 text-right text-text-muted">
+                <td className="py-2 px-2 text-right text-text-tertiary">
                   {reserveSummary.currency === "USD"
                     ? formatValue(reserveSummary.totalValueBRL, "BRL")
                     : ""}
                 </td>
-                <td className="py-2 px-2 text-right text-text-muted">-</td>
-                <td className="py-2 px-2 text-right text-text-muted">-</td>
-                <td className="py-2 px-2 text-center text-text-muted">-</td>
-                <td className="py-2 px-2 text-right text-text-muted">-</td>
+                <td className="py-2 px-2 text-right text-text-tertiary">-</td>
+                <td className="py-2 px-2 text-right text-text-tertiary">-</td>
+                <td className="py-2 px-2 text-center text-text-tertiary">-</td>
+                <td className="py-2 px-2 text-right text-text-tertiary">-</td>
                 {onDeleteClass && (
                   <td className="py-2 px-2 text-center">
                     <button
-                      className="text-text-muted hover:text-error transition-colors"
+                      className="text-text-tertiary hover:text-red transition-colors"
                       title="Delete emergency reserve"
                       onClick={(e) => {
                         e.stopPropagation();
@@ -587,7 +586,7 @@ export function ClassSummaryTable({
               {onDeleteClass && <td className="py-2 px-2" />}
             </tr>
             {reserveSummary && reserveSummary.totalValueBRL > 0 && (
-              <tr className="font-semibold text-on-surface-variant">
+              <tr className="font-semibold" style={{ color: "var(--text-secondary)" }}>
                 <td className="py-2 px-2">Total + Reserve</td>
                 <td className="py-2 px-2" />
                 <td className="py-2 px-2 text-right">

@@ -138,22 +138,22 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 p-6 card mb-4">
-      <h3 className="font-semibold text-base text-on-surface">Add New Asset</h3>
+      <h3 className="font-semibold text-base" style={{ color: "var(--text-primary)" }}>Add New Asset</h3>
 
       <div className="flex gap-3 flex-wrap items-end">
         {/* Symbol search */}
         <div className="relative" ref={dropdownRef}>
-          <label className="block text-base text-on-surface-variant mb-1">Symbol / Name</label>
+          <label className="block text-base text-text-tertiary mb-1">Symbol / Name</label>
           {selectedSymbol ? (
             <div className="flex items-center gap-2">
-              <span className="bg-[var(--primary-soft)] text-primary font-semibold px-3 py-2 rounded-sm text-base">
+              <span className="font-semibold px-3 py-2 rounded-sm text-base" style={{ background: "var(--primary-soft)", color: "var(--blue)" }}>
                 {selectedSymbol}
-                {selectedName && <span className="text-on-surface-variant font-normal ml-1.5">— {selectedName}</span>}
+                {selectedName && <span className="text-text-tertiary font-normal ml-1.5">— {selectedName}</span>}
               </span>
               <button
                 type="button"
                 onClick={handleClearSymbol}
-                className="text-on-surface-variant hover:text-error text-base px-1"
+                className="text-text-tertiary hover:text-red text-base px-1"
               >
                 ×
               </button>
@@ -190,7 +190,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                 )}
               </div>
               {searching && (
-                <span className="absolute right-3 top-9 text-on-surface-variant text-base">...</span>
+                <span className="absolute right-3 top-9 text-text-tertiary text-base">...</span>
               )}
               {!useCustomSymbol && showDropdown && (
                 <ul className="absolute z-10 mt-1 w-80 max-h-60 overflow-y-auto card-elevated rounded-sm shadow-lg">
@@ -200,8 +200,8 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                       className="px-3 py-2 hover:bg-[var(--row-hover)] cursor-pointer text-base flex justify-between"
                       onClick={() => handleSelect(r)}
                     >
-                      <span className="font-medium text-primary">{r.symbol}</span>
-                      <span className="text-on-surface-variant truncate ml-2">{r.name}</span>
+                      <span className="font-medium text-blue">{r.symbol}</span>
+                      <span className="text-text-tertiary truncate ml-2">{r.name}</span>
                     </li>
                   ))}
                 </ul>
@@ -215,7 +215,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                     setResults([]);
                     setQuery("");
                   }}
-                  className="text-base text-primary hover:text-primary-hover mt-1"
+                  className="text-base text-blue hover:opacity-80 mt-1"
                 >
                   {useCustomSymbol ? "Search market instead" : "Use custom name (fixed income, etc.)"}
                 </button>
@@ -229,7 +229,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       {isFixedIncome ? (
         <div className="flex gap-3 flex-wrap items-end">
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Total Value</label>
+            <label className="block text-base text-text-tertiary mb-1">Total Value</label>
             <input
               type="number"
               step="any"
@@ -240,7 +240,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Currency</label>
+            <label className="block text-base text-text-tertiary mb-1">Currency</label>
             <select
               className="input-field"
               value={currency}
@@ -252,7 +252,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             </select>
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Date</label>
+            <label className="block text-base text-text-tertiary mb-1">Date</label>
             <input
               type="date"
               className="input-field"
@@ -265,7 +265,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       ) : (
         <div className="flex gap-3 flex-wrap items-end">
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Quantity</label>
+            <label className="block text-base text-text-tertiary mb-1">Quantity</label>
             <input
               type="number"
               step="any"
@@ -276,7 +276,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Unit Price</label>
+            <label className="block text-base text-text-tertiary mb-1">Unit Price</label>
             <input
               type="number"
               step="any"
@@ -287,16 +287,16 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Total</label>
+            <label className="block text-base text-text-tertiary mb-1">Total</label>
             <input
               type="text"
-              className="input-field w-28 text-on-surface-variant"
+              className="input-field w-28 text-text-tertiary"
               value={computedTotal}
               readOnly
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Currency</label>
+            <label className="block text-base text-text-tertiary mb-1">Currency</label>
             <select
               className="input-field"
               value={currency}
@@ -308,7 +308,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             </select>
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Tax</label>
+            <label className="block text-base text-text-tertiary mb-1">Tax</label>
             <input
               type="number"
               step="any"
@@ -318,7 +318,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
             />
           </div>
           <div>
-            <label className="block text-base text-on-surface-variant mb-1">Date</label>
+            <label className="block text-base text-text-tertiary mb-1">Date</label>
             <input
               type="date"
               className="input-field"
@@ -331,7 +331,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
       )}
 
       <div>
-        <label className="block text-base text-on-surface-variant mb-1">Notes</label>
+        <label className="block text-base text-text-tertiary mb-1">Notes</label>
         <input
           type="text"
           className="input-field w-full"
