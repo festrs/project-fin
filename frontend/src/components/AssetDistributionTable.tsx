@@ -364,8 +364,7 @@ export default function AssetDistributionTable({
                         <div className="flex-1 h-2 rounded overflow-hidden" style={{ background: "var(--surface-hover)" }}>
                           <div
                             className="h-full rounded transition-all"
-                            style={{ background: Math.abs(totalTargetWeight - 100) < 0.5 ? "var(--green)" : "var(--orange)" }}
-                            style={{ width: `${Math.min(totalTargetWeight, 100)}%` }}
+                            style={{ background: Math.abs(totalTargetWeight - 100) < 0.5 ? "var(--green)" : "var(--orange)", width: `${Math.min(totalTargetWeight, 100)}%` }}
                           />
                         </div>
                         <span className="text-sm font-medium font-body" style={{ color: Math.abs(totalTargetWeight - 100) < 0.5 ? "var(--green)" : "var(--orange)" }}>
