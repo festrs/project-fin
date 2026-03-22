@@ -14,10 +14,10 @@ import api from "../services/api";
 
 // Color mapping for donut chart segments
 const CLASS_COLORS: Record<string, string> = {
-  US: "#2563eb",
-  BR: "#3b82f6",
-  crypto: "#a78bfa",
-  fixed_income: "#60a5fa",
+  us_stocks: "#0a84ff",
+  br_stocks: "#3b82f6",
+  crypto: "#bf5af2",
+  fixed_income: "#ff9f0a",
   emergency_reserve: "#fbbf24",
 };
 
@@ -25,8 +25,8 @@ function getClassColor(ac: AssetClass): string {
   if (ac.is_emergency_reserve) return CLASS_COLORS.emergency_reserve;
   if (ac.type === "crypto") return CLASS_COLORS.crypto;
   if (ac.type === "fixed_income") return CLASS_COLORS.fixed_income;
-  if (ac.country === "US") return CLASS_COLORS.US;
-  return CLASS_COLORS.BR;
+  if (ac.country === "US") return CLASS_COLORS.us_stocks;
+  return CLASS_COLORS.br_stocks;
 }
 
 export default function Dashboard() {
