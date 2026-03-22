@@ -51,7 +51,7 @@ export default function NewsCard() {
             >
               <p className="text-[9px] font-bold text-secondary uppercase tracking-widest mb-1 font-body"
               >
-                {item.category || item.source}
+                {item.source || item.category}
               </p>
               <h6 className="text-sm font-bold text-on-surface mb-1 line-clamp-1">
                 {item.headline}
