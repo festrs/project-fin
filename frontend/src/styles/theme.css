@@ -1,28 +1,28 @@
 :root {
   /* ── Colors (light — default) ── */
-  --color-primary: #004E59;
-  --color-primary-container: #006876;
-  --color-primary-fixed: #a2efff;
-  --color-tertiary: #1d4f40;
-  --color-outline-variant: #bec8cb;
+  --color-primary: #1e3a5f;
+  --color-primary-container: #2563eb;
+  --color-primary-fixed: #dbeafe;
+  --color-tertiary: #1e3a5f;
+  --color-outline-variant: #e2e8f0;
 
-  --color-secondary: #10b981;
-  --color-secondary-container: #d5e3fd;
-  --color-error: #ba1a1a;
-  --color-warning: #f59e0b;
+  --color-secondary: #16a34a;
+  --color-secondary-container: #dcfce7;
+  --color-error: #dc2626;
+  --color-warning: #d97706;
 
-  --color-on-surface: #191c1e;
-  --color-on-surface-variant: #3f484b;
-  --color-text-muted: #94a3b8;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #475569;
+  --color-text-muted: #64748b;
 
-  --color-surface: #f7f9fb;
-  --color-surface-low: #f2f4f6;
+  --color-surface: #f8fafc;
+  --color-surface-low: #f1f5f9;
   --color-surface-lowest: #ffffff;
-  --color-surface-high: #e6e8ea;
-  --color-surface-highest: #d9dbdd;
+  --color-surface-high: #e2e8f0;
+  --color-surface-highest: #cbd5e1;
 
   /* ── Typography ── */
-  --font-family: 'Manrope', sans-serif;
+  --font-family: 'Inter', sans-serif;
   --font-family-body: 'Inter', sans-serif;
   --display-lg: 3.5rem;
   --display-lg-tracking: -0.02em;
@@ -40,63 +40,63 @@
   --space-list-gap: 1rem;
 
   /* ── Radii ── */
-  --radius-default: 0.75rem;
-  --radius-sm: 0.5rem;
+  --radius-default: 0.5rem;
+  --radius-sm: 0.375rem;
 
   /* ── Elevation ── */
-  --shadow-floating: 0px 12px 40px rgba(25, 28, 30, 0.12);
+  --shadow-floating: 0 1px 3px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.06);
 
-  /* ── Glass ── */
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-blur: 20px;
-  --glass-border: rgba(190, 200, 203, 0.15);
-  --glass-border-input: rgba(190, 200, 203, 0.3);
-  --glass-row-alt: rgba(242, 244, 246, 0.5);
-  --glass-hover: rgba(0, 0, 0, 0.03);
-  --glass-primary-soft: rgba(0, 78, 89, 0.08);
-  --glass-primary-ring: rgba(0, 78, 89, 0.15);
-  --glass-positive-soft: rgba(16, 185, 129, 0.08);
-  --glass-negative-soft: rgba(186, 26, 26, 0.08);
+  /* ── Surfaces (replaces glass) ── */
+  --card-bg: #ffffff;
+  --card-border: #e2e8f0;
+  --card-bg-hover: #f8fafc;
+  --row-alt: #f8fafc;
+  --row-hover: #f1f5f9;
+  --primary-soft: rgba(30, 58, 95, 0.06);
+  --primary-ring: rgba(37, 99, 235, 0.2);
+  --positive-soft: rgba(22, 163, 74, 0.06);
+  --negative-soft: rgba(220, 38, 38, 0.06);
 
-  /* ── Chart colors (shared) ── */
-  --chart-line-stroke: #004E59;
-  --chart-gradient-start: #004E59;
+  /* ── Chart colors ── */
+  --chart-line-stroke: #1e3a5f;
+  --chart-gradient-start: #1e3a5f;
 }
 
 /* ── Dark theme override ── */
 [data-theme="dark"] {
-  --color-primary: #c3f5ff;
-  --color-primary-container: #00e5ff;
-  --color-primary-fixed: #00e5ff;
-  --color-tertiary: #ffe7e5;
-  --color-outline-variant: #3b494c;
+  --color-primary: #60a5fa;
+  --color-primary-container: #3b82f6;
+  --color-primary-fixed: #1e3a5f;
+  --color-tertiary: #93c5fd;
+  --color-outline-variant: #334155;
 
-  --color-secondary: #4ae176;
-  --color-secondary-container: #00b954;
-  --color-error: #ffb4ab;
+  --color-secondary: #4ade80;
+  --color-secondary-container: #166534;
+  --color-error: #f87171;
+  --color-warning: #fbbf24;
 
-  --color-on-surface: #e5e2e3;
-  --color-on-surface-variant: #bac9cc;
-  --color-text-muted: #849396;
+  --color-on-surface: #f1f5f9;
+  --color-on-surface-variant: #94a3b8;
+  --color-text-muted: #64748b;
 
-  --color-surface: #131314;
-  --color-surface-low: #1c1b1c;
-  --color-surface-lowest: #0e0e0f;
-  --color-surface-high: #2a2a2b;
-  --color-surface-highest: #353436;
+  --color-surface: #0f172a;
+  --color-surface-low: #1e293b;
+  --color-surface-lowest: #020617;
+  --color-surface-high: #334155;
+  --color-surface-highest: #475569;
 
-  --shadow-floating: 0px 12px 40px rgba(0, 0, 0, 0.4);
+  --shadow-floating: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 
-  --glass-bg: rgba(0, 218, 243, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.05);
-  --glass-border-input: rgba(255, 255, 255, 0.1);
-  --glass-row-alt: rgba(42, 42, 43, 0.5);
-  --glass-hover: rgba(255, 255, 255, 0.03);
-  --glass-primary-soft: rgba(0, 229, 255, 0.05);
-  --glass-primary-ring: rgba(0, 229, 255, 0.15);
-  --glass-positive-soft: rgba(74, 225, 118, 0.08);
-  --glass-negative-soft: rgba(255, 180, 171, 0.08);
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --card-bg-hover: #334155;
+  --row-alt: rgba(30, 41, 59, 0.5);
+  --row-hover: rgba(51, 65, 85, 0.5);
+  --primary-soft: rgba(96, 165, 250, 0.08);
+  --primary-ring: rgba(59, 130, 246, 0.25);
+  --positive-soft: rgba(74, 222, 128, 0.08);
+  --negative-soft: rgba(248, 113, 113, 0.08);
 
-  --chart-line-stroke: #00E5FF;
-  --chart-gradient-start: #00E5FF;
+  --chart-line-stroke: #60a5fa;
+  --chart-gradient-start: #60a5fa;
 }
