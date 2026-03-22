@@ -1,161 +1,258 @@
+/* ══════════════════════════════════════
+   Project Fin — Apple Dark Component Classes
+   ══════════════════════════════════════ */
+
 /* ── Cards ── */
 .card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-default);
-  padding: var(--space-card-padding);
+  border-radius: var(--radius);
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.card:hover {
+  border-color: var(--border-hover);
 }
 
 .card-elevated {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: var(--radius-default);
-  padding: var(--space-card-padding);
+  border-radius: var(--radius);
+  padding: 20px;
   box-shadow: var(--shadow-floating);
 }
 
-/* ── Surfaces ── */
-.surface-base {
-  background-color: var(--color-surface);
-}
-
-.surface-mid {
-  background-color: var(--color-surface-low);
+.card-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-bottom: 16px;
 }
 
 /* ── Buttons ── */
 .btn-primary {
-  background: var(--color-primary-container);
+  background: var(--blue);
   color: white;
-  border-radius: var(--radius-default);
-  padding: 0.625rem 1.5rem;
-  font-size: var(--body-md);
+  border-radius: var(--radius-pill);
+  padding: 10px 24px;
+  font-size: 14px;
   font-weight: 600;
-  transition: background-color 0.15s ease;
-  cursor: pointer;
   border: none;
-}
-
-[data-theme="dark"] .btn-primary {
-  background: var(--color-primary-container);
-  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-primary:hover {
-  opacity: 0.9;
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  filter: brightness(0.9);
+  transform: scale(1.02);
 }
 
 .btn-ghost {
-  background: transparent;
-  color: var(--color-primary);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-default);
-  padding: 0.625rem 1.5rem;
-  font-size: var(--body-md);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border-radius: var(--radius-pill);
+  padding: 8px 18px;
+  font-size: 13px;
   font-weight: 500;
-  transition: background-color 0.15s ease;
+  border: none;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .btn-ghost:hover {
-  background-color: var(--color-surface-high);
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.btn-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
 }
 
 /* ── Inputs ── */
 .input-field {
-  width: 100%;
-  background: var(--color-surface-high);
-  border: none;
-  border-bottom: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.625rem 0.875rem;
-  font-size: var(--body-md);
-  color: var(--color-on-surface);
-  outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.input-field::placeholder {
-  color: var(--color-text-muted);
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  transition: border-color 0.2s;
+  width: 100%;
 }
 
 .input-field:focus {
-  border-bottom-color: var(--color-primary-container);
-  box-shadow: 0 2px 0 0 var(--primary-ring);
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 2px var(--primary-ring);
 }
 
-[data-theme="dark"] .input-field:focus {
-  border-bottom-color: var(--color-primary-container);
+.input-field::placeholder {
+  color: var(--text-tertiary);
 }
 
-/* ── Typography ── */
-.text-display {
-  font-size: var(--display-lg);
-  font-weight: 700;
-  letter-spacing: var(--display-lg-tracking);
-  color: var(--color-on-surface);
-  line-height: 1.1;
-}
-
-.text-heading {
-  font-size: var(--title-lg);
+/* ── Tables ── */
+.table-header {
+  display: grid;
+  padding: 10px 20px;
+  font-size: 11px;
   font-weight: 600;
-  letter-spacing: var(--title-lg-tracking);
-  color: var(--color-on-surface);
-}
-
-.text-label {
-  font-size: var(--label-md);
-  font-weight: 500;
-  letter-spacing: var(--label-md-tracking);
   text-transform: uppercase;
-  color: var(--color-on-surface-variant);
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  border-bottom: 1px solid var(--border);
 }
 
-/* ── Table ── */
 .table-row {
-  transition: background-color 0.1s ease;
-}
-
-.table-row:nth-child(even) {
-  background-color: var(--row-alt);
+  display: grid;
+  padding: 14px 20px;
+  font-size: 14px;
+  border-bottom: 1px solid var(--border);
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.15s;
 }
 
 .table-row:hover {
-  background-color: var(--row-hover);
+  background: var(--row-hover);
 }
 
-/* ── Insight Ribbon ── */
-.insight-ribbon {
-  width: 100%;
-  background-color: var(--color-surface-high);
-  padding: 0.75rem var(--space-card-padding);
-  font-size: var(--body-md);
-  color: var(--color-on-surface);
-  border-radius: var(--radius-sm);
+.table-row:nth-child(even) {
+  background: var(--row-alt);
 }
 
-/* ── Badge ── */
+/* ── Badges ── */
 .badge {
   display: inline-flex;
   align-items: center;
-  padding: 0.25rem 0.625rem;
-  border-radius: var(--radius-sm);
-  font-size: var(--label-md);
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
   font-weight: 600;
 }
 
-.badge-warning {
-  background-color: rgba(217, 119, 6, 0.1);
-  color: #92400e;
+.badge-green {
+  background: rgba(52, 199, 89, 0.15);
+  color: var(--green);
 }
 
-[data-theme="dark"] .badge-warning {
-  background-color: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+.badge-red {
+  background: rgba(255, 59, 48, 0.15);
+  color: var(--red);
+}
+
+.badge-orange {
+  background: rgba(255, 159, 10, 0.15);
+  color: var(--orange);
+}
+
+.badge-blue {
+  background: rgba(10, 132, 255, 0.15);
+  color: var(--blue);
+}
+
+.badge-warning {
+  background: rgba(255, 159, 10, 0.15);
+  color: var(--orange);
+}
+
+/* ── Period selector pills ── */
+.period-btn {
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.period-btn:hover {
+  color: var(--text-primary);
+}
+
+.period-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+/* ── Typography utility classes ── */
+.text-display {
+  font-size: 56px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.text-heading {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.text-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+/* ── Semantic text colors ── */
+.text-positive {
+  color: var(--green);
+}
+
+.text-negative {
+  color: var(--red);
+}
+
+/* ── Score bars ── */
+.score-bar {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.score-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+}
+
+/* ── Tabular numbers ── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Insight ribbon (kept for compatibility) ── */
+.insight-ribbon {
+  background: var(--primary-soft);
+  border: 1px solid var(--blue);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
 }
