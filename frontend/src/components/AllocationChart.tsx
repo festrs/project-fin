@@ -44,8 +44,8 @@ export function AllocationChart({ allocation }: AllocationChartProps) {
           <YAxis tick={{ fontSize: 12 }} />
           <Tooltip formatter={(value) => `${Number(value).toFixed(1)}%`} />
           <Legend />
-          <Bar dataKey="Target" fill="#004E59" />
-          <Bar dataKey="Actual" fill="#10B981" />
+          <Bar dataKey="Target" fill="#1e3a5f" />
+          <Bar dataKey="Actual" fill="#16a34a" />
         </BarChart>
       </ResponsiveContainer>
     </ChartCard>

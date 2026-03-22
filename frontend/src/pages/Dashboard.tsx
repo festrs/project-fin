@@ -15,7 +15,7 @@ import api from "../services/api";
 
 // Color mapping for donut chart segments
 const CLASS_COLORS: Record<string, string> = {
-  US: "#00e5ff",
+  US: "#2563eb",
   BR: "#22d3ee",
   crypto: "#a78bfa",
   fixed_income: "#34d399",

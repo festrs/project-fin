@@ -13,8 +13,8 @@ interface PortfolioCompositionChartProps {
 }
 
 const COLORS = [
-  "#004E59", "#10b981", "#f59e0b", "#006876", "#8b5cf6",
-  "#ec4899", "#14b8a6", "#f97316", "#1d4f40", "#84cc16",
+  "#1e3a5f", "#16a34a", "#d97706", "#2563eb", "#7c3aed",
+  "#ec4899", "#0ea5e9", "#f97316", "#475569", "#84cc16",
 ];
 
 export function PortfolioCompositionChart({ allocation, classSummaries }: PortfolioCompositionChartProps) {
