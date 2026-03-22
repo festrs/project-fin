@@ -25,35 +25,50 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen bg-surface flex items-center justify-center">
-      <div className="card w-full max-w-sm" style={{ padding: '2rem' }}>
-        <h1 className="text-2xl font-bold text-on-surface mb-6 text-center">
-          Project <span className="text-primary-container">Fin</span>
-        </h1>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="input-field"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="input-field"
-          />
+    <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="card" style={{ maxWidth: 400, width: "100%", padding: 32 }}>
+        <p style={{ fontSize: 24, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.02em", textAlign: "center", marginBottom: 32 }}>
+          Fin
+        </p>
+        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div>
+            <label htmlFor="email" style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--text-secondary)", marginBottom: 4 }}>
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="input-field"
+              style={{ width: "100%" }}
+            />
+          </div>
+          <div>
+            <label htmlFor="password" style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--text-secondary)", marginBottom: 4 }}>
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="input-field"
+              style={{ width: "100%" }}
+            />
+          </div>
           {error && (
-            <p className="text-error text-sm text-center">{error}</p>
+            <p style={{ color: "var(--red)", fontSize: 13, textAlign: "center", margin: 0 }}>{error}</p>
           )}
           <button
             type="submit"
             disabled={loading}
             className="btn-primary"
+            style={{ width: "100%" }}
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
