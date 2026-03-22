@@ -12,21 +12,22 @@ import { useSplits } from "../hooks/useSplits";
 import type { Transaction, AssetClass, DividendsResponse } from "../types";
 import api from "../services/api";
 
-// Color mapping for donut chart segments
-const CLASS_COLORS: Record<string, string> = {
-  us_stocks: "#6aadff",
-  br_stocks: "#d4a843",
-  crypto: "#a78bfa",
-  fixed_income: "#f4845f",
-  emergency_reserve: "#6bc5a0",
-};
+// Wide-range pastel palette — each class gets a unique, highly distinct color
+const CLASS_PALETTE = [
+  "#6aadff", // soft blue
+  "#d4a843", // muted gold
+  "#e05c8a", // rose pink
+  "#45b88c", // teal green
+  "#a78bfa", // lavender
+  "#f4845f", // salmon
+  "#56c4e8", // sky cyan
+  "#c7a24e", // amber
+  "#7c6dd8", // indigo
+  "#e8b84d", // warm yellow
+];
 
-function getClassColor(ac: AssetClass): string {
-  if (ac.is_emergency_reserve) return CLASS_COLORS.emergency_reserve;
-  if (ac.type === "crypto") return CLASS_COLORS.crypto;
-  if (ac.type === "fixed_income") return CLASS_COLORS.fixed_income;
-  if (ac.country === "US") return CLASS_COLORS.us_stocks;
-  return CLASS_COLORS.br_stocks;
+function getClassColor(_ac: AssetClass, index: number): string {
+  return CLASS_PALETTE[index % CLASS_PALETTE.length];
 }
 
 export default function Dashboard() {
@@ -73,13 +74,13 @@ export default function Dashboard() {
 
   // Build donut chart data
   const classMap = new Map(assetClasses.map((ac) => [ac.id, ac]));
-  const donutData = regularSummaries.map((s) => {
+  const donutData = regularSummaries.map((s, index) => {
     const ac = classMap.get(s.classId);
     return {
       className: s.className,
       percentage: s.percentage,
       targetWeight: s.targetWeight,
-      color: ac ? getClassColor(ac) : "#666",
+      color: ac ? getClassColor(ac, index) : "#666",
     };
   });
 
