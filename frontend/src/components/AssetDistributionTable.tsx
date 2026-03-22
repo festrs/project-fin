@@ -290,7 +290,7 @@ export default function AssetDistributionTable({
                     {formatValue(s.totalValue, s.currency)}
                   </td>
                   <td className="px-6 py-5 text-right tabular-nums text-sm font-body">
-                    {formatValue(s.totalValueBRL || s.totalValue, "BRL")}
+                    {s.currency === "BRL" ? "—" : formatValue(s.totalValueBRL || s.totalValue, "BRL")}
                   </td>
                   <td className="px-6 py-5 text-center">
                     {s.isEmergencyReserve ? (

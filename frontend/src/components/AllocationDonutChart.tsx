@@ -55,9 +55,10 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             cy="45%"
             innerRadius="50%"
             outerRadius="90%"
-            paddingAngle={0}
+            paddingAngle={1.5}
             dataKey="value"
-            stroke="none"
+            stroke="#0a0a0a"
+            strokeWidth={4}
           >
             {actualData.map((entry, index) => (
               <Cell key={`actual-${index}`} fill={entry.color} opacity={0.85} />
@@ -71,9 +72,10 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
               cy="45%"
               innerRadius="25%"
               outerRadius="47%"
-              paddingAngle={0}
+              paddingAngle={1.5}
               dataKey="value"
-              stroke="none"
+              stroke="#0a0a0a"
+              strokeWidth={4}
             >
               {targetData.map((entry, index) => (
                 <Cell key={`target-${index}`} fill={entry.color} opacity={0.55} />
