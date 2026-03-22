@@ -33,7 +33,7 @@ export default function Invest() {
       <div className="card">
         <div className="flex items-end gap-4 flex-wrap">
           <div>
-            <label htmlFor="amount" className="block text-base font-medium text-on-surface-variant mb-1">
+            <label htmlFor="amount" className="block text-base font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
               Amount
             </label>
             <input
@@ -49,7 +49,7 @@ export default function Invest() {
             />
           </div>
           <div>
-            <label htmlFor="currency" className="block text-base font-medium text-on-surface-variant mb-1">
+            <label htmlFor="currency" className="block text-base font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
               Currency
             </label>
             <select
@@ -63,7 +63,7 @@ export default function Invest() {
             </select>
           </div>
           <div>
-            <label htmlFor="count" className="block text-base font-medium text-on-surface-variant mb-1">
+            <label htmlFor="count" className="block text-base font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
               # Recommendations
             </label>
             <input
@@ -87,21 +87,21 @@ export default function Invest() {
 
       {/* Error */}
       {error && (
-        <div className="bg-error/10 border border-error/30 rounded-DEFAULT p-4">
-          <p className="text-error text-base">{error}</p>
+        <div className="bg-red/10 border border-red/30 rounded-DEFAULT p-4">
+          <p className="text-red text-base">{error}</p>
         </div>
       )}
 
       {/* Results */}
       {!plan && !loading && !error && (
         <div className="card">
-          <p className="text-text-muted text-base">Enter an amount and click Calculate to get your investment plan.</p>
+          <p className="text-text-tertiary text-base">Enter an amount and click Calculate to get your investment plan.</p>
         </div>
       )}
 
       {loading && (
         <div className="card">
-          <p className="text-text-muted text-base">Calculating investment plan...</p>
+          <p className="text-text-tertiary text-base">Calculating investment plan...</p>
         </div>
       )}
 
@@ -110,7 +110,7 @@ export default function Invest() {
           <h2 className="text-heading mb-4">Investment Plan</h2>
 
           {plan.recommendations.length === 0 ? (
-            <p className="text-text-muted text-base">
+            <p className="text-text-tertiary text-base">
               {plan.empty_reason === "no_holdings"
                 ? "Add holdings to your portfolio first."
                 : plan.empty_reason === "all_quarantined"
@@ -137,8 +137,8 @@ export default function Invest() {
                 <tbody>
                   {plan.recommendations.map((rec) => (
                     <tr key={rec.symbol} className="table-row">
-                      <td className="py-2.5 px-2 font-semibold text-on-surface">{rec.symbol}</td>
-                      <td className="py-2.5 px-2 text-text-muted">{rec.class_name}</td>
+                      <td className="py-2.5 px-2 font-semibold" style={{ color: "var(--text-primary)" }}>{rec.symbol}</td>
+                      <td className="py-2.5 px-2 text-text-tertiary">{rec.class_name}</td>
                       <td className="py-2.5 px-2 text-right">{rec.effective_target.toFixed(1)}%</td>
                       <td className="py-2.5 px-2 text-right">{rec.actual_weight.toFixed(1)}%</td>
                       <td className="py-2.5 px-2 text-right text-tertiary">+{rec.diff.toFixed(1)}%</td>
@@ -149,12 +149,12 @@ export default function Invest() {
                   ))}
                 </tbody>
                 <tfoot>
-                  <tr className="border-t-2 border-outline-variant/15 font-bold">
+                  <tr className="font-bold" style={{ borderTop: "2px solid var(--border)" }}>
                     <td colSpan={7} className="py-3 px-2">Total</td>
                     <td className="py-3 px-2 text-right">{formatMoney(plan.total_invested)}</td>
                   </tr>
                   {parseFloat(plan.remainder.amount) > 0 && (
-                    <tr className="text-text-muted">
+                    <tr className="text-text-tertiary">
                       <td colSpan={7} className="py-1 px-2 text-sm">Uninvested remainder</td>
                       <td className="py-1 px-2 text-right text-sm">{formatMoney(plan.remainder)}</td>
                     </tr>
@@ -165,7 +165,7 @@ export default function Invest() {
           )}
 
           {plan.exchange_rate && (
-            <p className="text-text-muted text-sm mt-3">
+            <p className="text-text-tertiary text-sm mt-3">
               Exchange rate ({plan.exchange_rate_pair}): {plan.exchange_rate.toFixed(2)}
             </p>
           )}

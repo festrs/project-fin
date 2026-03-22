@@ -16,9 +16,16 @@ import { useFundamentalsDetail } from "../hooks/useFundamentals";
 import type { FundamentalsScore } from "../types";
 
 const RATING_COLORS = {
-  green: "#22c55e",
-  yellow: "#eab308",
-  red: "#ef4444",
+  green: "var(--green)",
+  yellow: "var(--orange)",
+  red: "var(--red)",
+};
+
+// Hex values for Recharts (which doesn't support CSS variables in fill/stroke)
+const CHART_COLORS = {
+  green: "#34c759",
+  yellow: "#ff9f0a",
+  red: "#ff3b30",
 };
 
 type Rating = "green" | "yellow" | "red";
@@ -68,7 +75,7 @@ function ScoreBreakdownCard({ detail }: { detail: FundamentalsScore }) {
   return (
     <div className="card">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-heading text-primary">Score Breakdown</h2>
+        <h2 className="text-heading text-blue">Score Breakdown</h2>
         <span
           className="text-2xl font-bold"
           style={{ color: compositeColor(detail.composite_score) }}
@@ -80,7 +87,7 @@ function ScoreBreakdownCard({ detail }: { detail: FundamentalsScore }) {
         {criteria.map((c) => (
           <li key={c.label} className="flex items-center">
             <RatingDot rating={c.rating} />
-            <span className="text-on-surface-variant text-sm">{c.label}</span>
+            <span style={{ color: "var(--text-secondary)" }} className="text-sm">{c.label}</span>
           </li>
         ))}
       </ul>
@@ -97,7 +104,7 @@ export default function Fundamentals() {
 
   if (loading) {
     return (
-      <div className="text-primary text-center mt-20">
+      <div className="text-blue text-center mt-20">
         Loading fundamentals...
       </div>
     );
@@ -106,7 +113,7 @@ export default function Fundamentals() {
   if (error) {
     return (
       <div className="text-center mt-20">
-        <p className="text-error mb-4">{error}</p>
+        <p className="text-red mb-4">{error}</p>
         <button onClick={refresh} className="btn-ghost px-4 py-2 text-sm">
           Retry
         </button>
@@ -116,7 +123,7 @@ export default function Fundamentals() {
 
   if (!detail) {
     return (
-      <div className="text-text-muted text-center mt-20">No data available.</div>
+      <div className="text-text-tertiary text-center mt-20">No data available.</div>
     );
   }
 
@@ -130,8 +137,8 @@ export default function Fundamentals() {
       i === 0
         ? "#8884d8"
         : d.eps > rawData[i - 1].eps
-          ? RATING_COLORS.green
-          : RATING_COLORS.red,
+          ? CHART_COLORS.green
+          : CHART_COLORS.red,
   }));
 
   // Net Debt/EBITDA chart data
@@ -144,13 +151,19 @@ export default function Fundamentals() {
   const incomeData = rawData.map((d) => ({
     year: String(d.year),
     net_income: d.net_income,
-    color: d.net_income > 0 ? RATING_COLORS.green : RATING_COLORS.red,
+    color: d.net_income > 0 ? CHART_COLORS.green : CHART_COLORS.red,
   }));
 
-  const axisStyle = { stroke: "var(--color-on-surface-variant)", fontSize: 12 };
+  const axisStyle = { stroke: "rgba(255,255,255,0.35)", fontSize: 12 };
   const gridStyle = {
     strokeDasharray: "3 3",
-    stroke: "var(--card-border)",
+    stroke: "rgba(255,255,255,0.08)",
+  };
+
+  const tooltipStyle = {
+    backgroundColor: "#1c1c1e",
+    border: "1px solid rgba(255,255,255,0.08)",
+    color: "#f5f5f7",
   };
 
   return (
@@ -164,7 +177,7 @@ export default function Fundamentals() {
           >
             ← Back
           </button>
-          <h1 className="text-primary text-2xl font-bold">
+          <h1 className="text-blue text-2xl font-bold">
             {symbol} Fundamentals
           </h1>
         </div>
@@ -182,7 +195,7 @@ export default function Fundamentals() {
       {/* EPS History */}
       {epsData.length > 0 && (
         <div className="card">
-          <h2 className="text-heading text-primary mb-4">
+          <h2 className="text-heading text-blue mb-4">
             EPS History
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -190,7 +203,7 @@ export default function Fundamentals() {
               <CartesianGrid {...gridStyle} />
               <XAxis dataKey="year" tick={axisStyle} />
               <YAxis tick={axisStyle} />
-              <Tooltip />
+              <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="eps" isAnimationActive={false}>
                 {epsData.map((entry, index) => (
                   <Cell key={`eps-${index}`} fill={entry.color} />
@@ -204,7 +217,7 @@ export default function Fundamentals() {
       {/* Net Debt / EBITDA */}
       {debtData.length > 0 && (
         <div className="card">
-          <h2 className="text-heading text-primary mb-4">
+          <h2 className="text-heading text-blue mb-4">
             Net Debt / EBITDA
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -212,14 +225,14 @@ export default function Fundamentals() {
               <CartesianGrid {...gridStyle} />
               <XAxis dataKey="year" tick={axisStyle} />
               <YAxis tick={axisStyle} />
-              <Tooltip />
+              <Tooltip contentStyle={tooltipStyle} />
               <ReferenceLine
                 y={3}
-                stroke={RATING_COLORS.red}
+                stroke="#ff3b30"
                 strokeDasharray="4 4"
                 label={{
                   value: "Threshold (3x)",
-                  fill: RATING_COLORS.red,
+                  fill: "#ff3b30",
                   fontSize: 12,
                 }}
               />
@@ -238,7 +251,7 @@ export default function Fundamentals() {
       {/* Net Income (Profitability) */}
       {incomeData.length > 0 && (
         <div className="card">
-          <h2 className="text-heading text-primary mb-4">
+          <h2 className="text-heading text-blue mb-4">
             Net Income
           </h2>
           <ResponsiveContainer width="100%" height={300}>
@@ -246,7 +259,7 @@ export default function Fundamentals() {
               <CartesianGrid {...gridStyle} />
               <XAxis dataKey="year" tick={axisStyle} />
               <YAxis tick={axisStyle} />
-              <Tooltip />
+              <Tooltip contentStyle={tooltipStyle} />
               <Bar dataKey="net_income" isAnimationActive={false}>
                 {incomeData.map((entry, index) => (
                   <Cell key={`income-${index}`} fill={entry.color} />
@@ -259,7 +272,7 @@ export default function Fundamentals() {
 
       {/* Updated at */}
       {detail.updated_at && (
-        <p className="text-text-muted text-xs text-right">
+        <p className="text-text-tertiary text-xs text-right">
           Updated at: {new Date(detail.updated_at).toLocaleString()}
         </p>
       )}
