@@ -4,7 +4,6 @@ import type { Holding, AssetClass, Transaction, DividendsResponse } from "../typ
 import { moneyToNumber } from "../utils/money";
 import { computeClassSummaries, type ClassSummary } from "./ClassSummaryTable";
 import { DividendHistoryModal } from "./DividendHistoryModal";
-import { TransactionHistoryModal } from "./TransactionHistoryModal";
 
 interface AssetDistributionTableProps {
   holdings: Holding[];
@@ -72,7 +71,6 @@ export default function AssetDistributionTable({
   const [editingWeights, setEditingWeights] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
   const [dividendModal, setDividendModal] = useState<{ classId: string; className: string; currency: string } | null>(null);
-  const [txModal, setTxModal] = useState<{ classId: string; className: string; symbols: string[] } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newName, setNewName] = useState("");
   const [newWeight, setNewWeight] = useState("");
@@ -264,7 +262,6 @@ export default function AssetDistributionTable({
                   )}
                 </div>
               </th>
-              <th className="px-3 py-4" />
               {onDeleteClass && <th className="px-3 py-4" />}
             </tr>
           </thead>
@@ -338,21 +335,6 @@ export default function AssetDistributionTable({
                   >
                     {getDividendDisplay(s)}
                   </td>
-                  <td className="px-3 py-5 text-center">
-                    <button
-                      className="text-text-tertiary hover:text-blue transition-colors"
-                      title="Transaction history"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        const classHoldings = holdings.filter((h) => h.asset_class_id === s.classId);
-                        const symbols = classHoldings.map((h) => h.symbol);
-                        if (symbols.length > 0) setTxModal({ classId: s.classId, className: s.className, symbols });
-                      }}
-                    >
-                      <span className="material-symbols-outlined text-lg">receipt_long</span>
-                    </button>
-                  </td>
                   {onDeleteClass && (
                     <td className="px-3 py-5 text-center">
                       <button
@@ -399,7 +381,6 @@ export default function AssetDistributionTable({
                 <td className="px-6 py-4 text-right tabular-nums text-sm font-body" style={{ color: "var(--text-tertiary)" }}>
                   —
                 </td>
-                <td className="px-3 py-4" />
                 {onDeleteClass && (
                   <td className="px-3 py-4 text-center">
                     <button
@@ -420,7 +401,7 @@ export default function AssetDistributionTable({
           <tfoot>
             {isEditing && (
               <tr className="border-b border-[var(--card-border)]">
-                <td colSpan={onDeleteClass ? 8 : 7} className="px-6 py-3">
+                <td colSpan={onDeleteClass ? 7 : 6} className="px-6 py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
@@ -453,7 +434,6 @@ export default function AssetDistributionTable({
               <td className="px-6 py-6 text-right text-sm font-bold tabular-nums font-body" style={{ color: "var(--green)" }}>
                 {totalDivBRL > 0 ? formatValue(totalDivBRL, "BRL") : "—"}
               </td>
-              <td className="px-3 py-6" />
               {onDeleteClass && <td className="px-3 py-6" />}
             </tr>
           </tfoot>
@@ -469,14 +449,6 @@ export default function AssetDistributionTable({
         />
       )}
 
-      {txModal && (
-        <TransactionHistoryModal
-          className={txModal.className}
-          assetClassId={txModal.classId}
-          symbols={txModal.symbols}
-          onClose={() => setTxModal(null)}
-        />
-      )}
     </div>
   );
 }

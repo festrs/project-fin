@@ -4,6 +4,7 @@ import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
 import { formatMoney, moneyToNumber } from "../utils/money";
 import type { Holding, Transaction, QuarantineStatus, AssetClass, AssetClassType, FundamentalsScore } from "../types";
+import { TransactionHistoryModal } from "./TransactionHistoryModal";
 
 interface HoldingsTableProps {
   holdings: Holding[];
@@ -94,13 +95,11 @@ export function HoldingsTable({
     return rate ? value * rate : value;
   };
 
-  const handleRowClick = async (symbol: string) => {
-    if (expandedRow === symbol) {
-      setExpandedRow(null);
-    } else {
-      setExpandedRow(symbol);
-      await onFetchTransactions(symbol);
-    }
+  const [txModalSymbol, setTxModalSymbol] = useState<string | null>(null);
+
+  const handleShowTransactions = async (symbol: string) => {
+    await onFetchTransactions(symbol);
+    setTxModalSymbol(symbol);
   };
 
   const commitWeightEdit = () => {
@@ -204,7 +203,7 @@ export function HoldingsTable({
                   holding={h}
                   type={type}
                   quarantine={q}
-                  isExpanded={isExpanded}
+                  isExpanded={false}
                   transactions={transactions}
                   classId={assetClassId}
                   isEditingWeight={isEditingThis}
@@ -220,7 +219,8 @@ export function HoldingsTable({
                   onChangeAssetClass={onChangeAssetClass}
                   onFetchTransactions={onFetchTransactions}
                   onNavigateScore={() => navigate(`/fundamentals/${h.symbol}`)}
-                  onRowClick={() => handleRowClick(h.symbol)}
+                  onRowClick={() => {}}
+                  onShowTransactions={() => handleShowTransactions(h.symbol)}
                   onBuy={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "buy" })}
                   onSell={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "sell" })}
                   onStartEditWeight={
@@ -237,6 +237,15 @@ export function HoldingsTable({
           </tbody>
         </table>
       </div>
+
+      {txModalSymbol && (
+        <TransactionHistoryModal
+          className={txModalSymbol}
+          assetClassId={assetClassId}
+          symbols={[txModalSymbol]}
+          onClose={() => setTxModalSymbol(null)}
+        />
+      )}
     </div>
   );
 }
@@ -262,6 +271,7 @@ interface HoldingRowsProps {
   onFetchTransactions: (symbol: string) => Promise<void>;
   onNavigateScore: () => void;
   onRowClick: () => void;
+  onShowTransactions: () => void;
   onBuy: () => void;
   onSell: () => void;
   onStartEditWeight?: () => void;
@@ -291,6 +301,7 @@ function HoldingRows({
   onFetchTransactions,
   onNavigateScore,
   onRowClick,
+  onShowTransactions,
   onBuy,
   onSell,
   onStartEditWeight,
@@ -480,6 +491,16 @@ function HoldingRows({
         )}
         <td className="px-3 py-2 text-center">
           <span className="flex gap-1 justify-center items-center relative">
+            <button
+              className="text-text-tertiary hover:text-blue transition-colors text-base px-2"
+              title="Transaction history"
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowTransactions();
+              }}
+            >
+              <span className="material-symbols-outlined text-lg">receipt_long</span>
+            </button>
             <button
               className="text-green hover:opacity-80 text-base px-2 font-medium"
               onClick={(e) => {
