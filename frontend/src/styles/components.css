@@ -1,16 +1,14 @@
 /* ── Cards ── */
 .card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-default);
   padding: var(--space-card-padding);
 }
 
 .card-elevated {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid var(--glass-border);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
   border-radius: var(--radius-default);
   padding: var(--space-card-padding);
   box-shadow: var(--shadow-floating);
@@ -27,20 +25,20 @@
 
 /* ── Buttons ── */
 .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-container));
+  background: var(--color-primary-container);
   color: white;
   border-radius: var(--radius-default);
   padding: 0.625rem 1.5rem;
   font-size: var(--body-md);
   font-weight: 600;
-  transition: opacity 0.15s ease;
+  transition: background-color 0.15s ease;
   cursor: pointer;
   border: none;
 }
 
 [data-theme="dark"] .btn-primary {
-  background: linear-gradient(135deg, var(--color-primary-container), var(--color-primary));
-  color: #131314;
+  background: var(--color-primary-container);
+  color: white;
 }
 
 .btn-primary:hover {
@@ -87,8 +85,8 @@
 }
 
 .input-field:focus {
-  border-bottom-color: var(--color-primary);
-  box-shadow: 0 2px 0 0 var(--glass-primary-ring);
+  border-bottom-color: var(--color-primary-container);
+  box-shadow: 0 2px 0 0 var(--primary-ring);
 }
 
 [data-theme="dark"] .input-field:focus {
@@ -125,11 +123,11 @@
 }
 
 .table-row:nth-child(even) {
-  background-color: var(--glass-row-alt);
+  background-color: var(--row-alt);
 }
 
 .table-row:hover {
-  background-color: var(--glass-hover);
+  background-color: var(--row-hover);
 }
 
 /* ── Insight Ribbon ── */
@@ -153,11 +151,11 @@
 }
 
 .badge-warning {
-  background-color: rgba(245, 158, 11, 0.1);
-  color: #b45309;
+  background-color: rgba(217, 119, 6, 0.1);
+  color: #92400e;
 }
 
 [data-theme="dark"] .badge-warning {
-  background-color: rgba(245, 158, 11, 0.15);
+  background-color: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }
