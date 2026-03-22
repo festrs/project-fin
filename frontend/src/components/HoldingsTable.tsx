@@ -65,7 +65,6 @@ export function HoldingsTable({
 }: HoldingsTableProps) {
   const navigate = useNavigate();
   const scoreMap = new Map((fundamentalsScores ?? []).map((s) => [s.symbol, s]));
-  const [expandedRow, setExpandedRow] = useState<string | null>(null);
   const [transactionForm, setTransactionForm] = useState<{
     symbol: string;
     assetClassId: string;
@@ -194,7 +193,6 @@ export function HoldingsTable({
           <tbody>
             {sortedHoldings.map((h) => {
               const q = quarantineMap.get(h.symbol);
-              const isExpanded = expandedRow === h.symbol;
               const isEditingThis = editingWeight?.symbol === h.symbol;
 
               return (
