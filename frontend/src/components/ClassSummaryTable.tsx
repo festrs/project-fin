@@ -295,7 +295,7 @@ export function ClassSummaryTable({
                   await onCreateClass("Emergency Reserve", 0, "fixed_income", true, "BR");
                 }
               }}
-              className="text-xs text-text-muted hover:text-primary transition-colors border border-[var(--glass-border)] rounded-lg px-2 py-1"
+              className="text-xs text-text-muted hover:text-primary transition-colors border border-[var(--card-border)] rounded-lg px-2 py-1"
               title="Add emergency reserve"
             >
               + Reserve
@@ -431,7 +431,7 @@ export function ClassSummaryTable({
               return (
                 <tr
                   key={s.classId}
-                  className="table-row cursor-pointer hover:bg-[var(--glass-hover)] transition-colors"
+                  className="table-row cursor-pointer hover:bg-[var(--row-hover)] transition-colors"
                   onClick={() => navigate(`/portfolio/${s.classId}`)}
                 >
                   <td className="py-2 px-2 font-medium text-primary">{s.className}</td>
@@ -532,7 +532,7 @@ export function ClassSummaryTable({
               </tr>
             )}
             {reserveSummary && (
-              <tr className="border-t border-[var(--glass-border)]">
+              <tr className="border-t border-[var(--card-border)]">
                 <td
                   className="py-2 px-2 font-medium text-on-surface-variant cursor-pointer hover:text-primary transition-colors"
                   onClick={() => navigate(`/portfolio/${reserveSummary.classId}`)}
@@ -571,7 +571,7 @@ export function ClassSummaryTable({
                 )}
               </tr>
             )}
-            <tr className="font-semibold bg-[var(--glass-primary-soft)]">
+            <tr className="font-semibold bg-[var(--primary-soft)]">
               <td className="py-2 px-2">Total</td>
               <td className="py-2 px-2" />
               <td className="py-2 px-2 text-right">

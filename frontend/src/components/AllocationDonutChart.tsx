@@ -69,7 +69,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             formatter={(value) => `${Number(value).toFixed(1)}%`}
             contentStyle={{
               background: "var(--color-surface-high)",
-              border: "1px solid var(--glass-border)",
+              border: "1px solid var(--card-border)",
               borderRadius: "var(--radius-sm)",
               color: "var(--color-on-surface)",
               fontSize: "0.75rem",

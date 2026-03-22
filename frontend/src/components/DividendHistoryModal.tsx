@@ -43,7 +43,7 @@ export function DividendHistoryModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={onClose}
     >
       <div

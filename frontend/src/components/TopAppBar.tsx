@@ -7,9 +7,8 @@ export default function TopAppBar({ title }: TopAppBarProps) {
     <header
       className="fixed top-0 right-0 w-[calc(100%-16rem)] h-16 z-40 flex items-center justify-between px-8"
       style={{
-        background: "var(--glass-bg)",
-        backdropFilter: "blur(var(--glass-blur))",
-        borderBottom: "1px solid var(--glass-border)",
+        background: "var(--card-bg)",
+        borderBottom: "1px solid var(--card-border)",
       }}
     >
       <h2 className="font-bold text-lg text-on-surface">{title}</h2>

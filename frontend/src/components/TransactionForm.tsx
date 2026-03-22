@@ -109,7 +109,7 @@ export function TransactionForm({
             <label className="block text-base text-on-surface-variant mb-1">Total</label>
             <input
               type="text"
-              className="bg-[rgba(0,0,0,0.03)] border border-[var(--glass-border)] rounded-sm px-3.5 py-2.5 text-base w-28 text-on-surface-variant"
+              className="bg-[rgba(0,0,0,0.03)] border border-[var(--card-border)] rounded-sm px-3.5 py-2.5 text-base w-28 text-on-surface-variant"
               value={computedTotal}
               readOnly
             />

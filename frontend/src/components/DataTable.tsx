@@ -168,7 +168,7 @@ export function DataTable<T extends Record<string, any>>({
         processed.map((row) => {
           if (getRowId(row) !== expandedRow) return null;
           return (
-            <div key={`expanded-${getRowId(row)}`} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
+            <div key={`expanded-${getRowId(row)}`} className="px-4 py-3 bg-[var(--row-alt)] rounded-lg">
               {renderExpanded(row)}
             </div>
           );

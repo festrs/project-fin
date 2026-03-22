@@ -150,7 +150,7 @@ export default function Fundamentals() {
   const axisStyle = { stroke: "var(--color-on-surface-variant)", fontSize: 12 };
   const gridStyle = {
     strokeDasharray: "3 3",
-    stroke: "var(--glass-border)",
+    stroke: "var(--card-border)",
   };
 
   return (

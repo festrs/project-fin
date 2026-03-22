@@ -374,7 +374,7 @@ function HoldingRows({
 
   return (
     <>
-      <tr className="table-row hover:bg-[var(--glass-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
+      <tr className="table-row hover:bg-[var(--row-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
         <td className="px-3 py-2">
           <span className="flex items-center gap-2">
             <span className="font-medium">{h.symbol}</span>
@@ -519,7 +519,7 @@ function HoldingRows({
                   >
                     {onChangeAssetClass && !changingAssetClass && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-on-surface hover:bg-[var(--glass-hover)]"
+                        className="w-full text-left px-3 py-2 text-base text-on-surface hover:bg-[var(--row-hover)]"
                         onClick={() => setChangingAssetClass(true)}
                       >
                         Change Asset Class
@@ -545,7 +545,7 @@ function HoldingRows({
                     )}
                     {onDeleteHolding && !confirmDelete && (
                       <button
-                        className="w-full text-left px-3 py-2 text-base text-error hover:bg-[var(--glass-hover)]"
+                        className="w-full text-left px-3 py-2 text-base text-error hover:bg-[var(--row-hover)]"
                         onClick={() => setConfirmDelete(true)}
                       >
                         Delete Holding
@@ -584,7 +584,7 @@ function HoldingRows({
       {/* Expanded transaction history */}
       {isExpanded && (
         <tr>
-          <td colSpan={colCount} className="px-4 py-3 bg-[var(--glass-row-alt)] rounded-lg">
+          <td colSpan={colCount} className="px-4 py-3 bg-[var(--row-alt)] rounded-lg">
             <h4 className="font-semibold text-base text-on-surface mb-2">Transaction History</h4>
             {transactions.length === 0 ? (
               <p className="text-text-muted text-base">No transactions found</p>
@@ -607,7 +607,7 @@ function HoldingRows({
                 <tbody>
                   {transactions.map((t) => (
                     editingTx === t.id ? (
-                      <tr key={t.id} className="border-t bg-[var(--glass-primary-soft)]">
+                      <tr key={t.id} className="border-t bg-[var(--primary-soft)]">
                         <td className="py-1 px-2">
                           <input
                             type="date"
@@ -695,7 +695,7 @@ function HoldingRows({
                         </td>
                       </tr>
                     ) : (
-                      <tr key={t.id} className="border-t hover:bg-[var(--glass-hover)]">
+                      <tr key={t.id} className="border-t hover:bg-[var(--row-hover)]">
                         <td className="py-1 px-2">{t.date}</td>
                         <td className="py-1 px-2 capitalize">{t.type}</td>
                         <td className="py-1 px-2 text-right">{t.quantity != null ? t.quantity : "\u2014"}</td>

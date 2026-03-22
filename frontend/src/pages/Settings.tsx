@@ -55,8 +55,8 @@ export default function Settings() {
               onClick={() => setTheme("light")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
                 theme === "light"
-                  ? "border-primary bg-[var(--glass-primary-soft)] text-primary font-semibold"
-                  : "border-[var(--glass-border)] text-on-surface-variant hover:border-primary/50"
+                  ? "border-primary bg-[var(--primary-soft)] text-primary font-semibold"
+                  : "border-[var(--card-border)] text-on-surface-variant hover:border-primary/50"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">light_mode</span>
@@ -66,8 +66,8 @@ export default function Settings() {
               onClick={() => setTheme("dark")}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-all ${
                 theme === "dark"
-                  ? "border-primary bg-[var(--glass-primary-soft)] text-primary font-semibold"
-                  : "border-[var(--glass-border)] text-on-surface-variant hover:border-primary/50"
+                  ? "border-primary bg-[var(--primary-soft)] text-primary font-semibold"
+                  : "border-[var(--card-border)] text-on-surface-variant hover:border-primary/50"
               }`}
             >
               <span className="material-symbols-outlined text-[20px]">dark_mode</span>

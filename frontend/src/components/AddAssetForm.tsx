@@ -146,7 +146,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
           <label className="block text-base text-on-surface-variant mb-1">Symbol / Name</label>
           {selectedSymbol ? (
             <div className="flex items-center gap-2">
-              <span className="bg-[var(--glass-primary-soft)] text-primary font-semibold px-3 py-2 rounded-sm text-base">
+              <span className="bg-[var(--primary-soft)] text-primary font-semibold px-3 py-2 rounded-sm text-base">
                 {selectedSymbol}
                 {selectedName && <span className="text-on-surface-variant font-normal ml-1.5">— {selectedName}</span>}
               </span>
@@ -197,7 +197,7 @@ export function AddAssetForm({ type, assetClassId, onSubmit, onCancel }: AddAsse
                   {results.map((r) => (
                     <li
                       key={r.symbol}
-                      className="px-3 py-2 hover:bg-[var(--glass-hover)] cursor-pointer text-base flex justify-between"
+                      className="px-3 py-2 hover:bg-[var(--row-hover)] cursor-pointer text-base flex justify-between"
                       onClick={() => handleSelect(r)}
                     >
                       <span className="font-medium text-primary">{r.symbol}</span>

@@ -21,9 +21,8 @@ export default function Sidebar() {
     <aside
       className="fixed left-0 top-0 h-full w-64 border-r flex flex-col py-6 px-4 z-50"
       style={{
-        background: "var(--glass-bg)",
-        backdropFilter: "blur(var(--glass-blur))",
-        borderColor: "var(--glass-border)",
+        background: "var(--card-bg)",
+        borderColor: "var(--card-border)",
       }}
     >
       <div className="mb-10 px-2">
@@ -47,7 +46,7 @@ export default function Sidebar() {
                   ? "text-primary border-r-2 border-primary"
                   : "text-text-muted hover:text-on-surface"
               }`}
-              style={isActive ? { background: "var(--glass-primary-soft)" } : { }}
+              style={isActive ? { background: "var(--primary-soft)" } : { }}
             >
               <span className="material-symbols-outlined text-[20px]">{link.icon}</span>
               <span className="text-sm font-medium font-body">{link.label}</span>
@@ -56,7 +55,7 @@ export default function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto pt-4" style={{ borderTop: "1px solid var(--glass-border)" }}>
+      <div className="mt-auto pt-4" style={{ borderTop: "1px solid var(--card-border)" }}>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-text-muted hover:text-on-surface transition-all duration-200 w-full"

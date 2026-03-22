@@ -34,7 +34,7 @@ function getClassIcon(ac: AssetClass): { icon: string; colorClass: string; bgCla
   if (ac.country === "US") {
     return { icon: "public", colorClass: "text-primary-container", bgClass: "bg-primary-container/10" };
   }
-  return { icon: "apartment", colorClass: "text-cyan-400", bgClass: "bg-cyan-500/10" };
+  return { icon: "apartment", colorClass: "text-blue-400", bgClass: "bg-blue-500/10" };
 }
 
 function formatValue(value: number, currency: string): string {
@@ -172,7 +172,7 @@ export default function AssetDistributionTable({
   return (
     <div className="bg-surface-low rounded-xl overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 flex justify-between items-center border-b border-[var(--glass-border)]">
+      <div className="px-6 py-4 flex justify-between items-center border-b border-[var(--card-border)]">
         <div className="flex items-center gap-3">
           <h3 className="font-bold text-on-surface">Asset Distribution</h3>
           <span className="text-xs text-text-muted font-body">
@@ -213,7 +213,7 @@ export default function AssetDistributionTable({
 
       {/* Create form */}
       {showCreateForm && onCreateClass && (
-        <div className="px-6 py-3 flex items-center gap-2 border-b border-[var(--glass-border)]">
+        <div className="px-6 py-3 flex items-center gap-2 border-b border-[var(--card-border)]">
           <input type="text" placeholder="Class name" className="input-field" value={newName} onChange={(e) => setNewName(e.target.value)} />
           <select className="input-field" value={newType} onChange={(e) => setNewType(e.target.value as "stock" | "crypto" | "fixed_income")}>
             <option value="stock">Stock</option>
@@ -266,7 +266,7 @@ export default function AssetDistributionTable({
               {onDeleteClass && <th className="px-3 py-4" />}
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--glass-border)]">
+          <tbody className="divide-y divide-[var(--card-border)]">
             {allSummaries.map((s) => {
               const ac = classMap.get(s.classId);
               const iconInfo = ac ? getClassIcon(ac) : { icon: "folder", colorClass: "text-text-muted", bgClass: "bg-surface-high" };
@@ -356,7 +356,7 @@ export default function AssetDistributionTable({
           </tbody>
           <tfoot>
             {isEditing && (
-              <tr className="border-b border-[var(--glass-border)]">
+              <tr className="border-b border-[var(--card-border)]">
                 <td colSpan={onDeleteClass ? 7 : 6} className="px-6 py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex-1">

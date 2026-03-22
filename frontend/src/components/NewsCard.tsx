@@ -14,7 +14,7 @@ export default function NewsCard() {
 
   if (loading) {
     return (
-      <div className="bg-surface-low rounded-xl p-6 border border-[var(--glass-border)]">
+      <div className="bg-surface-low rounded-xl p-6 border border-[var(--card-border)]">
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
@@ -29,7 +29,7 @@ export default function NewsCard() {
   }
 
   return (
-    <div className="bg-surface-low rounded-xl p-6 border border-[var(--glass-border)]">
+    <div className="bg-surface-low rounded-xl p-6 border border-[var(--card-border)]">
       <h4 className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4 font-body">
         Market News
       </h4>
@@ -46,7 +46,7 @@ export default function NewsCard() {
               target="_blank"
               rel="noopener noreferrer"
               className={`block py-4 ${
-                idx < Math.min(news.length, 4) - 1 ? "border-b border-[var(--glass-border)]" : ""
+                idx < Math.min(news.length, 4) - 1 ? "border-b border-[var(--card-border)]" : ""
               } hover:opacity-80 transition-opacity`}
             >
               <p className="text-[9px] font-bold text-secondary uppercase tracking-widest mb-1 font-body"

@@ -29,7 +29,7 @@ export default function BuyRecommendationCard() {
       <div>
         <div
           className="w-10 h-10 rounded-full flex items-center justify-center text-primary mb-4"
-          style={{ background: "var(--glass-primary-soft)" }}
+          style={{ background: "var(--primary-soft)" }}
         >
           <span className="material-symbols-outlined">account_balance_wallet</span>
         </div>

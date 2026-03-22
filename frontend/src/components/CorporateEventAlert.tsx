@@ -28,7 +28,7 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
             <div className="flex items-center gap-4">
               <div
                 className="w-10 h-10 rounded-full flex items-center justify-center text-primary"
-                style={{ background: "var(--glass-primary-soft)" }}
+                style={{ background: "var(--primary-soft)" }}
               >
                 <span className="material-symbols-outlined">event_note</span>
               </div>

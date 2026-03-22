@@ -169,7 +169,7 @@ export default function AssetClassHoldings() {
         </h1>
         <span className="ml-auto text-text-muted text-base">
           Total: R${totalValueBRL.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          {isReserve && <span className="ml-2 badge" style={{ backgroundColor: 'var(--glass-primary-soft)' }}>(Emergency Reserve)</span>}
+          {isReserve && <span className="ml-2 badge" style={{ backgroundColor: 'var(--primary-soft)' }}>(Emergency Reserve)</span>}
         </span>
       </div>
 
@@ -181,7 +181,7 @@ export default function AssetClassHoldings() {
       />
 
       {fundamentalsLoading && (
-        <div className="insight-ribbon flex items-center gap-2" style={{ backgroundColor: 'var(--glass-primary-soft)', color: 'var(--color-primary)' }}>
+        <div className="insight-ribbon flex items-center gap-2" style={{ backgroundColor: 'var(--primary-soft)', color: 'var(--color-primary)' }}>
           <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
