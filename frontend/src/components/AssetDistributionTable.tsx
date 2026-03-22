@@ -340,10 +340,11 @@ export default function AssetDistributionTable({
                   </td>
                   <td className="px-3 py-5 text-center">
                     <button
-                      className="text-text-tertiary hover:text-blue transition-colors opacity-0 group-hover:opacity-100"
+                      className="text-text-tertiary hover:text-blue transition-colors"
                       title="Transaction history"
                       onClick={(e) => {
                         e.stopPropagation();
+                        e.preventDefault();
                         const classHoldings = holdings.filter((h) => h.asset_class_id === s.classId);
                         const symbols = classHoldings.map((h) => h.symbol);
                         if (symbols.length > 0) setTxModal({ classId: s.classId, className: s.className, symbols });
