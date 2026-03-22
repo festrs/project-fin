@@ -25,37 +25,52 @@ export default function BuyRecommendationCard() {
   }, []);
 
   return (
-    <div className="card flex flex-col justify-between h-full">
-      <div>
-        <div
-          className="w-10 h-10 rounded-full flex items-center justify-center mb-4"
-          style={{ background: "var(--primary-soft)", color: "var(--blue)" }}
-        >
-          <span className="material-symbols-outlined">account_balance_wallet</span>
+    <div className="card">
+      <div className="card-title">Top Buy Recommendation</div>
+      {loading ? (
+        <div className="animate-pulse" style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ height: 16, width: 200, borderRadius: 4, background: "var(--surface-hover)" }} />
+          <div style={{ height: 14, width: 300, borderRadius: 4, background: "var(--surface-hover)" }} />
         </div>
-        <h5 className="text-sm font-bold mb-1 font-body" style={{ color: "var(--text-tertiary)" }}>
-          Buy Order Recommendation
-        </h5>
-        {loading ? (
-          <div className="h-4 w-48 rounded animate-pulse" style={{ background: "var(--surface-hover)" }} />
-        ) : rec ? (
-          <p className="text-xs font-body" style={{ color: "var(--text-secondary)" }}>
-            Your <span className="font-medium" style={{ color: "var(--blue)" }}>{rec.class_name}</span> is under-allocated by{" "}
-            <span className="font-medium" style={{ color: "var(--green)" }}>{Math.abs(rec.diff).toFixed(1)}%</span>.
-            Consider buying <span className="font-medium" style={{ color: "var(--text-primary)" }}>{rec.symbol}</span>.
-          </p>
-        ) : (
-          <p className="text-xs font-body" style={{ color: "var(--text-secondary)" }}>
-            Portfolio is balanced. No buy recommendations.
-          </p>
-        )}
-      </div>
-      <Link
-        to="/invest"
-        className="btn-ghost mt-4 text-xs font-bold uppercase tracking-wider flex items-center gap-1 self-start font-body"
-      >
-        View Details <span className="material-symbols-outlined text-sm">chevron_right</span>
-      </Link>
+      ) : rec ? (
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 10,
+                background: "rgba(52, 199, 89, 0.15)",
+                color: "var(--green)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 13,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {rec.symbol.slice(0, 4)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text-primary)" }}>{rec.symbol}</div>
+              <div style={{ fontSize: 12, color: "var(--text-tertiary)" }}>
+                {rec.class_name} &middot; Under-allocated {Math.abs(rec.diff).toFixed(1)}%
+              </div>
+            </div>
+            <Link to="/invest" className="btn-ghost" style={{ fontSize: 12, padding: "6px 14px" }}>
+              View Analysis
+            </Link>
+          </div>
+          <div style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5 }}>
+            Your {rec.class_name} is under-allocated by {Math.abs(rec.diff).toFixed(1)}%. Consider buying {rec.symbol}.
+          </div>
+        </>
+      ) : (
+        <p style={{ color: "var(--text-secondary)", fontSize: 13 }}>
+          Portfolio is balanced. No buy recommendations.
+        </p>
+      )}
     </div>
   );
 }
