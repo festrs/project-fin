@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from "recharts";
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 
 interface ClassAllocation {
   className: string;
@@ -44,19 +44,21 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           marginBottom: 16,
         }}
       >
-        Allocation Comparison (Actual vs Target)
+        Actual vs Target
       </h4>
-      <ResponsiveContainer width="100%" height={320}>
+      <ResponsiveContainer width="100%" height={380}>
         <PieChart>
           {/* Outer ring: Actual allocation */}
           <Pie
             data={actualData}
             cx="50%"
-            cy="50%"
-            innerRadius={85}
-            outerRadius={120}
-            paddingAngle={1}
+            cy="45%"
+            innerRadius="52%"
+            outerRadius="90%"
+            paddingAngle={2}
             dataKey="value"
+            stroke="#0a0a0a"
+            strokeWidth={3}
           >
             {actualData.map((entry, index) => (
               <Cell key={`actual-${index}`} fill={entry.color} />
@@ -67,16 +69,16 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             <Pie
               data={targetData}
               cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={80}
-              paddingAngle={1}
+              cy="45%"
+              innerRadius="25%"
+              outerRadius="48%"
+              paddingAngle={2}
               dataKey="value"
-              legendType="none"
-              opacity={0.5}
+              stroke="#0a0a0a"
+              strokeWidth={3}
             >
               {targetData.map((entry, index) => (
-                <Cell key={`target-${index}`} fill={entry.color} />
+                <Cell key={`target-${index}`} fill={entry.color} opacity={0.7} />
               ))}
             </Pie>
           )}
@@ -92,18 +94,32 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             labelStyle={{ color: "#f5f5f7" }}
             itemStyle={{ color: "rgba(255,255,255,0.55)" }}
           />
-          <Legend
-            formatter={(value) => (
-              <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)" }}>
-                {value}
-              </span>
-            )}
-          />
         </PieChart>
       </ResponsiveContainer>
+      {/* Pill badge legend */}
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: -4 }}>
+        {actualData.map((entry) => (
+          <span
+            key={entry.name}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              padding: "3px 10px",
+              borderRadius: "var(--radius-pill)",
+              fontSize: 11,
+              fontWeight: 600,
+              background: entry.color,
+              color: "#fff",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {entry.name}
+          </span>
+        ))}
+      </div>
       <div
-        className="text-center tabular-nums"
-        style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: -8 }}
+        className="text-center"
+        style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 10 }}
       >
         Outer: Actual &middot; Inner: Target
       </div>
