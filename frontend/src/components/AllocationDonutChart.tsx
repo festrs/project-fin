@@ -61,7 +61,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             strokeWidth={3}
           >
             {actualData.map((entry, index) => (
-              <Cell key={`actual-${index}`} fill={entry.color} />
+              <Cell key={`actual-${index}`} fill={entry.color} opacity={0.85} />
             ))}
           </Pie>
           {/* Inner ring: Target allocation */}
@@ -78,7 +78,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
               strokeWidth={3}
             >
               {targetData.map((entry, index) => (
-                <Cell key={`target-${index}`} fill={entry.color} opacity={0.7} />
+                <Cell key={`target-${index}`} fill={entry.color} opacity={0.55} />
               ))}
             </Pie>
           )}

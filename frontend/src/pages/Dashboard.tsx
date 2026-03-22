@@ -14,11 +14,11 @@ import api from "../services/api";
 
 // Color mapping for donut chart segments
 const CLASS_COLORS: Record<string, string> = {
-  us_stocks: "#0a84ff",
-  br_stocks: "#34c759",
-  crypto: "#bf5af2",
-  fixed_income: "#ff9f0a",
-  emergency_reserve: "#ff375f",
+  us_stocks: "#6aadff",
+  br_stocks: "#d4a843",
+  crypto: "#a78bfa",
+  fixed_income: "#f4845f",
+  emergency_reserve: "#6bc5a0",
 };
 
 function getClassColor(ac: AssetClass): string {
