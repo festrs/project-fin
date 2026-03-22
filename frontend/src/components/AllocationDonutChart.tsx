@@ -14,8 +14,11 @@ interface AllocationDonutChartProps {
 export default function AllocationDonutChart({ classSummaries }: AllocationDonutChartProps) {
   if (classSummaries.length === 0) {
     return (
-      <div className="rounded-xl p-6" style={{ background: "var(--color-surface-low)" }}>
-        <p className="text-text-muted text-sm">No allocation data</p>
+      <div
+        className="rounded-xl p-6"
+        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+      >
+        <p style={{ color: "var(--text-tertiary)", fontSize: "0.875rem" }}>No allocation data</p>
       </div>
     );
   }
@@ -26,9 +29,20 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
     .map((s) => ({ name: s.className, value: s.targetWeight, color: s.color }));
 
   return (
-    <div className="rounded-xl p-6" style={{ background: "var(--color-surface-low)" }}>
+    <div
+      className="rounded-xl p-6"
+      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+    >
       <h4
-        className="text-xs text-on-surface-variant font-medium uppercase tracking-widest mb-4 font-body"
+        className="text-label"
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: "var(--text-tertiary)",
+          marginBottom: 16,
+        }}
       >
         Allocation Comparison (Actual vs Target)
       </h4>
@@ -68,23 +82,28 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           <Tooltip
             formatter={(value) => `${Number(value).toFixed(1)}%`}
             contentStyle={{
-              background: "var(--color-surface-high)",
-              border: "1px solid var(--card-border)",
-              borderRadius: "var(--radius-sm)",
-              color: "var(--color-on-surface)",
+              background: "#1c1c1e",
+              border: "1px solid rgba(255,255,255,0.08)",
+              borderRadius: 8,
+              color: "#f5f5f7",
               fontSize: "0.75rem",
             }}
+            labelStyle={{ color: "#f5f5f7" }}
+            itemStyle={{ color: "rgba(255,255,255,0.55)" }}
           />
           <Legend
             formatter={(value) => (
-              <span className="text-xs text-on-surface-variant font-body">
+              <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)" }}>
                 {value}
               </span>
             )}
           />
         </PieChart>
       </ResponsiveContainer>
-      <div className="text-center text-xs text-text-muted -mt-2 tabular-nums font-body">
+      <div
+        className="text-center tabular-nums"
+        style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.35)", marginTop: -8 }}
+      >
         Outer: Actual &middot; Inner: Target
       </div>
     </div>
