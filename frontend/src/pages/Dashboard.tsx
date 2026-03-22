@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { computeClassSummaries } from "../components/ClassSummaryTable";
-import BackgroundGradients from "../components/BackgroundGradients";
 import PortfolioHeroCard from "../components/PortfolioHeroCard";
 import AssetDistributionTable from "../components/AssetDistributionTable";
 import AllocationDonutChart from "../components/AllocationDonutChart";
@@ -16,9 +15,9 @@ import api from "../services/api";
 // Color mapping for donut chart segments
 const CLASS_COLORS: Record<string, string> = {
   US: "#2563eb",
-  BR: "#22d3ee",
+  BR: "#3b82f6",
   crypto: "#a78bfa",
-  fixed_income: "#34d399",
+  fixed_income: "#60a5fa",
   emergency_reserve: "#fbbf24",
 };
 
@@ -108,9 +107,7 @@ export default function Dashboard() {
 
   return (
     <div className="relative">
-      <BackgroundGradients />
-
-      <div className="relative z-10 space-y-6">
+      <div className="space-y-6">
         {/* Row 1: Portfolio Value Hero */}
         <PortfolioHeroCard grandTotalBRL={grandTotalWithReserve} loading={loading} />
 
