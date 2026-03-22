@@ -134,18 +134,40 @@ export function HoldingsTable({
       </div>
 
       {transactionForm && (
-        <div className="mb-4">
-          <TransactionForm
-            symbol={transactionForm.symbol}
-            assetClassId={transactionForm.assetClassId}
-            type={type}
-            initialType={transactionForm.type}
-            onSubmit={async (data) => {
-              await onCreateTransaction(data);
-              setTransactionForm(null);
-            }}
-            onCancel={() => setTransactionForm(null)}
-          />
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0, 0, 0, 0.7)" }}
+          onClick={() => setTransactionForm(null)}
+        >
+          <div
+            className="card-elevated w-full max-w-md"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-heading">
+                {transactionForm.type === "buy" ? "Buy" : "Sell"} {transactionForm.symbol}
+              </h3>
+              <button
+                onClick={() => setTransactionForm(null)}
+                className="text-text-tertiary hover:opacity-80 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <TransactionForm
+              symbol={transactionForm.symbol}
+              assetClassId={transactionForm.assetClassId}
+              type={type}
+              initialType={transactionForm.type}
+              onSubmit={async (data) => {
+                await onCreateTransaction(data);
+                setTransactionForm(null);
+              }}
+              onCancel={() => setTransactionForm(null)}
+            />
+          </div>
         </div>
       )}
 
