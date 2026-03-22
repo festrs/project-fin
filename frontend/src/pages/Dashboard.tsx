@@ -106,7 +106,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="relative">
+    <div>
       <div className="space-y-6">
         {/* Row 1: Portfolio Value Hero */}
         <PortfolioHeroCard grandTotalBRL={grandTotalWithReserve} loading={loading} />
