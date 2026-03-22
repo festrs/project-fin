@@ -72,6 +72,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
               outerRadius={80}
               paddingAngle={1}
               dataKey="value"
+              legendType="none"
               opacity={0.5}
             >
               {targetData.map((entry, index) => (
@@ -92,11 +93,6 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             itemStyle={{ color: "rgba(255,255,255,0.55)" }}
           />
           <Legend
-            payload={actualData.map((entry) => ({
-              value: entry.name,
-              type: "circle" as const,
-              color: entry.color,
-            }))}
             formatter={(value) => (
               <span style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.55)" }}>
                 {value}
