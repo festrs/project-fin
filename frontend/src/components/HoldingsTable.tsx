@@ -183,7 +183,7 @@ export function HoldingsTable({
                         title="Fetch scores for all stocks"
                         onClick={onRefreshAllScores}
                       >
-                        \u21BB
+                        {"\u21BB"}
                       </button>
                     )}
                   </span>
@@ -510,7 +510,7 @@ function HoldingRows({
                   }}
                   title="More actions"
                 >
-                  \u00B7\u00B7\u00B7
+                  {"\u00B7\u00B7\u00B7"}
                 </button>
                 {showHoldingMenu && (
                   <div
