@@ -1,13 +1,149 @@
+import { useState } from "react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import { usePortfolioHistory } from "../hooks/usePortfolioHistory";
+
+type Period = "1D" | "1W" | "1M" | "1Y" | "ALL";
+
 interface PortfolioHeroCardProps {
   grandTotalBRL: number;
   loading: boolean;
 }
 
 export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioHeroCardProps) {
+  const [selectedPeriod, setSelectedPeriod] = useState<Period>("1M");
+  const { history, latestSnapshot, loading: historyLoading } = usePortfolioHistory(selectedPeriod);
+
   const formattedValue = grandTotalBRL.toLocaleString("pt-BR", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+  const chartData = history.map((s) => ({
+    date: s.date,
+    value: parseFloat(s.total_value_brl),
+  }));
+
+  const periodGain =
+    chartData.length >= 2 ? chartData[chartData.length - 1].value - chartData[0].value : 0;
+  const chartColor = periodGain >= 0 ? "#34c759" : "#ff3b30";
+
+  function renderChart() {
+    if (selectedPeriod === "1D") {
+      if (!latestSnapshot) {
+        return (
+          <div className="h-48 w-full mt-4 flex items-center justify-center">
+            <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>No snapshot yet</p>
+          </div>
+        );
+      }
+
+      const snapshotValue = parseFloat(latestSnapshot.total_value_brl);
+      const delta = grandTotalBRL - snapshotValue;
+      const deltaPct = snapshotValue !== 0 ? (delta / snapshotValue) * 100 : 0;
+      const isPositive = delta >= 0;
+      const color = isPositive ? "#34c759" : "#ff3b30";
+
+      return (
+        <div className="h-48 w-full mt-4 flex flex-col items-center justify-center gap-1">
+          <span style={{ fontSize: 32, fontWeight: 700, color }} className="tabular-nums">
+            {isPositive ? "+" : ""}
+            R${" "}
+            {Math.abs(delta).toLocaleString("pt-BR", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
+          </span>
+          <span style={{ fontSize: 14, fontWeight: 500, color }} className="tabular-nums">
+            {isPositive ? "+" : ""}
+            {deltaPct.toFixed(2)}%
+          </span>
+          <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>
+            Today&apos;s change
+          </span>
+        </div>
+      );
+    }
+
+    if (historyLoading) {
+      return (
+        <div className="h-48 w-full mt-4">
+          <div
+            className="animate-pulse"
+            style={{
+              height: "100%",
+              width: "100%",
+              borderRadius: 8,
+              background: "var(--surface-hover)",
+            }}
+          />
+        </div>
+      );
+    }
+
+    if (chartData.length === 0) {
+      return (
+        <div className="h-48 w-full mt-4 flex items-center justify-center">
+          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>No history data yet</p>
+        </div>
+      );
+    }
+
+    const gradientId = "heroGradient";
+
+    return (
+      <div className="h-48 w-full mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="date" hide />
+            <Tooltip
+              contentStyle={{
+                background: "var(--surface-elevated)",
+                border: "1px solid var(--border)",
+                borderRadius: 8,
+                fontSize: 13,
+                color: "var(--text-primary)",
+              }}
+              labelFormatter={(label) =>
+                new Date(String(label)).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              }
+              formatter={(value) => [
+                `R$ ${Number(value).toLocaleString("pt-BR", {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}`,
+                "Value",
+              ]}
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={chartColor}
+              strokeWidth={2.5}
+              fill={`url(#${gradientId})`}
+              dot={false}
+              activeDot={{ r: 4, fill: chartColor, strokeWidth: 0 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -55,12 +191,11 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
           )}
         </div>
         <div className="flex gap-2">
-          {["1D", "1W", "1M", "1Y", "ALL"].map((period, i) => (
+          {(["1D", "1W", "1M", "1Y", "ALL"] as Period[]).map((period) => (
             <button
               key={period}
-              title={i !== 2 ? "Coming soon" : undefined}
-              className={`period-btn${i === 2 ? " active" : ""}`}
-              disabled={i !== 2}
+              className={`period-btn${selectedPeriod === period ? " active" : ""}`}
+              onClick={() => setSelectedPeriod(period)}
             >
               {period}
             </button>
@@ -68,32 +203,7 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
         </div>
       </div>
 
-      {/* Placeholder chart */}
-      <div className="h-48 w-full mt-4">
-        <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 1000 200">
-          <defs>
-            <filter id="hero-glow">
-              <feGaussianBlur result="coloredBlur" stdDeviation="2" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
-          <path
-            d="M0,200 L0,150 C100,140 150,160 250,130 C350,100 450,120 550,80 C650,40 750,60 850,30 C950,0 1000,20 1000,20 L1000,200 Z"
-            fill="rgba(52,199,89,0.1)"
-          />
-          <path
-            d="M0,150 C100,140 150,160 250,130 C350,100 450,120 550,80 C650,40 750,60 850,30 C950,0 1000,20 1000,20"
-            fill="none"
-            stroke="#34c759"
-            strokeWidth="3"
-            strokeLinecap="round"
-            filter="url(#hero-glow)"
-          />
-        </svg>
-      </div>
+      {renderChart()}
     </div>
   );
 }
