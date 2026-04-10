@@ -14,9 +14,13 @@ describe("PortfolioHeroCard", () => {
     expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
-  it("renders period selector with coming soon tooltips", () => {
+  it("renders all period selector buttons as enabled", () => {
     render(<PortfolioHeroCard grandTotalBRL={100000} loading={false} />);
-    expect(screen.getByText("1D")).toHaveAttribute("title", "Coming soon");
-    expect(screen.getByText("1M")).not.toHaveAttribute("title");
+    const periods = ["1D", "1W", "1M", "1Y", "ALL"];
+    for (const p of periods) {
+      const btn = screen.getByText(p);
+      expect(btn).toBeInTheDocument();
+      expect(btn).not.toBeDisabled();
+    }
   });
 });
