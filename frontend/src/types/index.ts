@@ -178,3 +178,22 @@ export interface PortfolioSnapshot {
   date: string;
   total_value_brl: string;
 }
+
+export interface MarketIndex {
+  symbol: string;
+  name: string;
+  value: string | null;
+  change_pct: number | null;
+}
+
+export interface MarketMover {
+  symbol: string;
+  name: string;
+  change_pct: number;
+  current_price: string;
+}
+
+export interface MarketMoversResponse {
+  gainers: MarketMover[];
+  losers: MarketMover[];
+}
