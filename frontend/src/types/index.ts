@@ -197,3 +197,19 @@ export interface MarketMoversResponse {
   gainers: MarketMover[];
   losers: MarketMover[];
 }
+
+export interface TaxMonthlyEntry {
+  month: number;
+  stocks: {
+    total_sales: string;
+    total_gain: string;
+    exempt: boolean;
+    tax_due: string;
+  };
+  fiis: {
+    total_sales: string;
+    total_gain: string;
+    tax_due: string;
+  };
+  total_tax_due: string;
+}
