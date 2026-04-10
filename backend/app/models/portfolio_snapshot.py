@@ -17,5 +17,5 @@ class PortfolioSnapshot(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid4()))
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     date: Mapped[date] = mapped_column(Date, nullable=False)
-    total_value_brl: Mapped[Decimal] = mapped_column(Numeric(19, 8), nullable=False)
+    total_value_brl: Mapped[Decimal] = mapped_column(Numeric(19, 8, asdecimal=True), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
