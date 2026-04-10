@@ -1,8 +1,8 @@
 import logging
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
@@ -12,6 +12,7 @@ from app.middleware.rate_limit import limiter, CRUD_LIMIT
 from app.models.asset_class import AssetClass
 from app.models.asset_weight import AssetWeight
 from app.models.dividend_history import DividendHistory
+from app.models.portfolio_snapshot import PortfolioSnapshot
 from app.services.exchange_rate import fetch_exchange_rate as _fetch_exchange_rate
 from app.services.market_data import get_market_data_service, CRYPTO_CLASS_NAMES
 from app.services.portfolio import PortfolioService
@@ -221,6 +222,53 @@ def portfolio_dividends(
         "dividends": list(class_totals.values()),
         "total_annual_income": {"amount": str(total_annual.quantize(Decimal("0.01"))), "currency": "mixed"},
     }
+
+
+@router.get("/history")
+@limiter.limit(CRUD_LIMIT)
+def get_portfolio_history(
+    request: Request,
+    period: str = Query("1M"),
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return portfolio value snapshots for the given period."""
+    period_days = {"1W": 7, "1M": 30, "1Y": 365}
+    query = (
+        db.query(PortfolioSnapshot)
+        .filter(PortfolioSnapshot.user_id == user_id)
+    )
+    if period != "ALL":
+        days = period_days.get(period, 30)
+        cutoff = date.today() - timedelta(days=days)
+        query = query.filter(PortfolioSnapshot.date >= cutoff)
+    snapshots = query.order_by(PortfolioSnapshot.date.asc()).all()
+    return [
+        {"date": s.date.isoformat(), "total_value_brl": str(s.total_value_brl)}
+        for s in snapshots
+    ]
+
+
+@router.get("/snapshot/latest")
+@limiter.limit(CRUD_LIMIT)
+def get_latest_snapshot(
+    request: Request,
+    user_id: str = Depends(get_current_user_id),
+    db: Session = Depends(get_db),
+):
+    """Return the most recent snapshot before today, or null."""
+    snapshot = (
+        db.query(PortfolioSnapshot)
+        .filter(
+            PortfolioSnapshot.user_id == user_id,
+            PortfolioSnapshot.date < date.today(),
+        )
+        .order_by(PortfolioSnapshot.date.desc())
+        .first()
+    )
+    if snapshot is None:
+        return None
+    return {"date": snapshot.date.isoformat(), "total_value_brl": str(snapshot.total_value_brl)}
 
 
 @router.get("/exchange-rate")
