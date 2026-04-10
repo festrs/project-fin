@@ -64,6 +64,8 @@ export function HoldingsTable({
   onUpdateWeight,
 }: HoldingsTableProps) {
   const navigate = useNavigate();
+  const assetClass = assetClasses.find(ac => ac.id === assetClassId);
+  const country = assetClass?.country || "US";
   const scoreMap = new Map((fundamentalsScores ?? []).map((s) => [s.symbol, s]));
   const [transactionForm, setTransactionForm] = useState<{
     symbol: string;
@@ -239,7 +241,7 @@ export function HoldingsTable({
                   onChangeAssetClass={onChangeAssetClass}
                   onFetchTransactions={onFetchTransactions}
                   onNavigateScore={() => navigate(`/fundamentals/${h.symbol}`)}
-                  onRowClick={() => {}}
+                  onRowClick={() => navigate(`/portfolio/${assetClassId}/${h.symbol}?country=${country}&type=${type}`)}
                   onShowTransactions={() => handleShowTransactions(h.symbol)}
                   onBuy={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "buy" })}
                   onSell={() => setTransactionForm({ symbol: h.symbol, assetClassId, type: "sell" })}
@@ -408,7 +410,13 @@ function HoldingRows({
       <tr className="table-row hover:bg-[var(--row-hover)] cursor-pointer rounded-lg" onClick={onRowClick}>
         <td className="px-3 py-2">
           <span className="flex items-center gap-2">
-            <span className="font-medium">{h.symbol}</span>
+            <span
+              className="font-medium hover:text-blue transition-colors cursor-pointer"
+              style={{ textDecoration: "none" }}
+              onClick={(e) => { e.stopPropagation(); onRowClick(); }}
+            >
+              {h.symbol}
+            </span>
             {q && (
               <QuarantineBadge
                 isQuarantined={q.is_quarantined}
