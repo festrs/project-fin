@@ -173,3 +173,8 @@ export interface DividendsResponse {
   dividends: DividendClassData[];
   total_annual_income: { amount: string; currency: string };
 }
+
+export interface PortfolioSnapshot {
+  date: string;
+  total_value_brl: string;
+}
