@@ -181,7 +181,7 @@ app.add_middleware(
 from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
-    fundamentals, splits, dividends, auth, news,
+    fundamentals, splits, dividends, auth, news, market,
 )
 
 app.include_router(auth.router)
@@ -197,6 +197,7 @@ app.include_router(fundamentals.router)
 app.include_router(splits.router)
 app.include_router(dividends.router)
 app.include_router(news.router)
+app.include_router(market.router)
 
 
 @app.get("/api/health")
