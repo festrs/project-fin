@@ -58,6 +58,19 @@ def _run_dividend_scrape():
         db.close()
 
 
+def _run_snapshot():
+    from app.database import SessionLocal
+    from app.services.snapshot_scheduler import SnapshotScheduler
+
+    db = SessionLocal()
+    try:
+        SnapshotScheduler().take_snapshots(db)
+    except Exception:
+        logger.exception("Scheduled portfolio snapshot failed")
+    finally:
+        db.close()
+
+
 def _run_split_checker():
     from app.database import SessionLocal
     from app.providers.brapi import BrapiProvider
@@ -122,6 +135,13 @@ async def lifespan(app: FastAPI):
             logger.info(
                 f"Dividend scraper scheduled ({settings.dividend_scraper_days} at {settings.dividend_scraper_hour}:00 UTC)"
             )
+        if settings.enable_snapshot_scheduler:
+            bg_scheduler.add_job(
+                _run_snapshot, "cron",
+                hour=settings.snapshot_hour,
+                id="portfolio_snapshot",
+            )
+            logger.info(f"Portfolio snapshot scheduled (daily at {settings.snapshot_hour}:00 UTC)")
         if settings.enable_split_checker:
             bg_scheduler.add_job(
                 _run_split_checker, "cron",
@@ -161,7 +181,7 @@ app.add_middleware(
 from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
-    fundamentals, splits, dividends, auth, news,
+    fundamentals, splits, dividends, auth, news, market, tax,
 )
 
 app.include_router(auth.router)
@@ -177,6 +197,8 @@ app.include_router(fundamentals.router)
 app.include_router(splits.router)
 app.include_router(dividends.router)
 app.include_router(news.router)
+app.include_router(market.router)
+app.include_router(tax.router)
 
 
 @app.get("/api/health")

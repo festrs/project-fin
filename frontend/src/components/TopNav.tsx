@@ -7,6 +7,7 @@ const TABS = [
   { label: "Fundamentals", path: "/fundamentals" },
   { label: "Market", path: "/market" },
   { label: "Invest", path: "/invest" },
+  { label: "Tax", path: "/tax" },
 ];
 
 export default function TopNav() {

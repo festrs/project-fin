@@ -8,7 +8,9 @@ import FundamentalsIndex from "./pages/FundamentalsIndex";
 import Market from "./pages/Market";
 import AssetClassHoldings from "./pages/AssetClassHoldings";
 import Invest from "./pages/Invest";
+import AssetDetail from "./pages/AssetDetail";
 import Login from "./pages/Login";
+import Tax from "./pages/Tax";
 import { useAuth } from "./contexts/AuthContext";
 
 function ProtectedLayout() {
@@ -36,10 +38,12 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/invest" element={<Invest />} />
           <Route path="/portfolio/:assetClassId" element={<AssetClassHoldings />} />
+          <Route path="/portfolio/:assetClassId/:symbol" element={<AssetDetail />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/fundamentals" element={<FundamentalsIndex />} />
           <Route path="/fundamentals/:symbol" element={<Fundamentals />} />
           <Route path="/market" element={<Market />} />
+          <Route path="/tax" element={<Tax />} />
         </Route>
       </Routes>
     </BrowserRouter>

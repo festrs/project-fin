@@ -7,5 +7,6 @@ from app.models.market_quote import MarketQuote
 from app.models.dividend_history import DividendHistory
 from app.models.fundamentals_score import FundamentalsScore
 from app.models.stock_split import StockSplit
+from app.models.portfolio_snapshot import PortfolioSnapshot
 
-__all__ = ["User", "AssetClass", "AssetWeight", "Transaction", "QuarantineConfig", "MarketQuote", "DividendHistory", "FundamentalsScore", "StockSplit"]
+__all__ = ["User", "AssetClass", "AssetWeight", "Transaction", "QuarantineConfig", "MarketQuote", "DividendHistory", "FundamentalsScore", "StockSplit", "PortfolioSnapshot"]

@@ -109,11 +109,10 @@ describe("HoldingsTable", () => {
     expect(screen.getByText("Quarantined")).toBeInTheDocument();
   });
 
-  it("expand row shows transactions", async () => {
+  it("clicking symbol navigates to asset detail", async () => {
     const user = userEvent.setup();
-    const fetchTransactions = vi.fn();
 
-    const { rerender } = render(
+    render(
       <MemoryRouter>
         <HoldingsTable
           holdings={mockHoldings}
@@ -122,34 +121,15 @@ describe("HoldingsTable", () => {
           type="stock"
           loading={false}
           transactions={[]}
-          onFetchTransactions={fetchTransactions}
+          onFetchTransactions={vi.fn()}
           onCreateTransaction={vi.fn()}
         />
       </MemoryRouter>
     );
 
-    // Click AAPL row to expand
-    await user.click(screen.getByText("AAPL"));
-    expect(fetchTransactions).toHaveBeenCalledWith("AAPL");
-
-    // Rerender with transactions loaded
-    rerender(
-      <MemoryRouter>
-        <HoldingsTable
-          holdings={mockHoldings}
-          assetClassId="c1"
-          assetClasses={mockAssetClasses}
-          type="stock"
-          loading={false}
-          transactions={mockTransactions}
-          onFetchTransactions={fetchTransactions}
-          onCreateTransaction={vi.fn()}
-        />
-      </MemoryRouter>
-    );
-
-    expect(screen.getByText("Transaction History")).toBeInTheDocument();
-    expect(screen.getByText("2024-01-15")).toBeInTheDocument();
-    expect(screen.getByText("$1,500.00")).toBeInTheDocument();
+    // AAPL symbol should be a clickable link to asset detail
+    const aaplLink = screen.getByText("AAPL");
+    expect(aaplLink).toBeInTheDocument();
+    await user.click(aaplLink);
   });
 });

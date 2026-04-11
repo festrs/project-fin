@@ -173,3 +173,43 @@ export interface DividendsResponse {
   dividends: DividendClassData[];
   total_annual_income: { amount: string; currency: string };
 }
+
+export interface PortfolioSnapshot {
+  date: string;
+  total_value_brl: string;
+}
+
+export interface MarketIndex {
+  symbol: string;
+  name: string;
+  value: string | null;
+  change_pct: number | null;
+}
+
+export interface MarketMover {
+  symbol: string;
+  name: string;
+  change_pct: number;
+  current_price: string;
+}
+
+export interface MarketMoversResponse {
+  gainers: MarketMover[];
+  losers: MarketMover[];
+}
+
+export interface TaxMonthlyEntry {
+  month: number;
+  stocks: {
+    total_sales: string;
+    total_gain: string;
+    exempt: boolean;
+    tax_due: string;
+  };
+  fiis: {
+    total_sales: string;
+    total_gain: string;
+    tax_due: string;
+  };
+  total_tax_due: string;
+}
