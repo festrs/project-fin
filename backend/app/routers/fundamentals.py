@@ -8,6 +8,7 @@ from app.database import SessionLocal, get_db
 from app.dependencies import get_current_user_id
 from app.middleware.rate_limit import CRUD_LIMIT, limiter
 from app.models.fundamentals_score import FundamentalsScore
+from app.providers.common import Symbol
 
 router = APIRouter(prefix="/api/fundamentals", tags=["fundamentals"])
 
@@ -44,7 +45,7 @@ def _refresh_score(symbol: str, db: Session) -> None:
     dados = DadosDeMercadoProvider()
     finnhub = FinnhubProvider(api_key=settings.finnhub_api_key)
 
-    country = "BR" if symbol.endswith(".SA") else "US"
+    country = Symbol.country(symbol)
 
     scheduler = FundamentalsScoreScheduler(
         yfinance_provider=yfinance,

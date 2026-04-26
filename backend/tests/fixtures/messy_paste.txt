@@ -1,0 +1,24 @@
+Minha carteira - copiado do StatusInvest
+
+Acoes:
+  ITUB3 - Itau Unibanco   1000 acoes   PM: 28.50   Atual: 32.50
+  WEGE3 - WEG              500 acoes   PM: 35.00   Atual: 42.00
+  PETR4 - Petrobras         300 acoes   PM: 28.00   Atual: 36.80
+
+FIIs:
+  BTLG11 - BTG Logistica   100 cotas   PM: 95.00   Atual: 102.00
+  KNRI11 - Kinea Renda       80 cotas   PM: 130.00  Atual: 142.00
+  MXRF11 - Maxi Renda       500 cotas  PM: 10.20   Atual: 10.50
+
+Exterior:
+  AAPL  50 shares  avg $150  current $180
+  VTI   40 shares  avg $210  current $260
+  O     100 shares avg $55   current $58
+
+Crypto:
+  BTC 0.5 @ $67,000
+  ETH 5.0 @ $3,200
+
+Renda Fixa:
+  Tesouro IPCA+ 2035  2 titulos  R$ 3.450,00 cada
+  CDB Banco C6 130% CDI venc 2028  R$ 10.000 aplicado

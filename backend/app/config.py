@@ -4,6 +4,7 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     database_url: str = "sqlite:///./project_fin.db"
     cors_origin: str = "http://localhost:5173"
+    cors_extra_origins: str = ""  # comma-separated extra origins (e.g., for mobile)
     coingecko_api_url: str = "https://api.coingecko.com/api/v3"
     finnhub_api_key: str = ""
     brapi_api_key: str = ""
@@ -20,6 +21,9 @@ class Settings(BaseSettings):
     split_checker_hour: int = 10
     enable_snapshot_scheduler: bool = True
     snapshot_hour: int = 18
+    mobile_api_key: str = ""
+    gemini_api_key: str = ""
+    anthropic_api_key: str = ""
     jwt_secret_key: str = "change-me-in-production"
     jwt_expiration_days: int = 30
     default_user_password: str = "changeme"

@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.models.asset_class import AssetClass
 from app.models.market_quote import MarketQuote
+from app.models.tracked_symbol import TrackedSymbol
 from app.models.transaction import Transaction
 from app.services.market_data import CRYPTO_CLASS_NAMES
 
@@ -21,13 +22,29 @@ class MarketDataScheduler:
         return self._brapi if country == "BR" else self._finnhub
 
     def fetch_all_quotes(self, db: Session) -> None:
-        symbols = (
+        # Symbols from web app transactions
+        tx_symbols = (
             db.query(Transaction.asset_symbol, AssetClass.country)
             .join(AssetClass, Transaction.asset_class_id == AssetClass.id)
             .filter(AssetClass.name.notin_(list(CRYPTO_CLASS_NAMES)))
             .distinct()
             .all()
         )
+
+        # Symbols tracked by iOS app
+        tracked = (
+            db.query(TrackedSymbol.symbol, TrackedSymbol.country)
+            .filter(TrackedSymbol.asset_class != "crypto")
+            .all()
+        )
+
+        # Merge and deduplicate
+        seen: set[str] = set()
+        symbols: list[tuple[str, str]] = []
+        for symbol, country in list(tx_symbols) + list(tracked):
+            if symbol not in seen:
+                seen.add(symbol)
+                symbols.append((symbol, country))
 
         for symbol, country in symbols:
             try:

@@ -5,6 +5,7 @@ from decimal import Decimal
 import httpx
 
 from app.money import Money, Currency
+from app.providers._http import finnhub_client
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,9 @@ class FinnhubProvider:
         self._base_url = base_url
 
     def search(self, query: str) -> list[dict]:
-        resp = httpx.get(
+        resp = finnhub_client.get(
             f"{self._base_url}/search",
             params={"q": query, "token": self._api_key},
-            timeout=10,
         )
         resp.raise_for_status()
         results = resp.json().get("result", [])
@@ -39,14 +39,14 @@ class FinnhubProvider:
         ][:10]
 
     def get_quote(self, symbol: str) -> dict:
-        quote_resp = httpx.get(
+        quote_resp = finnhub_client.get(
             f"{self._base_url}/quote",
             params={"symbol": symbol, "token": self._api_key},
         )
         quote_resp.raise_for_status()
         quote_data = quote_resp.json()
 
-        profile_resp = httpx.get(
+        profile_resp = finnhub_client.get(
             f"{self._base_url}/stock/profile2",
             params={"symbol": symbol, "token": self._api_key},
         )

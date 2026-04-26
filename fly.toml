@@ -1,4 +1,4 @@
-app = "project-fin"
+app = "grove-invest-api"
 primary_region = "gru"
 
 [build]
@@ -19,5 +19,5 @@ primary_region = "gru"
   memory = "512mb"
 
 [mounts]
-  source = "project_fin_data"
+  source = "data"
   destination = "/app/data"

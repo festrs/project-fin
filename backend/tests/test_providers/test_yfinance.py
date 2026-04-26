@@ -1,10 +1,71 @@
 from datetime import date
+from decimal import Decimal
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
 import pytest
 
 from app.providers.yfinance import YFinanceProvider
+
+
+class TestGetHistory:
+    def test_returns_history_data(self):
+        provider = YFinanceProvider()
+
+        index = pd.DatetimeIndex([
+            pd.Timestamp("2026-04-20"),
+            pd.Timestamp("2026-04-21"),
+            pd.Timestamp("2026-04-22"),
+        ])
+        mock_hist = pd.DataFrame({
+            "Close": [150.25, 151.50, 149.75],
+            "Volume": [1000000, 1100000, 900000],
+        }, index=index)
+
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = mock_hist
+            mock_yf.Ticker.return_value = mock_ticker
+
+            result = provider.get_history("AAPL", "1mo")
+
+        assert len(result) == 3
+        assert result[0]["date"] == "2026-04-20"
+        assert float(result[0]["close"]) == pytest.approx(150.25)
+        assert result[0]["volume"] == 1000000
+
+    def test_returns_empty_on_error(self):
+        provider = YFinanceProvider()
+
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_yf.Ticker.side_effect = Exception("Network error")
+            result = provider.get_history("BAD", "1mo")
+
+        assert result == []
+
+    def test_returns_empty_for_no_data(self):
+        provider = YFinanceProvider()
+
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = pd.DataFrame()
+            mock_yf.Ticker.return_value = mock_ticker
+
+            result = provider.get_history("BAD", "1y")
+
+        assert result == []
+
+    def test_passes_period_to_yfinance(self):
+        provider = YFinanceProvider()
+
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = pd.DataFrame()
+            mock_yf.Ticker.return_value = mock_ticker
+
+            provider.get_history("AAPL", "5y")
+
+        mock_ticker.history.assert_called_once_with(period="5y")
 
 
 class TestGetDividends:

@@ -1,5 +1,7 @@
 import os
 os.environ["ENABLE_SCHEDULER"] = "false"
+# Tests skip mobile auth — verify_mobile_api_key short-circuits when blank.
+os.environ["MOBILE_API_KEY"] = ""
 
 import pytest
 from sqlalchemy import create_engine

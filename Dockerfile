@@ -18,5 +18,5 @@ COPY backend/data/ data/
 COPY backend/scripts/ scripts/
 COPY --from=frontend-build /app/dist /app/static
 
-EXPOSE 8080
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--workers", "2"]
+EXPOSE 8000
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "120"]

@@ -38,6 +38,7 @@ def _run_scheduled_fetch():
 
 def _run_dividend_scrape():
     from app.database import SessionLocal
+    from app.providers.brapi import BrapiProvider
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
     from app.providers.yfinance import YFinanceProvider
     from app.services.dividend_scraper_scheduler import DividendScheduler
@@ -45,6 +46,7 @@ def _run_dividend_scrape():
     scheduler = DividendScheduler(
         dados_provider=DadosDeMercadoProvider(),
         yfinance_provider=YFinanceProvider(),
+        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
         br_delay=settings.dividend_scraper_delay,
         us_delay=settings.dividend_us_delay,
     )
@@ -89,6 +91,21 @@ def _run_split_checker():
         db.close()
 
 
+def _run_price_history_refresh():
+    from app.database import SessionLocal
+    from app.providers.yfinance import YFinanceProvider
+    from app.services.price_history_scheduler import PriceHistoryScheduler
+
+    scheduler = PriceHistoryScheduler(yfinance_provider=YFinanceProvider())
+    db = SessionLocal()
+    try:
+        scheduler.refresh_all(db)
+    except Exception:
+        logger.exception("Scheduled price history refresh failed")
+    finally:
+        db.close()
+
+
 def _run_migrations():
     """Run database migrations before create_all.
 
@@ -109,6 +126,15 @@ def _run_migrations():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Expand asyncio's default thread pool so endpoints that fan out via
+    # asyncio.to_thread (parallel quote fetches, parallel search providers)
+    # aren't bottlenecked by the default ~5-thread pool on a 1-CPU Fly machine.
+    import asyncio
+    from concurrent.futures import ThreadPoolExecutor
+    asyncio.get_running_loop().set_default_executor(
+        ThreadPoolExecutor(max_workers=64, thread_name_prefix="fanout")
+    )
+
     _run_migrations()
 
     from app.database import Base, engine
@@ -149,13 +175,29 @@ async def lifespan(app: FastAPI):
                 id="split_checker",
             )
             logger.info(f"Split checker scheduled (daily at {settings.split_checker_hour}:00 UTC)")
+        bg_scheduler.add_job(
+            _run_price_history_refresh, "cron",
+            hour="20",
+            id="price_history_refresh",
+        )
+        logger.info("Price history refresh scheduled (daily at 20:00 UTC)")
         bg_scheduler.start()
         logger.info(f"Market data scheduler started (runs at {settings.scheduler_hours})")
 
         import threading
-        threading.Thread(target=_run_scheduled_fetch, daemon=True).start()
+        import time
+
+        def _delayed_startup_fetch():
+            time.sleep(60)  # Let health checks pass before starting heavy work
+            _run_scheduled_fetch()
+
+        def _delayed_startup_scrape():
+            time.sleep(90)
+            _run_dividend_scrape()
+
+        threading.Thread(target=_delayed_startup_fetch, daemon=True).start()
         if settings.enable_dividend_scraper:
-            threading.Thread(target=_run_dividend_scrape, daemon=True).start()
+            threading.Thread(target=_delayed_startup_scrape, daemon=True).start()
 
     yield
 
@@ -169,12 +211,16 @@ app = FastAPI(title="Project Fin", version="0.1.0", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
+_origins = [settings.cors_origin]
+if settings.cors_extra_origins:
+    _origins.extend(o.strip() for o in settings.cors_extra_origins.split(",") if o.strip())
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.cors_origin],
+    allow_origins=_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-API-Key", "X-Device-ID"],
 )
 
 
@@ -182,6 +228,7 @@ from app.routers import (
     asset_classes, asset_weights, transactions,
     stocks, crypto, portfolio, recommendations, quarantine,
     fundamentals, splits, dividends, auth, news, market, tax,
+    mobile, import_portfolio,
 )
 
 app.include_router(auth.router)
@@ -199,6 +246,8 @@ app.include_router(dividends.router)
 app.include_router(news.router)
 app.include_router(market.router)
 app.include_router(tax.router)
+app.include_router(mobile.router)
+app.include_router(import_portfolio.router)
 
 
 @app.get("/api/health")

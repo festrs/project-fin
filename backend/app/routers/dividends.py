@@ -32,6 +32,7 @@ def trigger_dividend_scrape(request: Request):
         global _scraping
         try:
             from app.database import SessionLocal
+            from app.providers.brapi import BrapiProvider
             from app.providers.dados_de_mercado import DadosDeMercadoProvider
             from app.providers.yfinance import YFinanceProvider
             from app.services.dividend_scraper_scheduler import DividendScheduler
@@ -39,6 +40,7 @@ def trigger_dividend_scrape(request: Request):
             scheduler = DividendScheduler(
                 dados_provider=DadosDeMercadoProvider(),
                 yfinance_provider=YFinanceProvider(),
+                brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
                 br_delay=settings.dividend_scraper_delay,
                 us_delay=settings.dividend_us_delay,
             )

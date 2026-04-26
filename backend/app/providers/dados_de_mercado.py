@@ -5,16 +5,12 @@ from decimal import Decimal
 import httpx
 from bs4 import BeautifulSoup
 
-from app.providers.common import DividendRecord
+from app.providers.common import DividendRecord, Symbol
 
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.dadosdemercado.com.br"
 USER_AGENT = "ProjectFin/1.0"
-
-
-def _strip_sa(symbol: str) -> str:
-    return symbol.removesuffix(".SA")
 
 
 def _parse_date(text: str) -> date | None:
@@ -83,7 +79,7 @@ class DadosDeMercadoProvider:
         self._base_url = base_url
 
     def scrape_dividends(self, symbol: str) -> list[DividendRecord]:
-        ticker = _strip_sa(symbol).lower()
+        ticker = Symbol.strip_sa(symbol).lower()
         url = f"{self._base_url}/acoes/{ticker}/dividendos"
 
         try:
@@ -186,7 +182,7 @@ class DadosDeMercadoProvider:
             "raw_data": [],
         }
 
-        ticker = _strip_sa(symbol).lower()
+        ticker = Symbol.strip_sa(symbol).lower()
         url = f"{self._base_url}/acoes/{ticker}"
 
         try:
@@ -260,7 +256,7 @@ class DadosDeMercadoProvider:
 
     def scrape_splits(self, symbol: str) -> list[dict]:
         """Scrape stock splits (desdobramentos) from dadosdemercado.com.br."""
-        ticker = _strip_sa(symbol).lower()
+        ticker = Symbol.strip_sa(symbol).lower()
         url = f"{self._base_url}/acoes/{ticker}/desdobramentos"
 
         try:

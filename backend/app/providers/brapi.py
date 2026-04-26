@@ -1,13 +1,28 @@
+import logging
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import httpx
 
 from app.money import Money, Currency
+from app.providers._http import brapi_client
+from app.providers.common import DividendRecord, Symbol
+
+logger = logging.getLogger(__name__)
 
 
-def _strip_sa(symbol: str) -> str:
-    return symbol.removesuffix(".SA")
+class BrapiFeatureUnavailable(Exception):
+    """Raised when the Brapi free plan blocks a feature (e.g. dividends)."""
+
+
+def _parse_brapi_date(value):
+    if not value:
+        return None
+    try:
+        s = value.replace("Z", "+00:00") if isinstance(value, str) else value
+        return datetime.fromisoformat(s).date()
+    except (ValueError, TypeError, AttributeError):
+        return None
 
 
 class BrapiProvider:
@@ -16,10 +31,9 @@ class BrapiProvider:
         self._base_url = base_url
 
     def search(self, query: str) -> list[dict]:
-        resp = httpx.get(
+        resp = brapi_client.get(
             f"{self._base_url}/api/available",
             params={"search": query, "token": self._api_key},
-            timeout=10,
         )
         resp.raise_for_status()
         stocks = resp.json().get("stocks", [])
@@ -29,8 +43,8 @@ class BrapiProvider:
         ][:10]
 
     def get_quote(self, symbol: str) -> dict:
-        ticker = _strip_sa(symbol)
-        resp = httpx.get(
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
             f"{self._base_url}/api/quote/{ticker}",
             params={"token": self._api_key},
         )
@@ -51,15 +65,14 @@ class BrapiProvider:
 
         Sums cashDividends rate for payments in the last 12 months.
         """
-        ticker = _strip_sa(symbol)
-        resp = httpx.get(
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
             f"{self._base_url}/api/quote/{ticker}",
             params={
                 "token": self._api_key,
                 "fundamental": "true",
                 "dividends": "true",
             },
-            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()["results"][0]
@@ -90,12 +103,59 @@ class BrapiProvider:
             "dividend_yield_annual": dividend_yield,
         }
 
+    def get_dividends(self, symbol: str) -> list[DividendRecord]:
+        """Fetch full dividend history (past + announced upcoming) from Brapi.
+
+        Brapi's `cashDividends` includes announced upcoming payments with a
+        future `paymentDate`, which is what powers the upcoming-dividends view.
+
+        Raises BrapiFeatureUnavailable if the plan doesn't include dividends.
+        """
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
+            f"{self._base_url}/api/quote/{ticker}",
+            params={"token": self._api_key, "dividends": "true"},
+        )
+        try:
+            payload = resp.json()
+        except ValueError:
+            resp.raise_for_status()
+            raise
+
+        if isinstance(payload, dict) and payload.get("error"):
+            if payload.get("code") == "FEATURE_NOT_AVAILABLE":
+                raise BrapiFeatureUnavailable(payload.get("message", "Dividends not in plan"))
+            raise httpx.HTTPError(payload.get("message", "Brapi error"))
+
+        results = payload.get("results", [])
+        if not results:
+            return []
+
+        cash_dividends = results[0].get("dividendsData", {}).get("cashDividends", [])
+        records: list[DividendRecord] = []
+        for d in cash_dividends:
+            rate = d.get("rate")
+            if rate is None:
+                continue
+            ex_date = _parse_brapi_date(d.get("lastDatePrior") or d.get("lastDatePriorEx"))
+            payment_date = _parse_brapi_date(d.get("paymentDate"))
+            if ex_date is None and payment_date is None:
+                continue
+            label = (d.get("label") or "Dividend").strip()
+            records.append(DividendRecord(
+                dividend_type=label,
+                value=Decimal(str(rate)).quantize(Decimal("0.000001")),
+                record_date=ex_date or payment_date,
+                ex_date=ex_date or payment_date,
+                payment_date=payment_date,
+            ))
+        return records
+
     def get_fundamentals(self, symbol: str) -> dict:
-        ticker = _strip_sa(symbol)
-        resp = httpx.get(
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
             f"{self._base_url}/api/quote/{ticker}",
             params={"token": self._api_key, "fundamental": "true"},
-            timeout=15,
         )
         resp.raise_for_status()
         resp.json()["results"][0]
@@ -111,11 +171,10 @@ class BrapiProvider:
 
     def get_splits(self, symbol: str) -> list[dict]:
         """Get stock splits from quote endpoint with dividends=true."""
-        ticker = _strip_sa(symbol)
-        resp = httpx.get(
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
             f"{self._base_url}/api/quote/{ticker}",
             params={"token": self._api_key, "dividends": "true"},
-            timeout=10,
         )
         resp.raise_for_status()
         data = resp.json()["results"][0]
@@ -136,8 +195,8 @@ class BrapiProvider:
         return splits
 
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
-        ticker = _strip_sa(symbol)
-        resp = httpx.get(
+        ticker = Symbol.strip_sa(symbol)
+        resp = brapi_client.get(
             f"{self._base_url}/api/quote/{ticker}",
             params={
                 "range": period,

@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.models.market_quote import MarketQuote
+from app.providers._http import coingecko_client
 from app.providers.finnhub import FinnhubProvider
 from app.providers.brapi import BrapiProvider
+from app.providers.yfinance import YFinanceProvider
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +37,7 @@ class MarketDataService:
             api_key=settings.brapi_api_key,
             base_url=settings.brapi_base_url,
         )
+        self._yfinance = YFinanceProvider()
         self._quote_cache: TTLCache = TTLCache(maxsize=256, ttl=300)
         self._history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
         self._crypto_quote_cache: TTLCache = TTLCache(maxsize=256, ttl=120)
@@ -92,14 +95,48 @@ class MarketDataService:
 
         return result
 
-    def get_stock_history(self, symbol: str, period: str = "1mo", country: str = "US") -> list[dict]:
+    PERIOD_DAYS = {"1d": 1, "5d": 5, "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "5y": 1825}
+
+    def get_stock_history(
+        self, symbol: str, period: str = "1mo", country: str = "US", db: Session | None = None
+    ) -> list[dict]:
         cache_key = f"{symbol}:{period}"
         if cache_key in self._history_cache:
             return self._history_cache[cache_key]
 
-        provider = self._get_provider(country)
-        result = provider.get_history(symbol, period)
+        result = self._try_db_history(db, symbol, period)
+        if not result:
+            result = self._fetch_from_providers(symbol, period, country)
+        if result and db is not None:
+            from app.repositories.price_history_repo import store_history
+            store_history(db, symbol, result, "BRL" if country == "BR" else "USD")
+
         self._history_cache[cache_key] = result
+        return result
+
+    def _try_db_history(self, db: Session | None, symbol: str, period: str) -> list[dict]:
+        if db is None or period == "max":
+            return []
+        days = self.PERIOD_DAYS.get(period, 0)
+        if not days:
+            return []
+        from datetime import timedelta
+        from_date = (datetime.now(timezone.utc) - timedelta(days=days)).date()
+        from app.repositories.price_history_repo import read_history
+        return read_history(db, symbol, from_date)
+
+    def _fetch_from_providers(self, symbol: str, period: str, country: str) -> list[dict]:
+        provider = self._get_provider(country)
+        try:
+            result = provider.get_history(symbol, period)
+        except Exception:
+            logger.warning("Primary provider failed for %s period=%s", symbol, period)
+            result = []
+        if not result:
+            logger.info("Falling back to yfinance for %s period=%s", symbol, period)
+            from app.providers.common import Symbol
+            yf_symbol = Symbol.with_sa(symbol) if country == "BR" else symbol
+            result = self._yfinance.get_history(yf_symbol, period)
         return result
 
     def get_quote_safe(
@@ -117,6 +154,42 @@ class MarketDataService:
         except Exception:
             return None
 
+    def search_crypto(self, query: str, limit: int = 10) -> list[dict]:
+        """Search CoinGecko coins by name/symbol. Returns lightweight matches.
+
+        Output shape mirrors stock-search results so the iOS client can render
+        a single unified list:
+            {id, symbol, name, type: "crypto", logo}
+        Where `id` is the CoinGecko coin id (e.g. "bitcoin"), and `symbol` is
+        the trading code shown to the user (e.g. "BTC").
+        """
+        try:
+            resp = coingecko_client.get(
+                "https://api.coingecko.com/api/v3/search",
+                params={"query": query},
+                timeout=8,
+            )
+            resp.raise_for_status()
+            coins = resp.json().get("coins", [])
+        except Exception:
+            logger.warning("CoinGecko search failed for %s", query, exc_info=True)
+            return []
+
+        results = []
+        for c in coins[:limit]:
+            symbol = (c.get("symbol") or "").upper()
+            if not symbol:
+                continue
+            results.append({
+                "id": c.get("id") or symbol,
+                "symbol": symbol,
+                "name": c.get("name") or symbol,
+                "type": "crypto",
+                "logo": c.get("thumb") or c.get("large"),
+                "currency": "USD",
+            })
+        return results
+
     def get_crypto_quote(self, coin_id: str) -> dict:
         if coin_id in self._crypto_quote_cache:
             return self._crypto_quote_cache[coin_id]
@@ -128,7 +201,7 @@ class MarketDataService:
             "include_market_cap": "true",
             "include_24hr_change": "true",
         }
-        resp = httpx.get(url, params=params)
+        resp = coingecko_client.get(url, params=params)
         data = resp.json()[coin_id]
         result = {
             "coin_id": coin_id,
@@ -147,7 +220,7 @@ class MarketDataService:
 
         url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/market_chart"
         params = {"vs_currency": "usd", "days": days}
-        resp = httpx.get(url, params=params)
+        resp = coingecko_client.get(url, params=params)
         data = resp.json()
         result = [
             {
