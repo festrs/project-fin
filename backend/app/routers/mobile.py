@@ -76,8 +76,8 @@ def get_exchange_rate(
     """Get exchange rate for a currency pair."""
     if not PAIR_PATTERN.match(pair):
         raise HTTPException(status_code=422, detail=f"Invalid pair format: {pair}")
-    rate = _fetch_exchange_rate(pair)
-    return {"pair": pair, "rate": rate}
+    rate: Decimal = _fetch_exchange_rate(pair)
+    return {"pair": pair, "rate": str(rate)}
 
 
 # ──────────────────────────────────────────────

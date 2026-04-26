@@ -31,7 +31,7 @@ def test_create_buy(client, default_user, db):
     data = resp.json()
     assert data["type"] == "buy"
     assert data["asset_symbol"] == "AAPL"
-    assert data["quantity"] == 10
+    assert data["quantity"] == "10.00000000"
     assert data["total_value"]["amount"] == "1500.00000000"
     assert data["total_value"]["currency"] == "USD"
     assert data["unit_price"]["amount"] == "150.00000000"
@@ -64,7 +64,7 @@ def test_update(client, default_user, db):
     tx_id = create_resp.json()["id"]
     resp = client.put(f"/api/transactions/{tx_id}", json={"quantity": 20}, headers=headers)
     assert resp.status_code == 200
-    assert resp.json()["quantity"] == 20
+    assert resp.json()["quantity"] == "20.00000000"
 
 
 def test_delete(client, default_user, db):

@@ -35,8 +35,7 @@ def invest_plan(
     user_id: str = Depends(get_current_user_id),
     db: Session = Depends(get_db),
 ):
-    rate = fetch_exchange_rate("USD-BRL")
-    exchange_rate = Decimal(str(rate))
+    exchange_rate: Decimal = fetch_exchange_rate("USD-BRL")
 
     service = RecommendationService(db)
     plan = service.get_investment_plan(
@@ -53,18 +52,18 @@ def invest_plan(
         recs_response.append(InvestmentRecommendationResponse(
             symbol=rec["symbol"],
             class_name=rec["class_name"],
-            effective_target=rec["effective_target"],
-            actual_weight=rec["actual_weight"],
-            diff=rec["diff"],
+            effective_target=str(rec["effective_target"]),
+            actual_weight=str(rec["actual_weight"]),
+            diff=str(rec["diff"]),
             price=MoneyResponse(amount=str(rec["price"].amount), currency=rec["price"].currency.code),
-            quantity=float(rec["quantity"]),
+            quantity=str(rec["quantity"]),
             invest_amount=MoneyResponse(amount=str(rec["invest_amount"].amount), currency=rec["invest_amount"].currency.code),
         ))
 
     return InvestmentPlanResponse(
         recommendations=recs_response,
         total_invested=MoneyResponse(amount=str(plan["total_invested"].amount), currency=plan["total_invested"].currency.code),
-        exchange_rate=plan["exchange_rate"],
+        exchange_rate=str(plan["exchange_rate"]) if plan["exchange_rate"] is not None else None,
         exchange_rate_pair=plan["exchange_rate_pair"],
         remainder=MoneyResponse(amount=str(plan["remainder"].amount), currency=plan["remainder"].currency.code),
         empty_reason=plan.get("empty_reason"),
