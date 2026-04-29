@@ -37,8 +37,16 @@ class BrapiProvider:
         )
         resp.raise_for_status()
         stocks = resp.json().get("stocks", [])
+        # Brapi's /api/available doesn't expose asset class, so we infer it
+        # from the ticker suffix: "11" is a FII (real-estate fund), the rest
+        # are equities. Without this, every BR ticker reached the iOS client
+        # as "Common Stock" and was misclassified as a US stock.
         return [
-            {"symbol": f"{s}.SA", "name": s, "type": "Common Stock"}
+            {
+                "symbol": f"{s}.SA",
+                "name": s,
+                "type": "fund" if s.endswith("11") else "stock",
+            }
             for s in stocks
         ][:10]
 

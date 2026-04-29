@@ -349,6 +349,88 @@ def sync_tracked_symbols(
     return {"tracked": len(incoming)}
 
 
+# ──────────────────────────────────────────────
+# On-demand dividend refresh
+# ──────────────────────────────────────────────
+
+# Keep a tiny set of symbols per request so a single refresh call doesn't
+# exceed sensible request budgets when each symbol triggers an upstream HTTP
+# fetch with provider-side rate limiting.
+MAX_REFRESH_SYMBOLS = 20
+
+# Mirrors DividendScheduler._TRACKED_FII_CLASSES: only the FII rows need the
+# class_name promoted from the iOS asset_class string so the BR fetch chain
+# skips DadosDeMercado (which doesn't cover FIIs).
+_REFRESH_FII_CLASSES = {"fiis"}
+
+
+@router.post("/dividends/refresh", status_code=200)
+@limiter.limit("4/minute")
+def refresh_dividends(
+    request: Request,
+    symbols: str = Query(description="Comma-separated symbols to refresh"),
+    asset_class: str = Query(description="Asset class for these symbols, e.g. fiis"),
+    since: str | None = Query(
+        default=None,
+        description="Optional cutoff date (YYYY-MM-DD). Records with payment/ex date earlier than this are skipped. Use the holding's first-transaction date for auto-fetch; leave empty for full history.",
+    ),
+    db: Session = Depends(get_db),
+):
+    """Run the dividend scraper inline for the given symbols.
+
+    Used by the iOS app when a holding was just added and the next cron run
+    is hours away. Synchronously calls the upstream provider chain
+    (Brapi → yfinance → DadosDeMercado depending on country/class), writes
+    new records to `dividend_history`, and returns counts. Caller is expected
+    to refetch `/mobile/dividends` afterwards.
+
+    Pass `since` (the holding's first-transaction date) on the auto-bootstrap
+    path so we don't pull dividends from before the user held the asset.
+    The manual refresh button omits it to allow backfills.
+    """
+    symbol_list = _validate_symbols(symbols)
+    if not symbol_list:
+        return {"scraped": 0, "new_records": 0, "failed": []}
+    if len(symbol_list) > MAX_REFRESH_SYMBOLS:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Too many symbols (max {MAX_REFRESH_SYMBOLS} per refresh)",
+        )
+    if asset_class not in ASSET_CLASS_COUNTRY:
+        raise HTTPException(status_code=422, detail=f"Invalid asset_class: {asset_class}")
+    country = ASSET_CLASS_COUNTRY[asset_class]
+    if asset_class == "crypto":
+        raise HTTPException(status_code=422, detail="Crypto has no dividends")
+
+    parsed_since = None
+    if since:
+        try:
+            parsed_since = date.fromisoformat(since)
+        except ValueError:
+            raise HTTPException(status_code=422, detail=f"Invalid since (expected YYYY-MM-DD): {since}")
+
+    class_name = "FIIs" if asset_class in _REFRESH_FII_CLASSES else asset_class
+    rows = [(s, country, class_name) for s in symbol_list]
+
+    from app.config import settings as _settings
+    from app.providers.brapi import BrapiProvider
+    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.providers.yfinance import YFinanceProvider
+    from app.services.dividend_scraper_scheduler import DividendScheduler
+
+    scheduler = DividendScheduler(
+        dados_provider=DadosDeMercadoProvider(),
+        yfinance_provider=YFinanceProvider(),
+        brapi_provider=BrapiProvider(
+            api_key=_settings.brapi_api_key,
+            base_url=_settings.brapi_base_url,
+        ),
+        br_delay=_settings.dividend_scraper_delay,
+        us_delay=_settings.dividend_us_delay,
+    )
+    return scheduler.scrape_symbols(db, rows, since=parsed_since)
+
+
 # ---------------------------------------------------------------------------
 # Fundamentals
 # ---------------------------------------------------------------------------

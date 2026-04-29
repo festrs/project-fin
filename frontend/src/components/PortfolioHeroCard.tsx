@@ -1,11 +1,5 @@
 import { useState } from "react";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import BigChart from "./BigChart";
 import { usePortfolioHistory } from "../hooks/usePortfolioHistory";
 
 type Period = "1D" | "1W" | "1M" | "1Y" | "ALL";
@@ -13,6 +7,10 @@ type Period = "1D" | "1W" | "1M" | "1Y" | "ALL";
 interface PortfolioHeroCardProps {
   grandTotalBRL: number;
   loading: boolean;
+}
+
+function fmtBRL(n: number): string {
+  return "R$\u00A0" + Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(n);
 }
 
 export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioHeroCardProps) {
@@ -24,21 +22,17 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
     maximumFractionDigits: 2,
   });
 
-  const chartData = history.map((s) => ({
-    date: s.date,
-    value: parseFloat(s.total_value_brl),
-  }));
+  const chartData = history.map((s) => parseFloat(s.total_value_brl));
 
-  const periodGain =
-    chartData.length >= 2 ? chartData[chartData.length - 1].value - chartData[0].value : 0;
-  const chartColor = periodGain >= 0 ? "#34c759" : "#ff3b30";
+  const periodGain = chartData.length >= 2 ? chartData[chartData.length - 1] - chartData[0] : 0;
+  const periodPct = chartData.length >= 2 && chartData[0] !== 0 ? (periodGain / chartData[0]) * 100 : 0;
 
   function renderChart() {
     if (selectedPeriod === "1D") {
       if (!latestSnapshot) {
         return (
-          <div className="h-48 w-full mt-4 flex items-center justify-center">
-            <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>No snapshot yet</p>
+          <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <p style={{ color: "var(--fg-3)", fontSize: 14 }}>No snapshot yet</p>
           </div>
         );
       }
@@ -47,150 +41,88 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
       const delta = grandTotalBRL - snapshotValue;
       const deltaPct = snapshotValue !== 0 ? (delta / snapshotValue) * 100 : 0;
       const isPositive = delta >= 0;
-      const color = isPositive ? "#34c759" : "#ff3b30";
+      const color = isPositive ? "var(--up)" : "var(--down)";
 
       return (
-        <div className="h-48 w-full mt-4 flex flex-col items-center justify-center gap-1">
-          <span style={{ fontSize: 32, fontWeight: 700, color }} className="tabular-nums">
-            {isPositive ? "+" : ""}
-            R${" "}
-            {Math.abs(delta).toLocaleString("pt-BR", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+        <div style={{ height: 240, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4 }}>
+          <span className="num" style={{ fontSize: 32, fontWeight: 700, color }}>
+            {isPositive ? "+" : ""}R${" "}
+            {Math.abs(delta).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
-          <span style={{ fontSize: 14, fontWeight: 500, color }} className="tabular-nums">
-            {isPositive ? "+" : ""}
-            {deltaPct.toFixed(2)}%
+          <span className="num" style={{ fontSize: 14, fontWeight: 500, color }}>
+            {isPositive ? "+" : ""}{deltaPct.toFixed(2)}%
           </span>
-          <span style={{ fontSize: 12, color: "var(--text-tertiary)", marginTop: 4 }}>
-            Today&apos;s change
-          </span>
+          <span style={{ fontSize: 12, color: "var(--fg-3)", marginTop: 4 }}>Today&apos;s change</span>
         </div>
       );
     }
 
     if (historyLoading) {
       return (
-        <div className="h-48 w-full mt-4">
-          <div
-            className="animate-pulse"
-            style={{
-              height: "100%",
-              width: "100%",
-              borderRadius: 8,
-              background: "var(--surface-hover)",
-            }}
-          />
+        <div style={{ height: 240 }}>
+          <div className="animate-pulse" style={{ height: "100%", width: "100%", borderRadius: 8, background: "var(--bg-3)" }} />
         </div>
       );
     }
 
     if (chartData.length === 0) {
       return (
-        <div className="h-48 w-full mt-4 flex items-center justify-center">
-          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>No history data yet</p>
+        <div style={{ height: 240, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <p style={{ color: "var(--fg-3)", fontSize: 14 }}>No history data yet</p>
         </div>
       );
     }
 
-    const gradientId = "heroGradient";
-
     return (
-      <div className="h-48 w-full mt-4">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-            <defs>
-              <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={chartColor} stopOpacity={0.2} />
-                <stop offset="100%" stopColor={chartColor} stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <XAxis dataKey="date" hide />
-            <Tooltip
-              contentStyle={{
-                background: "var(--surface-elevated)",
-                border: "1px solid var(--border)",
-                borderRadius: 8,
-                fontSize: 13,
-                color: "var(--text-primary)",
-              }}
-              labelFormatter={(label) =>
-                new Date(String(label)).toLocaleDateString("pt-BR", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              }
-              formatter={(value) => [
-                `R$ ${Number(value).toLocaleString("pt-BR", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}`,
-                "Value",
-              ]}
-            />
-            <Area
-              type="monotone"
-              dataKey="value"
-              stroke={chartColor}
-              strokeWidth={2.5}
-              fill={`url(#${gradientId})`}
-              dot={false}
-              activeDot={{ r: 4, fill: chartColor, strokeWidth: 0 }}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
+      <BigChart
+        data={chartData}
+        height={240}
+        formatValue={fmtBRL}
+        formatLabel={(i, total) => {
+          const snap = history[i];
+          return snap ? new Date(snap.date).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : `Day -${total - 1 - i}`;
+        }}
+      />
     );
   }
 
   return (
-    <div
-      className="relative overflow-hidden"
+    <section
       style={{
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
+        background: "var(--bg-2)",
+        border: "1px solid var(--line)",
         borderRadius: "var(--radius)",
-        padding: "24px",
+        padding: "28px 28px 20px",
       }}
     >
-      <div className="flex justify-between items-start mb-6">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 }}>
         <div>
-          <p
-            className="text-label"
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              color: "var(--text-tertiary)",
-              marginBottom: 4,
-            }}
-          >
-            Portfolio Value
-          </p>
+          <div className="section-title">Total balance</div>
           {loading ? (
-            <div
-              className="animate-pulse"
-              style={{ height: 56, width: 256, borderRadius: 8, background: "var(--surface-hover)" }}
-            />
+            <div className="animate-pulse" style={{ height: 44, width: 256, borderRadius: 8, background: "var(--bg-3)", marginTop: 4 }} />
           ) : (
-            <h3
-              style={{
-                fontSize: 56,
-                fontWeight: 700,
-                letterSpacing: "-0.03em",
-                color: "var(--text-primary)",
-                lineHeight: 1,
-              }}
-              className="tabular-nums"
-            >
+            <div className="num" style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 44,
+              fontWeight: 600,
+              letterSpacing: "-0.03em",
+              marginTop: 4,
+            }}>
               R$ {formattedValue}
-            </h3>
+            </div>
+          )}
+          {!loading && selectedPeriod !== "1D" && chartData.length >= 2 && (
+            <div style={{ display: "flex", gap: 14, marginTop: 6, alignItems: "center" }}>
+              <span className="num" style={{ color: periodGain >= 0 ? "var(--up)" : "var(--down)", fontWeight: 500, fontSize: 14 }}>
+                {periodGain >= 0 ? "+" : ""}R$ {Math.abs(periodGain).toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
+                {" · "}
+                {periodGain >= 0 ? "+" : ""}{periodPct.toFixed(2)}%
+              </span>
+              <span style={{ color: "var(--fg-3)", fontSize: 13 }}>{selectedPeriod}</span>
+            </div>
           )}
         </div>
-        <div className="flex gap-2">
+        <div style={{ display: "flex", gap: 6 }}>
           {(["1D", "1W", "1M", "1Y", "ALL"] as Period[]).map((period) => (
             <button
               key={period}
@@ -202,8 +134,9 @@ export default function PortfolioHeroCard({ grandTotalBRL, loading }: PortfolioH
           ))}
         </div>
       </div>
-
-      {renderChart()}
-    </div>
+      <div style={{ marginTop: 20 }}>
+        {renderChart()}
+      </div>
+    </section>
   );
 }

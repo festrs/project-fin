@@ -6,7 +6,7 @@ describe("PortfolioHeroCard", () => {
   it("renders formatted portfolio value", () => {
     render(<PortfolioHeroCard grandTotalBRL={1248392.42} loading={false} />);
     expect(screen.getByText(/1\.248\.392,42/)).toBeInTheDocument();
-    expect(screen.getByText("Portfolio Value")).toBeInTheDocument();
+    expect(screen.getByText("Total balance")).toBeInTheDocument();
   });
 
   it("shows loading skeleton when loading", () => {

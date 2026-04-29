@@ -1,5 +1,6 @@
 import type { StockSplit } from "../types";
 import { SPLIT_EVENT_TYPE } from "../types";
+import Icon from "./Icon";
 
 interface CorporateEventAlertProps {
   splits: StockSplit[];
@@ -28,7 +29,7 @@ export default function CorporateEventAlert({ splits, actionLoading, onApply, on
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ background: "var(--primary-soft)", color: "var(--blue)" }}
               >
-                <span className="material-symbols-outlined">event_note</span>
+                <Icon name="bell" size={20} />
               </div>
               <div>
                 <h4 className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>

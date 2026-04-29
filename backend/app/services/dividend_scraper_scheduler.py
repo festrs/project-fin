@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import date as _date
 
 from sqlalchemy.orm import Session
 
@@ -41,7 +42,7 @@ class DividendScheduler:
     # Map iOS asset_class values to class names used by the dividend scraper
     _TRACKED_FII_CLASSES = {"fiis"}
 
-    def scrape_all(self, db: Session) -> None:
+    def scrape_all(self, db: Session) -> dict:
         # Symbols from web app transactions
         tx_rows = (
             db.query(Transaction.asset_symbol, AssetClass.country, AssetClass.name)
@@ -73,18 +74,46 @@ class DividendScheduler:
                 seen.add(symbol)
                 rows.append((symbol, country, class_name))
 
+        return self.scrape_symbols(db, rows)
+
+    def scrape_symbols(
+        self,
+        db: Session,
+        rows: list[tuple[str, str, str]],
+        since: _date | None = None,
+    ) -> dict:
+        """Scrape dividend records for the given (symbol, country, class_name) rows.
+
+        Used by both the cron (`scrape_all`) and the iOS on-demand refresh
+        endpoint. Returns aggregate stats so the caller can surface progress.
+
+        When `since` is provided, records with payment_date (or ex_date when
+        payment_date is missing) earlier than `since` are skipped. The iOS
+        bootstrap path passes the holding's first-Contribution date so the
+        store doesn't get polluted with dividends from before the user owned
+        the asset; the manual refresh button leaves it `None` so users can
+        backfill full history.
+        """
+        new_total = 0
+        failed: list[str] = []
+        delay = 0.0
         for symbol, country, class_name in rows:
             try:
                 records, currency, delay = self._fetch_records(symbol, country, class_name)
 
                 new_count = 0
-                seen = set()
+                seen_records: set = set()
 
                 for rec in records:
+                    if since is not None:
+                        cutoff_date = rec.payment_date or rec.ex_date
+                        if cutoff_date is not None and cutoff_date < since:
+                            continue
+
                     key = (symbol, rec.record_date, rec.dividend_type, rec.value)
-                    if key in seen:
+                    if key in seen_records:
                         continue
-                    seen.add(key)
+                    seen_records.add(key)
 
                     exists = (
                         db.query(DividendHistory)
@@ -112,13 +141,16 @@ class DividendScheduler:
                     new_count += 1
 
                 db.commit()
+                new_total += new_count
                 logger.info(f"Scraped dividends for {symbol}: {new_count} new records")
             except Exception:
                 logger.exception(f"Failed to scrape dividends for {symbol}")
                 db.rollback()
+                failed.append(symbol)
             finally:
                 if delay > 0:
                     time.sleep(delay)
+        return {"scraped": len(rows), "new_records": new_total, "failed": failed}
 
     def _fetch_records(self, symbol: str, country: str, class_name: str):
         """Resolve the dividend records for a symbol via the provider chain.
