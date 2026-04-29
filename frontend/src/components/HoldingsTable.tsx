@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { QuarantineBadge } from "./QuarantineBadge";
 import { TransactionForm } from "./TransactionForm";
 import { formatMoney, moneyToNumber } from "../utils/money";
+import Icon from "./Icon";
 import type { Holding, Transaction, QuarantineStatus, AssetClass, AssetClassType, FundamentalsScore } from "../types";
 import { TransactionHistoryModal } from "./TransactionHistoryModal";
 
@@ -527,7 +528,7 @@ function HoldingRows({
                 onShowTransactions();
               }}
             >
-              <span className="material-symbols-outlined text-lg">receipt_long</span>
+              <Icon name="list" size={18} />
             </button>
             <button
               className="text-green hover:opacity-80 text-base px-2 font-medium"

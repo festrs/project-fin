@@ -90,6 +90,31 @@ class TestBrapiGetHistory:
         assert ".SA" not in call_url
 
 
+class TestBrapiSearch:
+    def test_classifies_fii_and_stock_by_ticker_suffix(self):
+        # The brapi /api/available endpoint doesn't expose asset class, so we
+        # infer it from the ticker: "11" suffix is a FII, otherwise a BR
+        # equity. Without this, every BR ticker reached the iOS client tagged
+        # "Common Stock" and was misclassified as a US stock.
+        provider = BrapiProvider(api_key="test-key", base_url="https://brapi.dev")
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "stocks": ["ITUB3", "KNRI11", "PETR4", "BCFF11", "VALE3"],
+        }
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
+            results = provider.search("any")
+
+        by_symbol = {r["symbol"]: r["type"] for r in results}
+        assert by_symbol["ITUB3.SA"] == "stock"
+        assert by_symbol["PETR4.SA"] == "stock"
+        assert by_symbol["VALE3.SA"] == "stock"
+        assert by_symbol["KNRI11.SA"] == "fund"
+        assert by_symbol["BCFF11.SA"] == "fund"
+
+
 def test_brapi_satisfies_protocol():
     provider = BrapiProvider(api_key="test")
     assert isinstance(provider, MarketDataProvider)

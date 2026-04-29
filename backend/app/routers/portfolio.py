@@ -275,5 +275,5 @@ def get_latest_snapshot(
 @limiter.limit(CRUD_LIMIT)
 def get_exchange_rate(request: Request, pair: str = "USD-BRL"):
     """Get current exchange rate. Default: USD-BRL."""
-    rate = _fetch_exchange_rate(pair)
-    return {"pair": pair, "rate": rate}
+    rate: Decimal = _fetch_exchange_rate(pair)
+    return {"pair": pair, "rate": str(rate)}

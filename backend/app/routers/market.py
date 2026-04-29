@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
@@ -44,7 +46,7 @@ def get_indices(request: Request, db: Session = Depends(get_db)):
 
     # USD/BRL
     try:
-        rate = fetch_exchange_rate("USD-BRL")
+        rate: Decimal = fetch_exchange_rate("USD-BRL")
         indices.append({"symbol": "USD/BRL", "name": "Dólar", "value": str(rate), "change_pct": None})
     except Exception:
         indices.append({"symbol": "USD/BRL", "name": "Dólar", "value": None, "change_pct": None})

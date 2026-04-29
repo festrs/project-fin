@@ -12,7 +12,7 @@ def test_create_emergency_reserve(client, default_user):
     assert resp.status_code == 201
     data = resp.json()
     assert data["is_emergency_reserve"] is True
-    assert data["target_weight"] == 0.0  # forced to 0 regardless of input
+    assert data["target_weight"] == "0.0000"  # forced to 0 regardless of input
 
 
 def test_create_emergency_reserve_uniqueness(client, default_user):
@@ -45,7 +45,7 @@ def test_create_regular_class_still_works(client, default_user):
     assert resp.status_code == 201
     data = resp.json()
     assert data["is_emergency_reserve"] is False
-    assert data["target_weight"] == 60.0
+    assert data["target_weight"] == "60.0000"
 
 
 def test_update_emergency_reserve_keeps_target_weight_zero(client, default_user):
@@ -65,7 +65,7 @@ def test_update_emergency_reserve_keeps_target_weight_zero(client, default_user)
     )
     assert resp.status_code == 200
     data = resp.json()
-    assert data["target_weight"] == 0.0  # still forced to 0
+    assert data["target_weight"] == "0.0000"  # still forced to 0
     assert data["name"] == "My Reserve"  # name update works
 
 

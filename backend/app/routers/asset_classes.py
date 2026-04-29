@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
@@ -36,12 +38,12 @@ def create_asset_class(
         )
         if existing:
             raise HTTPException(status_code=400, detail="Emergency reserve already exists")
-        body.target_weight = 0.0
+        body.target_weight = "0.0"
 
     ac = AssetClass(
         user_id=user_id,
         name=body.name,
-        target_weight=body.target_weight,
+        target_weight=Decimal(body.target_weight),
         country=body.country,
         type=body.type,
         is_emergency_reserve=body.is_emergency_reserve,
@@ -84,12 +86,12 @@ def update_asset_class(
         ac.is_emergency_reserve = body.is_emergency_reserve
     # Force target_weight to 0 for emergency reserve
     if ac.is_emergency_reserve:
-        ac.target_weight = 0.0
+        ac.target_weight = Decimal("0.0")
         body.target_weight = None  # prevent overwrite below
     if body.name is not None:
         ac.name = body.name
     if body.target_weight is not None:
-        ac.target_weight = body.target_weight
+        ac.target_weight = Decimal(body.target_weight)
     if body.country is not None:
         ac.country = body.country
     if body.type is not None:

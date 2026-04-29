@@ -1,7 +1,7 @@
 import datetime as dt
 from typing import Literal, Optional
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 from app.schemas.money import MoneyInput, MoneyResponse
 
@@ -10,13 +10,20 @@ class TransactionCreate(BaseModel):
     asset_class_id: str
     asset_symbol: str
     type: Literal["buy", "sell", "dividend"]
-    quantity: Optional[float] = None
+    quantity: Optional[str] = None
     unit_price: Optional[MoneyInput] = None
     total_value: MoneyInput
     currency: Optional[str] = None  # DEPRECATED: kept for backward compat, currency comes from MoneyInput now
     tax_amount: Optional[MoneyInput] = None
     date: dt.date
     notes: Optional[str] = None
+
+    @field_validator("quantity", mode="before")
+    @classmethod
+    def coerce_quantity_to_str(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        return str(v)
 
     @model_validator(mode="after")
     def validate_field_consistency(self):
@@ -29,12 +36,19 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionUpdate(BaseModel):
-    quantity: Optional[float] = None
+    quantity: Optional[str] = None
     unit_price: Optional[MoneyInput] = None
     total_value: Optional[MoneyInput] = None
     tax_amount: Optional[MoneyInput] = None
     date: Optional[dt.date] = None
     notes: Optional[str] = None
+
+    @field_validator("quantity", mode="before")
+    @classmethod
+    def coerce_quantity_to_str(cls, v: object) -> str | None:
+        if v is None:
+            return None
+        return str(v)
 
 
 class TransactionResponse(BaseModel):
@@ -43,7 +57,7 @@ class TransactionResponse(BaseModel):
     asset_class_id: str
     asset_symbol: str
     type: str
-    quantity: float | None
+    quantity: str | None
     unit_price: MoneyResponse | None
     total_value: MoneyResponse
     tax_amount: MoneyResponse | None

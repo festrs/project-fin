@@ -96,8 +96,8 @@ class RecommendationService:
             effective_target = (
                 info["class_target_weight"] * info["asset_target_weight"] / 100
             )
-            actual_weight = float(asset_values.get(symbol, Decimal("0")) / total_value * 100)
-            diff = effective_target - actual_weight
+            actual_weight = asset_values.get(symbol, Decimal("0")) / total_value * 100
+            diff = Decimal(str(effective_target)) - actual_weight
 
             recommendations.append(
                 {
@@ -131,7 +131,7 @@ class RecommendationService:
             return {
                 "recommendations": [],
                 "total_invested": Money(Decimal("0"), input_currency),
-                "exchange_rate": float(exchange_rate) if exchange_rate else None,
+                "exchange_rate": exchange_rate,
                 "exchange_rate_pair": "USD-BRL" if exchange_rate else None,
                 "remainder": Money(amount, input_currency),
                 "empty_reason": reason,
@@ -301,7 +301,7 @@ class RecommendationService:
         return {
             "recommendations": results,
             "total_invested": Money(amount - remaining.quantize(Decimal("0.01")), input_currency),
-            "exchange_rate": float(exchange_rate) if exchange_rate else None,
+            "exchange_rate": exchange_rate,
             "exchange_rate_pair": "USD-BRL" if exchange_rate else None,
             "remainder": Money(remaining.quantize(Decimal("0.01")), input_currency),
             "empty_reason": None,

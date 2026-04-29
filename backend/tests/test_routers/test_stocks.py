@@ -81,7 +81,9 @@ def test_get_br_stock_history(mock_get_mds, client):
 
 
 @patch("app.routers.stocks.get_market_data_service")
-def test_search_includes_crypto_results_first(mock_get_mds, client):
+def test_search_results_sorted_by_name(mock_get_mds, client):
+    # Providers return results in arbitrary order; the endpoint must hand
+    # back an alphabetical (case-insensitive) list to the iOS client.
     mock_md = MagicMock()
     mock_md.search_crypto.return_value = [
         {"id": "bitcoin", "symbol": "BTC", "name": "Bitcoin",
@@ -89,6 +91,7 @@ def test_search_includes_crypto_results_first(mock_get_mds, client):
     ]
     mock_md._finnhub.search.return_value = [
         {"symbol": "GBTC", "name": "Grayscale Bitcoin Trust", "type": "Common Stock"},
+        {"symbol": "ABTC", "name": "Alpha Bit Coin Co.", "type": "Common Stock"},
     ]
     mock_md._brapi.search.return_value = []
     mock_get_mds.return_value = mock_md
@@ -97,14 +100,12 @@ def test_search_includes_crypto_results_first(mock_get_mds, client):
     assert resp.status_code == 200
     results = resp.json()
 
-    # Crypto must lead the list so popular tokens beat the unrelated ETFs
-    assert results[0]["symbol"] == "BTC"
-    assert results[0]["type"] == "crypto"
-    assert results[0]["name"] == "Bitcoin"
+    names = [r["name"] for r in results]
+    assert names == sorted(names, key=str.lower), "Results must be alphabetical by name"
     # Logo flows through so the iOS row can render the token thumbnail
-    assert results[0]["logo"] == "logo-url"
-    # Stock results still appear after crypto
-    assert any(r["symbol"] == "GBTC" for r in results)
+    btc = next(r for r in results if r["symbol"] == "BTC")
+    assert btc["type"] == "crypto"
+    assert btc["logo"] == "logo-url"
 
 
 @patch("app.routers.stocks.get_market_data_service")

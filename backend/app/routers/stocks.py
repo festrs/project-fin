@@ -42,11 +42,13 @@ def _quote_to_response(quote: dict) -> dict:
 @router.get("/search")
 @limiter.limit(MARKET_DATA_LIMIT)
 async def search_stocks(request: Request, q: str = Query(min_length=1)):
-    """Search for stocks across US (Finnhub) and BR (Brapi) markets.
+    """Search for stocks across US (Finnhub), BR (Brapi), and crypto markets.
 
     Each provider runs in parallel via asyncio.gather so total latency is
-    max(provider_times) instead of sum. Crypto results land first in the
-    merged list so popular tokens (BTC, ETH) outrank unrelated ETFs.
+    max(provider_times) instead of sum. Crypto runs first in the merge so
+    that on duplicate symbols the crypto record wins (the dedupe loop keeps
+    the first occurrence). The final list is sorted alphabetically by name
+    for the iOS client.
     """
     market_data = get_market_data_service()
 
@@ -63,7 +65,7 @@ async def search_stocks(request: Request, q: str = Query(min_length=1)):
     )
     raw = list(crypto_res) + list(finnhub_res) + list(brapi_res)
 
-    # Deduplicate by symbol — first occurrence wins
+    # Deduplicate by symbol — first occurrence (crypto-first) wins
     seen: set[str] = set()
     results = []
     for item in raw:
@@ -88,6 +90,10 @@ async def search_stocks(request: Request, q: str = Query(min_length=1)):
             if item.get("logo"):
                 result["logo"] = item["logo"]
             results.append(result)
+
+    # Sort alphabetically by name (case-insensitive); fall back to symbol
+    # when name is missing so unnamed entries stay deterministic.
+    results.sort(key=lambda r: ((r.get("name") or r.get("symbol") or "").lower(), r.get("symbol") or ""))
     return results
 
 

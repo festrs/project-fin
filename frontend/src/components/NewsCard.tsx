@@ -1,4 +1,5 @@
 import { useNews } from "../hooks/useNews";
+import Icon from "./Icon";
 
 function timeAgo(unixTimestamp: number): string {
   const now = Math.floor(Date.now() / 1000);
@@ -14,13 +15,13 @@ export default function NewsCard() {
 
   if (loading) {
     return (
-      <div className="rounded-xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}>
-        <div className="space-y-4">
+      <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 24 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-3 w-20 rounded mb-2" style={{ background: "var(--surface-hover)" }} />
-              <div className="h-4 w-full rounded mb-1" style={{ background: "var(--surface-hover)" }} />
-              <div className="h-3 w-3/4 rounded" style={{ background: "var(--surface-hover)" }} />
+              <div style={{ height: 12, width: 80, borderRadius: 4, background: "var(--bg-3)", marginBottom: 8 }} />
+              <div style={{ height: 16, width: "100%", borderRadius: 4, background: "var(--bg-3)", marginBottom: 4 }} />
+              <div style={{ height: 12, width: "75%", borderRadius: 4, background: "var(--bg-3)" }} />
             </div>
           ))}
         </div>
@@ -29,39 +30,41 @@ export default function NewsCard() {
   }
 
   return (
-    <div className="rounded-xl p-6" style={{ background: "var(--surface)", border: "1px solid var(--card-border)" }}>
-      <h4 className="text-xs font-medium uppercase tracking-widest mb-4 font-body" style={{ color: "var(--text-tertiary)" }}>
-        Market News
-      </h4>
+    <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 24 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 600 }}>News</h3>
+        <span style={{ color: "var(--fg-3)", fontSize: 12 }}>Curated for your holdings</span>
+      </div>
       {news.length === 0 ? (
-        <p className="text-sm font-body" style={{ color: "var(--text-tertiary)" }}>
-          No recent market news
-        </p>
+        <p style={{ color: "var(--fg-3)", fontSize: 13 }}>No recent market news</p>
       ) : (
-        <div>
-          {news.slice(0, 4).map((item, idx) => (
+        <div style={{ display: "grid", gap: 4 }}>
+          {news.slice(0, 5).map((item) => (
             <a
               key={item.id}
               href={item.url}
               target="_blank"
               rel="noopener noreferrer"
-              className={`block py-4 ${
-                idx < Math.min(news.length, 4) - 1 ? "border-b" : ""
-              } hover:opacity-80 transition-opacity`}
-              style={idx < Math.min(news.length, 4) - 1 ? { borderColor: "var(--card-border)" } : undefined}
+              style={{
+                textDecoration: "none",
+                color: "inherit",
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                gap: 12,
+                alignItems: "start",
+                padding: "12px 4px",
+                borderBottom: "1px solid var(--line)",
+              }}
             >
-              <p className="text-[9px] font-bold uppercase tracking-widest mb-1 font-body" style={{ color: "var(--text-tertiary)" }}>
-                {item.source || item.category}
-              </p>
-              <h6 className="text-sm font-bold mb-1 line-clamp-1" style={{ color: "var(--text-primary)" }}>
-                {item.headline}
-              </h6>
-              <p className="text-xs mb-2 leading-relaxed line-clamp-2 font-body" style={{ color: "var(--text-secondary)" }}>
-                {item.summary}
-              </p>
-              <p className="text-[10px] font-medium font-body" style={{ color: "var(--text-tertiary)" }}>
-                {timeAgo(item.datetime)}
-              </p>
+              <div>
+                <div style={{ fontSize: 13, lineHeight: 1.4 }}>{item.headline}</div>
+                <div style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4 }}>
+                  <span style={{ fontWeight: 500, color: "var(--fg-2)" }}>{item.source || item.category}</span>
+                  {" · "}
+                  {timeAgo(item.datetime)}
+                </div>
+              </div>
+              <Icon name="chevron" size={14} />
             </a>
           ))}
         </div>

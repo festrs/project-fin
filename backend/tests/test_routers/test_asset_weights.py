@@ -21,7 +21,7 @@ def test_add_asset(client, default_user, db):
     assert resp.status_code == 201
     data = resp.json()
     assert data["symbol"] == "AAPL"
-    assert data["target_weight"] == 50.0
+    assert data["target_weight"] == "50.0000"
 
 
 def test_list_assets(client, default_user, db):
@@ -47,7 +47,7 @@ def test_update_weight(client, default_user, db):
     aw_id = create_resp.json()["id"]
     resp = client.put(f"/api/asset-weights/{aw_id}", json={"target_weight": 70.0}, headers=headers)
     assert resp.status_code == 200
-    assert resp.json()["target_weight"] == 70.0
+    assert resp.json()["target_weight"] == "70.0000"
 
 
 def test_delete_asset(client, default_user, db):
