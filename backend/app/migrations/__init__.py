@@ -227,13 +227,32 @@ def _005_canonicalize_br_symbols(cur: sqlite3.Cursor) -> None:
         cur.execute(f"SELECT {column} FROM {table} WHERE 1=1{clause}")
         rows = cur.fetchall()
         bare = {r[0] for r in rows if _is_bare_br(r[0])}
+        renamed_total = 0
+        dropped_total = 0
         for sym in bare:
             extra = f" AND ({where})" if where else ""
+            # `UPDATE OR IGNORE` silently skips rows whose canonical twin
+            # already satisfies a UNIQUE/PK constraint (real case in prod
+            # `dividend_history` where (symbol, record_date, dividend_type,
+            # value) is unique and bare/`.SA` rows for the same payment exist
+            # side-by-side from prior cron runs).
             cur.execute(
-                f"UPDATE {table} SET {column} = ? WHERE {column} = ?{extra}",
+                f"UPDATE OR IGNORE {table} SET {column} = ? WHERE {column} = ?{extra}",
                 (sym + ".SA", sym),
             )
-        logger.info("  %s.%s: rewrote %d distinct symbol(s)", table, column, len(bare))
+            renamed_total += cur.rowcount
+            # Anything still bare after the OR IGNORE pass is a leftover
+            # duplicate of an already-canonical row — safe to drop so future
+            # canonical lookups don't double-count.
+            cur.execute(
+                f"DELETE FROM {table} WHERE {column} = ?{extra}",
+                (sym,),
+            )
+            dropped_total += cur.rowcount
+        logger.info(
+            "  %s.%s: %d distinct symbol(s); renamed %d row(s), dropped %d duplicate row(s)",
+            table, column, len(bare), renamed_total, dropped_total,
+        )
 
     rename_unique("market_quotes")
     rename_unique("tracked_symbols")
