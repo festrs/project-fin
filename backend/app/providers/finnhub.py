@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from decimal import Decimal
 
 import httpx
@@ -9,34 +9,11 @@ from app.providers._http import finnhub_client
 
 logger = logging.getLogger(__name__)
 
-PERIOD_DAYS = {
-    "1mo": 30,
-    "3mo": 90,
-    "1y": 365,
-}
-
 
 class FinnhubProvider:
     def __init__(self, api_key: str, base_url: str = "https://finnhub.io/api/v1"):
         self._api_key = api_key
         self._base_url = base_url
-
-    def search(self, query: str) -> list[dict]:
-        resp = finnhub_client.get(
-            f"{self._base_url}/search",
-            params={"q": query, "token": self._api_key},
-        )
-        resp.raise_for_status()
-        results = resp.json().get("result", [])
-        return [
-            {
-                "symbol": r["symbol"],
-                "name": r.get("description", ""),
-                "type": r.get("type", ""),
-            }
-            for r in results
-            if "." not in r.get("symbol", "")  # filter out foreign exchanges
-        ][:10]
 
     def get_quote(self, symbol: str) -> dict:
         quote_resp = finnhub_client.get(
@@ -61,16 +38,6 @@ class FinnhubProvider:
             "currency": currency,
             "market_cap": Money(Decimal(str(profile_data.get("marketCapitalization", 0))) * Decimal("1000000"), currency),
         }
-
-    def get_splits(self, symbol: str, from_date: str, to_date: str) -> list[dict]:
-        """GET /stock/split for a symbol within a date range."""
-        resp = httpx.get(
-            f"{self._base_url}/stock/split",
-            params={"symbol": symbol, "from": from_date, "to": to_date, "token": self._api_key},
-            timeout=10,
-        )
-        resp.raise_for_status()
-        return resp.json()
 
     def get_fundamentals(self, symbol: str) -> dict:
         """Fetch fundamentals from SEC filings via /stock/financials-reported."""
@@ -207,35 +174,4 @@ class FinnhubProvider:
                 "image": item.get("image", ""),
             }
             for item in items[:10]
-        ]
-
-    def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
-        now = datetime.now(timezone.utc)
-        days = PERIOD_DAYS.get(period, 30)
-        from_ts = int((now - timedelta(days=days)).timestamp())
-        to_ts = int(now.timestamp())
-
-        resp = httpx.get(
-            f"{self._base_url}/stock/candle",
-            params={
-                "symbol": symbol,
-                "resolution": "D",
-                "from": from_ts,
-                "to": to_ts,
-                "token": self._api_key,
-            },
-        )
-        resp.raise_for_status()
-        data = resp.json()
-
-        if data.get("s") != "ok":
-            return []
-
-        return [
-            {
-                "date": datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d"),
-                "close": Decimal(str(close)),
-                "volume": int(volume),
-            }
-            for ts, close, volume in zip(data["t"], data["c"], data["v"])
         ]

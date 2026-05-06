@@ -42,7 +42,13 @@ router = APIRouter(
 
 
 def _validate_symbols(raw: str) -> list[str]:
-    """Parse, validate, and return a list of symbols from a comma-separated string."""
+    """Parse, validate, canonicalize, and dedupe a comma-separated symbol list.
+
+    Canonicalization here is what makes the rest of the app simple: any
+    legacy iOS client still sending bare BR tickers (`ITUB3`) gets the same
+    `.SA`-suffixed treatment as a current client (`ITUB3.SA`). Storage,
+    lookups, and responses all work off the canonical form.
+    """
     symbol_list = [s.strip() for s in raw.split(",") if s.strip()]
     if len(symbol_list) > MAX_SYMBOLS_PER_REQUEST:
         raise HTTPException(
@@ -52,7 +58,16 @@ def _validate_symbols(raw: str) -> list[str]:
     for s in symbol_list:
         if not SYMBOL_PATTERN.match(s):
             raise HTTPException(status_code=422, detail=f"Invalid symbol: {s}")
-    return symbol_list
+    # Canonicalize + dedupe while preserving order.
+    seen: set[str] = set()
+    out: list[str] = []
+    for s in symbol_list:
+        canonical = Symbol.canonicalize(s)
+        if canonical in seen:
+            continue
+        seen.add(canonical)
+        out.append(canonical)
+    return out
 
 
 def _money_to_dict(m) -> dict | None:
@@ -110,11 +125,13 @@ def _fetch_one_quote(market_data, symbol: str) -> dict | None:
         return None
 
     currency = quote.get("currency")
+    dy = quote.get("dividend_yield")
     return {
-        "symbol": symbol,
+        "symbol": Symbol.canonicalize(symbol),
         "name": quote.get("name", symbol),
         "price": _money_to_dict(quote.get("current_price")),
         "currency": currency.code if hasattr(currency, "code") else str(currency or "USD"),
+        "dividend_yield": str(dy) if dy is not None else None,
     }
 
 
@@ -167,6 +184,9 @@ def get_dividends_for_symbols(
     year_start = date(target_year, 1, 1)
     year_end = date(target_year, 12, 31)
 
+    # `symbol_list` is already canonical (`.SA`-suffixed for BR) coming out of
+    # `_validate_symbols`. `expand_variants` stays as a belt-and-suspenders so
+    # any pre-migration rows still in the DB without `.SA` also match.
     query_symbols = Symbol.expand_variants(symbol_list)
 
     rows = (
@@ -190,16 +210,12 @@ def get_dividends_for_symbols(
         .all()
     )
 
-    # Echo back the symbol the client sent, not the .SA-suffixed DB form.
-    canonical = {s.removesuffix(".SA"): s for s in symbol_list}
-
     result = []
     for r in rows:
         value = r.value if isinstance(r.value, Decimal) else Decimal(str(r.value))
         currency = r.currency if r.currency else "BRL"
-        client_symbol = canonical.get(r.symbol.removesuffix(".SA"), r.symbol)
         result.append({
-            "symbol": client_symbol,
+            "symbol": Symbol.canonicalize(r.symbol),
             "dividend_type": r.dividend_type,
             "value": {"amount": str(value), "currency": currency},
             "ex_date": r.ex_date.isoformat(),
@@ -229,6 +245,8 @@ def get_dividend_summary(
     year_start = date(current_year, 1, 1)
     year_end = date(current_year, 12, 31)
 
+    # See comment on `/dividends` — `expand_variants` covers pre-migration rows;
+    # everything else relies on the canonical form coming out of `_validate_symbols`.
     query_symbols = Symbol.expand_variants(symbol_list)
 
     rows = (
@@ -252,15 +270,16 @@ def get_dividend_summary(
         .all()
     )
 
-    # Collapse .SA / bare duplicates back to the symbol the client requested.
-    canonical = {s.removesuffix(".SA"): s for s in symbol_list}
+    # Collapse any `.SA`/bare duplicates onto the canonical key. Once the
+    # storage migration has run, every row will already be canonical and the
+    # `.get` is a no-op.
     result: dict[str, dict] = {}
     for symbol, total in rows:
-        client_symbol = canonical.get(symbol.removesuffix(".SA"), symbol)
+        canonical_key = Symbol.canonicalize(symbol)
         dps = total if isinstance(total, Decimal) else Decimal(str(total))
-        existing = result.get(client_symbol)
+        existing = result.get(canonical_key)
         if existing is None or Decimal(existing["dividend_per_share"]) < dps:
-            result[client_symbol] = {"dividend_per_share": str(dps)}
+            result[canonical_key] = {"dividend_per_share": str(dps)}
 
     return result
 
@@ -289,14 +308,15 @@ def track_symbol(
     if asset_class not in ASSET_CLASS_COUNTRY:
         raise HTTPException(status_code=422, detail=f"Invalid asset_class: {asset_class}")
     country = ASSET_CLASS_COUNTRY[asset_class]
-    existing = db.query(TrackedSymbol).filter_by(symbol=symbol).first()
+    canonical = Symbol.canonicalize(symbol)
+    existing = db.query(TrackedSymbol).filter_by(symbol=canonical).first()
     if existing:
         existing.asset_class = asset_class
         existing.country = country
     else:
-        db.add(TrackedSymbol(symbol=symbol, asset_class=asset_class, country=country))
+        db.add(TrackedSymbol(symbol=canonical, asset_class=asset_class, country=country))
     db.commit()
-    return {"symbol": symbol, "asset_class": asset_class, "country": country}
+    return {"symbol": canonical, "asset_class": asset_class, "country": country}
 
 
 @router.delete("/track/{symbol}", status_code=204)
@@ -307,7 +327,11 @@ def untrack_symbol(
     db: Session = Depends(get_db),
 ):
     """Stop tracking a symbol."""
-    db.query(TrackedSymbol).filter_by(symbol=symbol).delete()
+    canonical = Symbol.canonicalize(symbol)
+    # Match both forms during the migration window.
+    db.query(TrackedSymbol).filter(
+        TrackedSymbol.symbol.in_({canonical, symbol})
+    ).delete(synchronize_session=False)
     db.commit()
 
 
@@ -333,7 +357,9 @@ def sync_tracked_symbols(
             raise HTTPException(status_code=422, detail=f"Invalid symbol: {sym}")
         if cls not in ASSET_CLASS_COUNTRY:
             raise HTTPException(status_code=422, detail=f"Invalid asset_class: {cls}")
-        incoming[sym] = cls
+        # Store under the canonical form so legacy bare-form clients stay in
+        # sync with current `.SA`-aware ones.
+        incoming[Symbol.canonicalize(sym)] = cls
 
     # Upsert incoming (never remove — symbols are shared across users)
     for symbol, asset_class in incoming.items():
@@ -444,11 +470,18 @@ def get_fundamentals(
 ):
     """Return fundamentals score for a symbol, fetching on-demand if not cached."""
     _validate_symbols(symbol)
-    score = db.query(FundamentalsScore).filter_by(symbol=symbol).first()
+    canonical = Symbol.canonicalize(symbol)
+    # Match either form during the migration window — pre-existing rows may
+    # still be stored bare. New writes always go to the canonical row.
+    score = (
+        db.query(FundamentalsScore)
+        .filter(FundamentalsScore.symbol.in_({canonical, symbol}))
+        .first()
+    )
     if score is None:
-        score = _fetch_fundamentals_on_demand(symbol, db)
+        score = _fetch_fundamentals_on_demand(canonical, db)
     if score is None:
-        raise HTTPException(status_code=404, detail=f"No fundamentals for {symbol}")
+        raise HTTPException(status_code=404, detail=f"No fundamentals for {canonical}")
     return _fundamentals_to_dict(score)
 
 

@@ -1,5 +1,3 @@
-import asyncio
-
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
@@ -25,74 +23,66 @@ def _money_to_dict(m) -> dict | None:
 
 
 def _detect_country(symbol: str) -> tuple[str, str]:
-    """Detect country from symbol. Returns (clean_symbol, country)."""
-    return symbol, Symbol.country(symbol)
+    """Canonicalize and detect country. Returns (canonical_symbol, country).
+
+    Accepts either form on input (`ITUB3` or `ITUB3.SA`) so legacy callers
+    keep working; downstream provider/storage code always sees the canonical
+    form.
+    """
+    canonical = Symbol.canonicalize(symbol)
+    return canonical, Symbol.country(canonical)
 
 
 def _quote_to_response(quote: dict) -> dict:
+    dy = quote.get("dividend_yield")
     return {
-        "symbol": quote["symbol"],
+        "symbol": Symbol.canonicalize(quote["symbol"]),
         "name": quote["name"],
         "price": _money_to_dict(quote["current_price"]),
         "currency": quote["currency"].code if hasattr(quote["currency"], "code") else quote["currency"],
         "market_cap": _money_to_dict(quote["market_cap"]),
+        "dividend_yield": str(dy) if dy is not None else None,
     }
 
 
 @router.get("/search")
 @limiter.limit(MARKET_DATA_LIMIT)
-async def search_stocks(request: Request, q: str = Query(min_length=1)):
-    """Search for stocks across US (Finnhub), BR (Brapi), and crypto markets.
+async def search_stocks(
+    request: Request,
+    q: str = Query(min_length=1),
+    asset_class: str | None = Query(default=None, description="iOS AssetClassType.rawValue (acoesBR, fiis, usStocks, reits, crypto, rendaFixa)"),
+):
+    """Class-aware unified search.
 
-    Each provider runs in parallel via asyncio.gather so total latency is
-    max(provider_times) instead of sum. Crypto runs first in the merge so
-    that on duplicate symbols the crypto record wins (the dedupe loop keeps
-    the first occurrence). The final list is sorted alphabetically by name
-    for the iOS client.
+    Backed by yfinance for stocks/FIIs/REITs and CoinGecko for crypto. When
+    ``asset_class`` is given, the provider only returns matches for that
+    class (and yfinance gets a chance to retry BR queries with a ``.SA``
+    suffix to hit B3 ticker matches). BR results are enriched with Brapi
+    price/logo when available; the search degrades gracefully if Brapi is
+    down.
     """
     market_data = get_market_data_service()
+    raw = await market_data.search_stocks(q, asset_class=asset_class)
 
-    async def _safe(fn, *args):
-        try:
-            return await asyncio.to_thread(fn, *args)
-        except Exception:
-            return []
-
-    crypto_res, finnhub_res, brapi_res = await asyncio.gather(
-        _safe(market_data.search_crypto, q),
-        _safe(market_data._finnhub.search, q),
-        _safe(market_data._brapi.search, q),
-    )
-    raw = list(crypto_res) + list(finnhub_res) + list(brapi_res)
-
-    # Deduplicate by symbol — first occurrence (crypto-first) wins
     seen: set[str] = set()
     results = []
     for item in raw:
         symbol = item.get("symbol", "")
-        if symbol and symbol not in seen:
-            seen.add(symbol)
-            result = {
-                "id": symbol,
-                "symbol": symbol,
-                "name": item.get("name"),
-                "type": item.get("type"),
-            }
-            # Include enriched fields when available (from brapi /api/quote/list)
-            if item.get("price") is not None:
-                result["price"] = item["price"]
-            if item.get("currency"):
-                result["currency"] = item["currency"]
-            if item.get("change") is not None:
-                result["change"] = item["change"]
-            if item.get("sector"):
-                result["sector"] = item["sector"]
-            if item.get("logo"):
-                result["logo"] = item["logo"]
-            results.append(result)
+        if not symbol or symbol in seen:
+            continue
+        seen.add(symbol)
+        result = {
+            "id": symbol,
+            "symbol": symbol,
+            "name": item.get("name"),
+            "type": item.get("type"),
+        }
+        for key in ("price", "currency", "change", "sector", "industry", "logo"):
+            value = item.get(key)
+            if value is not None:
+                result[key] = value
+        results.append(result)
 
-    # Sort alphabetically by name (case-insensitive); fall back to symbol
-    # when name is missing so unnamed entries stay deterministic.
     results.sort(key=lambda r: ((r.get("name") or r.get("symbol") or "").lower(), r.get("symbol") or ""))
     return results
 

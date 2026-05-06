@@ -36,12 +36,10 @@ def _score_to_dict(score: FundamentalsScore, include_raw: bool = False) -> dict:
 def _refresh_score(symbol: str, db: Session) -> None:
     from app.providers.finnhub import FinnhubProvider
     from app.providers.yfinance import YFinanceProvider
-    from app.providers.brapi import BrapiProvider
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
     from app.services.fundamentals_scheduler import FundamentalsScoreScheduler
 
     yfinance = YFinanceProvider()
-    brapi = BrapiProvider(api_key=settings.brapi_api_key)
     dados = DadosDeMercadoProvider()
     finnhub = FinnhubProvider(api_key=settings.finnhub_api_key)
 
@@ -49,7 +47,6 @@ def _refresh_score(symbol: str, db: Session) -> None:
 
     scheduler = FundamentalsScoreScheduler(
         yfinance_provider=yfinance,
-        brapi_provider=brapi,
         dados_provider=dados,
         finnhub_provider=finnhub,
         delay=0,
@@ -69,7 +66,6 @@ def refresh_all_scores(
     request: Request,
     user_id: str = Depends(get_current_user_id),
 ):
-    from app.providers.brapi import BrapiProvider
     from app.providers.dados_de_mercado import DadosDeMercadoProvider
     from app.providers.finnhub import FinnhubProvider
     from app.providers.yfinance import YFinanceProvider
@@ -77,7 +73,6 @@ def refresh_all_scores(
 
     scheduler = FundamentalsScoreScheduler(
         yfinance_provider=YFinanceProvider(),
-        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
         dados_provider=DadosDeMercadoProvider(),
         finnhub_provider=FinnhubProvider(api_key=settings.finnhub_api_key),
         delay=1.0,

@@ -1,9 +1,7 @@
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
-from datetime import datetime, timedelta
 
 from app.providers.finnhub import FinnhubProvider
-from app.providers.base import MarketDataProvider
 from app.money import Money, Currency
 
 
@@ -56,41 +54,3 @@ class TestFinnhubGetQuote:
             assert call_args[1]["params"]["token"] == "my-key"
 
 
-class TestFinnhubGetHistory:
-    def test_returns_correct_structure(self):
-        provider = FinnhubProvider(api_key="test-key", base_url="https://finnhub.io/api/v1")
-
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            "c": [170.0, 175.0],
-            "v": [1000000, 1200000],
-            "t": [1704067200, 1704153600],  # 2024-01-01 and 2024-01-02 UTC
-            "s": "ok",
-        }
-        mock_resp.raise_for_status = MagicMock()
-
-        with patch("app.providers.finnhub.httpx.get", return_value=mock_resp):
-            result = provider.get_history("AAPL", period="1mo")
-
-        assert len(result) == 2
-        assert result[0]["date"] == "2024-01-01"
-        assert result[0]["close"] == Decimal("170.0")
-        assert result[0]["volume"] == 1000000
-        assert result[1]["date"] == "2024-01-02"
-
-    def test_no_data_returns_empty(self):
-        provider = FinnhubProvider(api_key="test-key", base_url="https://finnhub.io/api/v1")
-
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {"s": "no_data"}
-        mock_resp.raise_for_status = MagicMock()
-
-        with patch("app.providers.finnhub.httpx.get", return_value=mock_resp):
-            result = provider.get_history("INVALID", period="1mo")
-
-        assert result == []
-
-
-def test_finnhub_satisfies_protocol():
-    provider = FinnhubProvider(api_key="test")
-    assert isinstance(provider, MarketDataProvider)

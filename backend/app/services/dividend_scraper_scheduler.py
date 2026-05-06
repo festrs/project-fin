@@ -66,13 +66,19 @@ class DividendScheduler:
             class_name = "FIIs" if asset_class in self._TRACKED_FII_CLASSES else asset_class
             tx_rows.append((symbol, country, class_name))
 
-        # Deduplicate
+        # Canonicalize and deduplicate. Pre-migration rows may be stored bare;
+        # canonicalizing here means we hit the right provider once per asset
+        # and write back to the canonical key in `dividend_history`.
+        from app.providers.common import Symbol as _Symbol
+
         seen: set[str] = set()
         rows: list[tuple[str, str, str]] = []
         for symbol, country, class_name in tx_rows:
-            if symbol not in seen:
-                seen.add(symbol)
-                rows.append((symbol, country, class_name))
+            canonical = _Symbol.canonicalize(symbol)
+            if canonical in seen:
+                continue
+            seen.add(canonical)
+            rows.append((canonical, country, class_name))
 
         return self.scrape_symbols(db, rows)
 

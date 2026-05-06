@@ -1,0 +1,189 @@
+"""Tests for YFinanceProvider.search() — the unified non-crypto search.
+
+The mapper has to be hermetic: every test mocks ``yf.Search`` so we never
+hit Yahoo. The fixtures mirror real shapes captured during the live probe
+that informed the implementation (see plan).
+"""
+from unittest.mock import patch, MagicMock
+
+from app.providers.yfinance import YFinanceProvider
+
+
+def _quote(**kwargs) -> dict:
+    base = {
+        "quoteType": "EQUITY",
+        "exchange": "NMS",
+        "symbol": "AAPL",
+        "longname": "Apple Inc.",
+        "shortname": "Apple Inc.",
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+    }
+    base.update(kwargs)
+    return base
+
+
+def _mock_search(results_per_query: dict | list):
+    """Build a ``yf.Search`` MagicMock factory.
+
+    Pass a dict to vary results by query string (``.SA`` retry tests need
+    this), or a list to return the same quotes regardless of query.
+    """
+    def factory(query, **_):
+        m = MagicMock()
+        if isinstance(results_per_query, dict):
+            m.quotes = results_per_query.get(query, [])
+        else:
+            m.quotes = results_per_query
+        return m
+    return factory
+
+
+def test_us_equity_maps_to_common_stock():
+    p = YFinanceProvider()
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([_quote()])):
+        out = p.search("AAPL")
+    assert out == [{
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "type": "common stock",
+        "sector": "Technology",
+        "industry": "Consumer Electronics",
+    }]
+
+
+def test_us_real_estate_sector_maps_to_reit():
+    p = YFinanceProvider()
+    quote = _quote(
+        symbol="O",
+        longname="Realty Income Corporation",
+        shortname="Realty Income Corporation",
+        exchange="NYQ",
+        sector="Real Estate",
+        industry="REIT—Retail",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([quote])):
+        out = p.search("O")
+    assert len(out) == 1
+    assert out[0]["type"] == "reit"
+
+
+def test_sao_ticker_ending_11_maps_to_fund():
+    p = YFinanceProvider()
+    quote = _quote(
+        symbol="BTLG11.SA",
+        longname="BTG Pactual Logística FII",
+        shortname="FII BTLG",
+        exchange="SAO",
+        sector="Real Estate",
+        industry="REIT—Industrial",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([quote])):
+        out = p.search("BTLG11")
+    assert out and out[0]["type"] == "fund"
+
+
+def test_sao_normal_ticker_maps_to_stock():
+    p = YFinanceProvider()
+    quote = _quote(
+        symbol="PETR4.SA",
+        longname="Petrobras",
+        shortname="PETROBRAS",
+        exchange="SAO",
+        sector="Energy",
+        industry="Oil & Gas Integrated",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([quote])):
+        out = p.search("PETR4")
+    assert out and out[0]["type"] == "stock"
+
+
+def test_sao_bdr_suffix_maps_to_bdr():
+    p = YFinanceProvider()
+    quote = _quote(
+        symbol="AAPL34.SA",
+        longname="Apple BDR",
+        shortname="AAPL BDR",
+        exchange="SAO",
+        sector="Technology",
+        industry="Consumer Electronics",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([quote])):
+        out = p.search("AAPL34")
+    assert out and out[0]["type"] == "bdr"
+
+
+def test_filters_drop_non_equity():
+    p = YFinanceProvider()
+    futures = _quote(quoteType="FUTURE", symbol="CL=F", exchange="NYM")
+    etf = _quote(quoteType="ETF", symbol="AAPB", longname="GraniteShares 2x")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([futures, etf, _quote()])):
+        out = p.search("AAPL")
+    assert len(out) == 1 and out[0]["symbol"] == "AAPL"
+
+
+def test_filters_drop_foreign_exchanges():
+    p = YFinanceProvider()
+    arg = _quote(symbol="AAPL.BA", exchange="BUE", longname="Apple Argentina CEDEAR")
+    chf = _quote(symbol="AAPL.SW", exchange="EBS")
+    de = _quote(symbol="AAPY.DE", exchange="GER")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([arg, chf, de, _quote()])):
+        out = p.search("AAPL")
+    assert len(out) == 1 and out[0]["symbol"] == "AAPL"
+
+
+def test_filters_drop_b3_noise_variants():
+    p = YFinanceProvider()
+    real = _quote(symbol="PETR4.SA", longname="Petrobras", exchange="SAO")
+    forward = _quote(symbol="PETR4F.SA", longname="", shortname="PETROBRAS", exchange="SAO")
+    option = _quote(symbol="PETR4Q.SA", longname="", shortname="PETROBRAS", exchange="SAO")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([real, forward, option])):
+        out = p.search("PETR4")
+    assert [r["symbol"] for r in out] == ["PETR4.SA"]
+
+
+def test_asset_class_filter_only_returns_matching_class():
+    p = YFinanceProvider()
+    aapl = _quote()  # common stock
+    realty = _quote(symbol="O", exchange="NYQ", longname="Realty Income",
+                    sector="Real Estate", industry="REIT—Retail")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([aapl, realty])):
+        only_reits = p.search("anything", asset_class="reits")
+    assert [r["symbol"] for r in only_reits] == ["O"]
+
+
+def test_asset_class_crypto_short_circuits_yfinance():
+    p = YFinanceProvider()
+    with patch("app.providers.yfinance.yf.Search") as mocked:
+        out = p.search("BTC", asset_class="crypto")
+    assert out == []
+    mocked.assert_not_called()
+
+
+def test_asset_class_renda_fixa_short_circuits_yfinance():
+    p = YFinanceProvider()
+    with patch("app.providers.yfinance.yf.Search") as mocked:
+        out = p.search("CDB", asset_class="rendaFixa")
+    assert out == []
+    mocked.assert_not_called()
+
+
+def test_br_class_retries_with_sa_suffix():
+    """When the user types a bare BR ticker like "BTLG11" (no .SA),
+    the provider should retry the query with the suffix appended so
+    Yahoo's matcher surfaces the B3 listing."""
+    p = YFinanceProvider()
+    btlg = _quote(symbol="BTLG11.SA", exchange="SAO", longname="BTLG FII",
+                  sector="Real Estate", industry="REIT—Industrial")
+    # First query (bare) returns nothing; .SA retry returns the FII.
+    results_by_query = {"BTLG11": [], "BTLG11.SA": [btlg]}
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search(results_by_query)):
+        out = p.search("BTLG11", asset_class="fiis")
+    assert [r["symbol"] for r in out] == ["BTLG11.SA"]
+
+
+def test_yfinance_failure_returns_empty_not_raises():
+    p = YFinanceProvider()
+    with patch("app.providers.yfinance.yf.Search", side_effect=RuntimeError("boom")):
+        out = p.search("AAPL")
+    assert out == []

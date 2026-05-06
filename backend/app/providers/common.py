@@ -45,6 +45,24 @@ class Symbol:
         return symbol if symbol.endswith(cls._SA_SUFFIX) else f"{symbol}{cls._SA_SUFFIX}"
 
     @classmethod
+    def canonicalize(cls, symbol: str) -> str:
+        """End-to-end canonical form. BR tickers (B3 stocks, FIIs, BDRs)
+        always carry the `.SA` suffix; everything else is returned uppercased
+        and trimmed.
+
+        This is the single rule iOS clients can rely on: every symbol that
+        leaves the backend in an asset-class-tagged response is canonicalized,
+        and every symbol that arrives is canonicalized before DB lookup or
+        storage. Provider-specific stripping/appending happens *inside* the
+        provider classes (Brapi/Dados strip, yfinance keeps `.SA`); callers
+        should always work with the canonical form.
+        """
+        if not symbol:
+            return symbol
+        upper = symbol.strip().upper()
+        return cls.with_sa(upper) if cls.is_br(upper) else upper
+
+    @classmethod
     def expand_variants(cls, symbols: list[str]) -> list[str]:
         """For each BR ticker, include both the bare and .SA forms.
 
