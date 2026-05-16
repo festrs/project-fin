@@ -186,3 +186,150 @@ class TestGetCryptoHistory:
 
         assert len(result) == 2
         assert result[0]["price"] == Decimal("42000.0")
+
+
+class TestComputeYieldFromHistory:
+    """For BR tickers we ignore whatever yield a provider reports and compute
+    it ourselves: sum(last 12mo dividend_history.value) / current_price * 100.
+
+    This makes the iOS Dashboard's "Gross Income" card numerically consistent
+    with the gauge — both flow from the same DividendHistory rows.
+    """
+    def test_sums_trailing_year_and_divides_by_price(self, db):
+        from app.services.market_data import compute_yield_from_history
+        from app.models.dividend_history import DividendHistory
+        from datetime import date, timedelta
+
+        # 12 monthly payments of R$0.25/share — annual = R$3 — at price R$50 → 6%.
+        today = date.today()
+        for offset in range(1, 13):
+            db.add(DividendHistory(
+                symbol="ITUB3.SA", dividend_type="JCP", value=Decimal("0.25"),
+                record_date=today - timedelta(days=30 * offset),
+                ex_date=today - timedelta(days=30 * offset),
+                payment_date=today - timedelta(days=30 * offset - 5),
+                currency="BRL",
+            ))
+        db.commit()
+
+        result = compute_yield_from_history(db, "ITUB3.SA", Decimal("50"))
+        assert result is not None
+        # 3.00 / 50 * 100 = 6.0
+        assert result == Decimal("6.00")
+
+    def test_excludes_payments_older_than_one_year(self, db):
+        from app.services.market_data import compute_yield_from_history
+        from app.models.dividend_history import DividendHistory
+        from datetime import date, timedelta
+
+        today = date.today()
+        # Two recent + one ancient (2 years ago) payment.
+        for offset in (10, 90):
+            db.add(DividendHistory(
+                symbol="ITUB3.SA", dividend_type="JCP", value=Decimal("1"),
+                record_date=today - timedelta(days=offset),
+                ex_date=today - timedelta(days=offset),
+                payment_date=today - timedelta(days=offset),
+                currency="BRL",
+            ))
+        db.add(DividendHistory(
+            symbol="ITUB3.SA", dividend_type="JCP", value=Decimal("99"),
+            record_date=today - timedelta(days=730),
+            ex_date=today - timedelta(days=730),
+            payment_date=today - timedelta(days=730),
+            currency="BRL",
+        ))
+        db.commit()
+
+        # Only the 2 recent payments count: 2.00 / 100 * 100 = 2.0
+        result = compute_yield_from_history(db, "ITUB3.SA", Decimal("100"))
+        assert result == Decimal("2.00")
+
+    def test_returns_none_when_no_records(self, db):
+        from app.services.market_data import compute_yield_from_history
+        result = compute_yield_from_history(db, "NEWIPO.SA", Decimal("50"))
+        assert result is None
+
+    def test_returns_none_when_price_is_zero(self, db):
+        from app.services.market_data import compute_yield_from_history
+        from app.models.dividend_history import DividendHistory
+        from datetime import date
+
+        db.add(DividendHistory(
+            symbol="ITUB3.SA", dividend_type="JCP", value=Decimal("1"),
+            record_date=date.today(), ex_date=date.today(),
+            payment_date=date.today(), currency="BRL",
+        ))
+        db.commit()
+        result = compute_yield_from_history(db, "ITUB3.SA", Decimal("0"))
+        assert result is None
+
+
+class TestUpsertQuoteOverridesBRYield:
+    """When upserting a BR quote, MarketDataService must overwrite the
+    provider-supplied dividend_yield with the one computed from records.
+
+    This is the seam that prevents broken yfinance numbers (ITUB3 = 0.53%)
+    from leaking through to iOS clients.
+    """
+    def test_br_yield_replaced_by_computed_from_history(self, service, db):
+        from app.models.dividend_history import DividendHistory
+        from datetime import date, timedelta
+
+        today = date.today()
+        for offset in range(1, 13):
+            db.add(DividendHistory(
+                symbol="ITUB3.SA", dividend_type="JCP", value=Decimal("0.25"),
+                record_date=today - timedelta(days=30 * offset),
+                ex_date=today - timedelta(days=30 * offset),
+                payment_date=today - timedelta(days=30 * offset - 5),
+                currency="BRL",
+            ))
+        db.commit()
+
+        # Provider returns a deliberately wrong yield (0.53 — yfinance's bug).
+        provider_payload = {
+            "symbol": "ITUB3.SA", "name": "Itaú",
+            "current_price": Money(Decimal("50"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("0"), Currency.BRL),
+            "dividend_yield": Decimal("0.53"),
+        }
+
+        service._upsert_quote(db, "ITUB3.SA", "BR", provider_payload)
+
+        from app.models.market_quote import MarketQuote
+        stored = db.query(MarketQuote).filter_by(symbol="ITUB3.SA").one()
+        # 12 × 0.25 = 3.00 / 50 × 100 = 6.00
+        assert stored.dividend_yield == Decimal("6.00")
+
+    def test_us_yield_left_untouched(self, service, db):
+        # No DividendHistory rows for US tickers in this test — provider value
+        # must be preserved (we trust yfinance for US dividend yields).
+        provider_payload = {
+            "symbol": "AAPL", "name": "Apple",
+            "current_price": Money(Decimal("200"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("0"), Currency.USD),
+            "dividend_yield": Decimal("0.40"),
+        }
+        service._upsert_quote(db, "AAPL", "US", provider_payload)
+
+        from app.models.market_quote import MarketQuote
+        stored = db.query(MarketQuote).filter_by(symbol="AAPL").one()
+        assert stored.dividend_yield == Decimal("0.40")
+
+    def test_br_yield_falls_back_when_no_history(self, service, db):
+        # Brand-new BR ticker with no recorded dividends — keep provider value.
+        provider_payload = {
+            "symbol": "NEWIPO.SA", "name": "New Co",
+            "current_price": Money(Decimal("10"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("0"), Currency.BRL),
+            "dividend_yield": Decimal("3.5"),
+        }
+        service._upsert_quote(db, "NEWIPO.SA", "BR", provider_payload)
+
+        from app.models.market_quote import MarketQuote
+        stored = db.query(MarketQuote).filter_by(symbol="NEWIPO.SA").one()
+        assert stored.dividend_yield == Decimal("3.5")

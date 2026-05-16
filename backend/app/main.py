@@ -35,15 +35,13 @@ def _run_scheduled_fetch():
 
 def _run_dividend_scrape():
     from app.database import SessionLocal
-    from app.providers.brapi import BrapiProvider
-    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.providers.statusinvest import StatusInvestProvider
     from app.providers.yfinance import YFinanceProvider
     from app.services.dividend_scraper_scheduler import DividendScheduler
 
     scheduler = DividendScheduler(
-        dados_provider=DadosDeMercadoProvider(),
+        statusinvest_provider=StatusInvestProvider(),
         yfinance_provider=YFinanceProvider(),
-        brapi_provider=BrapiProvider(api_key=settings.brapi_api_key, base_url=settings.brapi_base_url),
         br_delay=settings.dividend_scraper_delay,
         us_delay=settings.dividend_us_delay,
     )

@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import httpx
@@ -9,6 +9,7 @@ from cachetools import TTLCache
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.models.dividend_history import DividendHistory
 from app.models.market_quote import MarketQuote
 from app.providers._http import coingecko_client
 from app.providers.finnhub import FinnhubProvider
@@ -25,6 +26,37 @@ CRYPTO_COINGECKO_MAP = {
     "DAI": "dai", "DAI-USD": "dai",
 }
 CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
+
+
+def compute_yield_from_history(
+    db: Session, symbol: str, current_price: Decimal
+) -> Decimal | None:
+    """Trailing-12m dividend yield computed from `DividendHistory`.
+
+    Replaces the broken yfinance/Brapi `dividend_yield` field for BR tickers:
+    yfinance reports ITUB3 at 0.53% (only the latest JCP), real ~7.6%. By
+    summing recorded payments ourselves we get the same number Status Invest's
+    page shows and match the iOS Dashboard's TTM-based monthly income card.
+
+    Returns None when there are no recent payments or the price is zero —
+    callers should leave the existing yield in place rather than overwrite
+    with garbage.
+    """
+    if current_price is None or current_price <= 0:
+        return None
+    cutoff = date.today() - timedelta(days=365)
+    rows = (
+        db.query(DividendHistory)
+        .filter(
+            DividendHistory.symbol == symbol,
+            DividendHistory.payment_date >= cutoff,
+        )
+        .all()
+    )
+    if not rows:
+        return None
+    total = sum((Decimal(r.value) for r in rows), Decimal("0"))
+    return (total / current_price * Decimal("100")).quantize(Decimal("0.01"))
 
 
 class MarketDataService:
@@ -122,7 +154,16 @@ class MarketDataService:
         quote.currency = price_currency
         mcap_amount, _ = result["market_cap"].to_db()
         quote.market_cap = mcap_amount
-        quote.dividend_yield = result.get("dividend_yield")
+        # For BR tickers, recompute the yield from records — yfinance/Brapi
+        # report only the latest payment for B3 stocks (e.g. ITUB3 = 0.53%).
+        # When we have history we trust the records; otherwise keep the
+        # provider value so brand-new positions still show *something*.
+        provider_yield = result.get("dividend_yield")
+        if country == "BR":
+            computed = compute_yield_from_history(db, symbol, price_amount)
+            quote.dividend_yield = computed if computed is not None else provider_yield
+        else:
+            quote.dividend_yield = provider_yield
         quote.country = country
         quote.updated_at = datetime.now(timezone.utc)
         db.commit()

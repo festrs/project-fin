@@ -22,6 +22,10 @@ class Settings(BaseSettings):
     enable_snapshot_scheduler: bool = True
     snapshot_hour: int = 18
     mobile_api_key: str = ""
+    # Comma-separated list of unlock codes that grant unlimited assets in the
+    # iOS app. Empty (default) disables redemption entirely — every code is
+    # rejected. Rotate by changing the env var.
+    mobile_redeem_codes: str = ""
     gemini_api_key: str = ""
     anthropic_api_key: str = ""
     jwt_secret_key: str = "change-me-in-production"

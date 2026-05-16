@@ -8,7 +8,6 @@ from app.models.asset_class import AssetClass
 from app.models.dividend_history import DividendHistory
 from app.models.tracked_symbol import TrackedSymbol
 from app.models.transaction import Transaction
-from app.providers.brapi import BrapiFeatureUnavailable
 from app.providers.common import Symbol
 
 logger = logging.getLogger(__name__)
@@ -19,25 +18,24 @@ CRYPTO_CLASS_NAMES = {"Crypto", "Criptomoedas"}
 
 
 class DividendScheduler:
+    """One provider per market — Status Invest for BR, yfinance for US.
+
+    Replaces the previous Brapi → yfinance → DadosDeMercado fan-out. With one
+    writer per symbol the dedup logic at insert time only needs to collapse
+    re-runs of the same provider, never cross-provider duplicates.
+    """
+
     def __init__(
         self,
-        dados_provider,
+        statusinvest_provider,
         yfinance_provider,
-        brapi_provider=None,
         br_delay: float = 2.0,
         us_delay: float = 1.0,
     ):
-        self._dados = dados_provider
+        self._statusinvest = statusinvest_provider
         self._yfinance = yfinance_provider
-        self._brapi = brapi_provider
         self._br_delay = br_delay
         self._us_delay = us_delay
-        # Becomes True after the first FEATURE_NOT_AVAILABLE so we stop trying
-        # Brapi for the rest of the run.
-        self._brapi_disabled = False
-
-    # FIIs are not covered by DadosDeMercado; use yfinance for them
-    _YFINANCE_CLASS_NAMES = {"FIIs"}
 
     # Map iOS asset_class values to class names used by the dividend scraper
     _TRACKED_FII_CLASSES = {"fiis"}
@@ -159,28 +157,15 @@ class DividendScheduler:
         return {"scraped": len(rows), "new_records": new_total, "failed": failed}
 
     def _fetch_records(self, symbol: str, country: str, class_name: str):
-        """Resolve the dividend records for a symbol via the provider chain.
+        """Resolve the dividend records for a symbol — one provider per market.
 
-        BR (stocks + FIIs): Brapi cashDividends → yfinance(.SA) fallback.
-        US (stocks + REITs): yfinance.
+        BR (stocks + FIIs + BDRs): Status Invest.
+        US (stocks + REITs):       yfinance.
 
         Returns (records, currency, delay).
         """
         if country == "BR":
-            if self._brapi is not None and not self._brapi_disabled:
-                try:
-                    records = self._brapi.get_dividends(symbol)
-                    if records:
-                        return records, "BRL", self._br_delay
-                except BrapiFeatureUnavailable as e:
-                    logger.warning("Brapi dividends unavailable on current plan: %s", e)
-                    self._brapi_disabled = True
-                except Exception:
-                    logger.exception("Brapi.get_dividends failed for %s; falling back", symbol)
-
-            records = self._yfinance.get_dividends(Symbol.with_sa(symbol))
-            if not records and class_name not in self._YFINANCE_CLASS_NAMES:
-                records = self._dados.scrape_dividends(symbol)
+            records = self._statusinvest.get_dividends(symbol)
             return records, "BRL", self._br_delay
 
         # US stocks & REITs

@@ -9,6 +9,7 @@ All endpoints require a valid X-API-Key header (see dependencies_mobile.py).
 """
 
 import asyncio
+import hmac
 import logging
 import re
 from datetime import date
@@ -111,6 +112,12 @@ def _fetch_one_quote(market_data, symbol: str) -> dict | None:
 
     Pure function so it's easy to fan out via asyncio.to_thread.
     Returns None on failure — caller filters them out.
+
+    BR `dividend_yield` is overridden later in the endpoint using
+    `compute_yield_from_history` (yfinance/Brapi report only the latest
+    payment for B3, e.g. ITUB3 = 0.53% vs real ~7.7%). The override needs a
+    DB session, which is easier to manage at the request level than inside
+    the threaded fan-out.
     """
     try:
         if symbol.upper() in _CRYPTO_COIN_MAP:
@@ -126,12 +133,17 @@ def _fetch_one_quote(market_data, symbol: str) -> dict | None:
 
     currency = quote.get("currency")
     dy = quote.get("dividend_yield")
+    price_money = quote.get("current_price")
     return {
         "symbol": Symbol.canonicalize(symbol),
         "name": quote.get("name", symbol),
-        "price": _money_to_dict(quote.get("current_price")),
+        "price": _money_to_dict(price_money),
         "currency": currency.code if hasattr(currency, "code") else str(currency or "USD"),
         "dividend_yield": str(dy) if dy is not None else None,
+        # Internal-only: kept on the dict so the endpoint can recompute the
+        # yield from records without re-parsing the price string. Stripped
+        # before the response goes out.
+        "_price_amount": price_money.amount if price_money is not None and hasattr(price_money, "amount") else None,
     }
 
 
@@ -140,6 +152,7 @@ def _fetch_one_quote(market_data, symbol: str) -> dict | None:
 async def get_batch_quotes(
     request: Request,
     symbols: str = Query(description="Comma-separated symbols, e.g. ITUB3.SA,AAPL,BTC"),
+    db: Session = Depends(get_db),
 ):
     """Get current prices for a list of symbols, fanned-out in parallel.
 
@@ -157,6 +170,17 @@ async def get_batch_quotes(
         return_exceptions=False,
     )
     results = [q for q in fetched if q is not None]
+
+    # BR yield override using `dividend_history` — runs serially in the main
+    # request thread so it can share the request's `db` session safely.
+    from app.services.market_data import compute_yield_from_history
+    for q in results:
+        if Symbol.is_br(q["symbol"]) and q.get("_price_amount") is not None:
+            computed = compute_yield_from_history(db, q["symbol"], q["_price_amount"])
+            if computed is not None:
+                q["dividend_yield"] = str(computed)
+        q.pop("_price_amount", None)
+
     return {"quotes": results}
 
 
@@ -439,18 +463,13 @@ def refresh_dividends(
     rows = [(s, country, class_name) for s in symbol_list]
 
     from app.config import settings as _settings
-    from app.providers.brapi import BrapiProvider
-    from app.providers.dados_de_mercado import DadosDeMercadoProvider
+    from app.providers.statusinvest import StatusInvestProvider
     from app.providers.yfinance import YFinanceProvider
     from app.services.dividend_scraper_scheduler import DividendScheduler
 
     scheduler = DividendScheduler(
-        dados_provider=DadosDeMercadoProvider(),
+        statusinvest_provider=StatusInvestProvider(),
         yfinance_provider=YFinanceProvider(),
-        brapi_provider=BrapiProvider(
-            api_key=_settings.brapi_api_key,
-            base_url=_settings.brapi_base_url,
-        ),
         br_delay=_settings.dividend_scraper_delay,
         us_delay=_settings.dividend_us_delay,
     )
@@ -511,3 +530,51 @@ def _fundamentals_to_dict(score: FundamentalsScore) -> dict:
         "composite_score": score.composite_score,
         "updated_at": score.updated_at.isoformat() if score.updated_at else None,
     }
+
+
+# ---------------------------------------------------------------------------
+# Redeem codes
+# ---------------------------------------------------------------------------
+
+MAX_REDEEM_CODE_LENGTH = 64
+REDEEM_UNLIMITED_ASSETS = "unlimited_assets"
+
+
+def _valid_redeem_codes() -> list[str]:
+    from app.config import settings as _settings
+    raw = _settings.mobile_redeem_codes or ""
+    return [c.strip() for c in raw.split(",") if c.strip()]
+
+
+def _code_matches(submitted: str, valid: list[str]) -> bool:
+    # Constant-time compare against each configured code so timing leaks
+    # don't reveal the prefix of a real code.
+    matched = False
+    for code in valid:
+        if hmac.compare_digest(submitted, code):
+            matched = True
+    return matched
+
+
+@router.post("/redeem", status_code=200)
+@limiter.limit(CRUD_LIMIT)
+def redeem_code(
+    request: Request,
+    code: str = Query(description="Unlock code to redeem (case-sensitive)"),
+):
+    """Validate an unlock code and report what it grants.
+
+    Codes live in the `MOBILE_REDEEM_CODES` env var (comma-separated). When
+    unset, all redemptions fail. The endpoint is stateless — the client
+    persists the unlocked entitlement in `UserSettings` once `valid=true`
+    comes back.
+    """
+    submitted = (code or "").strip()
+    if not submitted or len(submitted) > MAX_REDEEM_CODE_LENGTH:
+        raise HTTPException(status_code=422, detail="Invalid code format")
+
+    valid = _valid_redeem_codes()
+    if not valid or not _code_matches(submitted, valid):
+        return {"valid": False, "unlocks": []}
+
+    return {"valid": True, "unlocks": [REDEEM_UNLIMITED_ASSETS]}
