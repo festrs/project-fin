@@ -14,11 +14,8 @@ interface AllocationDonutChartProps {
 export default function AllocationDonutChart({ classSummaries }: AllocationDonutChartProps) {
   if (classSummaries.length === 0) {
     return (
-      <div
-        className="rounded-xl p-6"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-      >
-        <p style={{ color: "var(--text-tertiary)", fontSize: "0.875rem" }}>No allocation data</p>
+      <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 24 }}>
+        <p style={{ color: "var(--fg-3)", fontSize: 13 }}>No allocation data</p>
       </div>
     );
   }
@@ -29,26 +26,10 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
     .map((s) => ({ name: s.className, value: s.targetWeight, color: s.color }));
 
   return (
-    <div
-      className="rounded-xl p-6"
-      style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-    >
-      <h4
-        className="text-label"
-        style={{
-          fontSize: 11,
-          fontWeight: 600,
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          color: "var(--text-tertiary)",
-          marginBottom: 16,
-        }}
-      >
-        Actual vs Target
-      </h4>
+    <div style={{ background: "var(--bg-2)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: 24 }}>
+      <h4 className="section-title" style={{ marginBottom: 16 }}>Actual vs Target</h4>
       <ResponsiveContainer width="100%" height={380}>
         <PieChart>
-          {/* Outer ring: Actual allocation */}
           <Pie
             data={actualData}
             cx="50%"
@@ -57,14 +38,13 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
             outerRadius="90%"
             paddingAngle={1.5}
             dataKey="value"
-            stroke="#0a0a0a"
+            stroke="var(--bg)"
             strokeWidth={4}
           >
             {actualData.map((entry, index) => (
               <Cell key={`actual-${index}`} fill={entry.color} opacity={0.85} />
             ))}
           </Pie>
-          {/* Inner ring: Target allocation */}
           {targetData.length > 0 && (
             <Pie
               data={targetData}
@@ -74,7 +54,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
               outerRadius="47%"
               paddingAngle={1.5}
               dataKey="value"
-              stroke="#0a0a0a"
+              stroke="var(--bg)"
               strokeWidth={4}
             >
               {targetData.map((entry, index) => (
@@ -85,18 +65,17 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           <Tooltip
             formatter={(value) => `${Number(value).toFixed(1)}%`}
             contentStyle={{
-              background: "#1c1c1e",
-              border: "1px solid rgba(255,255,255,0.08)",
+              background: "var(--bg-2)",
+              border: "1px solid var(--line)",
               borderRadius: 8,
-              color: "#f5f5f7",
-              fontSize: "0.75rem",
+              color: "var(--fg)",
+              fontSize: 12,
             }}
-            labelStyle={{ color: "#f5f5f7" }}
-            itemStyle={{ color: "rgba(255,255,255,0.55)" }}
+            labelStyle={{ color: "var(--fg)" }}
+            itemStyle={{ color: "var(--fg-2)" }}
           />
         </PieChart>
       </ResponsiveContainer>
-      {/* Pill badge legend */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6, justifyContent: "center", marginTop: -4 }}>
         {actualData.map((entry) => (
           <span
@@ -117,10 +96,7 @@ export default function AllocationDonutChart({ classSummaries }: AllocationDonut
           </span>
         ))}
       </div>
-      <div
-        className="text-center"
-        style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 10 }}
-      >
+      <div style={{ textAlign: "center", fontSize: 11, color: "var(--fg-3)", marginTop: 10 }}>
         Outer: Actual &middot; Inner: Target
       </div>
     </div>

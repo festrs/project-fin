@@ -1,17 +1,16 @@
 """
 Portfolio import endpoint.
 
-Accepts xlsx files (B3 CEI export) or raw text and uses Claude Haiku
+Accepts xlsx/csv/txt files (e.g. B3 CEI export) and uses Claude Haiku
 to extract structured portfolio positions.
 """
 
 import io
 import json
 import logging
-from typing import Optional
 
 import anthropic
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from pydantic import BaseModel
 
 from app.config import settings
@@ -174,29 +173,23 @@ async def _call_claude(text: str) -> list[dict]:
 
 @router.post("/parse", response_model=ImportResponse)
 async def parse_portfolio(
-    file: Optional[UploadFile] = File(None),
-    text: Optional[str] = Form(None),
+    file: UploadFile = File(...),
 ):
     """
-    Parse a portfolio export file (xlsx/csv) or raw text using Claude AI.
+    Parse a portfolio export file (xlsx/csv/txt) using Claude AI.
     Returns structured positions ready for import.
     """
-    if file is not None:
-        file_bytes = await file.read()
-        if len(file_bytes) > 5 * 1024 * 1024:  # 5 MB limit
-            raise HTTPException(status_code=413, detail="File too large. Maximum size is 5 MB.")
-        filename = (file.filename or "").lower()
+    file_bytes = await file.read()
+    if len(file_bytes) > 5 * 1024 * 1024:  # 5 MB limit
+        raise HTTPException(status_code=413, detail="File too large. Maximum size is 5 MB.")
+    filename = (file.filename or "").lower()
 
-        if filename.endswith(".xlsx"):
-            extracted = _extract_text_from_xlsx(file_bytes)
-        elif filename.endswith(".csv") or filename.endswith(".txt"):
-            extracted = _extract_text_from_csv(file_bytes)
-        else:
-            raise HTTPException(status_code=400, detail="Unsupported file type. Use .xlsx, .csv, or .txt")
-    elif text:
-        extracted = text
+    if filename.endswith(".xlsx"):
+        extracted = _extract_text_from_xlsx(file_bytes)
+    elif filename.endswith(".csv") or filename.endswith(".txt"):
+        extracted = _extract_text_from_csv(file_bytes)
     else:
-        raise HTTPException(status_code=400, detail="Provide either a file or text")
+        raise HTTPException(status_code=400, detail="Unsupported file type. Use .xlsx, .csv, or .txt")
 
     # Truncate if too long (context limit)
     if len(extracted) > 50_000:

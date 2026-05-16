@@ -68,7 +68,7 @@ class SnapshotScheduler:
         enriched = PortfolioService.enrich_holdings(holdings, class_map, weight_map, market_data, db=db)
 
         # Sum total value in BRL
-        exchange_rate = fetch_exchange_rate("USD-BRL")
+        exchange_rate: Decimal = fetch_exchange_rate("USD-BRL")
         total_value_brl = Decimal("0")
         for h in enriched:
             current_value = h.get("current_value")
@@ -77,7 +77,7 @@ class SnapshotScheduler:
             amount = current_value.amount
             currency_code = current_value.currency.code
             if currency_code == "USD":
-                amount = amount * Decimal(str(exchange_rate))
+                amount = amount * exchange_rate
             total_value_brl += amount
 
         snapshot = PortfolioSnapshot(

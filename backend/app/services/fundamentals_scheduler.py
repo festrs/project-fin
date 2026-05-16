@@ -15,9 +15,8 @@ CRYPTO_CLASS_NAMES = {"Crypto", "Criptomoedas"}
 
 
 class FundamentalsScoreScheduler:
-    def __init__(self, yfinance_provider, brapi_provider, dados_provider, finnhub_provider=None, delay: float = 1.5):
+    def __init__(self, yfinance_provider, dados_provider, finnhub_provider=None, delay: float = 1.5):
         self._yfinance = yfinance_provider
-        self._brapi = brapi_provider
         self._dados = dados_provider
         self._finnhub = finnhub_provider
         self._delay = delay
@@ -55,16 +54,7 @@ class FundamentalsScoreScheduler:
                 return self._finnhub.get_fundamentals(symbol)
             return self._yfinance.get_fundamentals(symbol)
 
-        # BR: try brapi first, fall back to dados if eps_history is insufficient
-        data = self._brapi.get_fundamentals(symbol)
-        eps_history = data.get("eps_history") or []
-        if len(eps_history) < 5:
-            logger.info(
-                f"brapi returned insufficient eps_history for {symbol} "
-                f"({len(eps_history)} entries), falling back to dados_de_mercado"
-            )
-            data = self._dados.scrape_fundamentals(symbol)
-        return data
+        return self._dados.scrape_fundamentals(symbol)
 
     def _upsert_score(self, db: Session, symbol: str, result: dict, raw_data: list | None) -> None:
         score = db.query(FundamentalsScore).filter_by(symbol=symbol).first()

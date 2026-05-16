@@ -27,9 +27,18 @@ export default function Login() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--black)", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <div className="card" style={{ maxWidth: 400, width: "100%", padding: 32 }}>
-        <p style={{ fontSize: 24, fontWeight: 600, color: "var(--text-primary)", letterSpacing: "-0.02em", textAlign: "center", marginBottom: 32 }}>
-          Fin
-        </p>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 10,
+            background: "var(--fg)", color: "var(--bg)",
+            display: "inline-grid", placeItems: "center",
+            fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 20,
+            marginBottom: 12,
+          }}>F</div>
+          <p style={{ fontSize: 20, fontWeight: 600, fontFamily: "var(--font-display)", letterSpacing: "-0.02em", margin: 0 }}>
+            Fin<span style={{ color: "var(--fg-3)", fontWeight: 400 }}>·folio</span>
+          </p>
+        </div>
         <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <label htmlFor="email" style={{ display: "block", fontSize: 13, fontWeight: 500, color: "var(--text-secondary)", marginBottom: 4 }}>

@@ -1,7 +1,8 @@
 from datetime import datetime, date
+from decimal import Decimal
 from uuid import uuid4
 
-from sqlalchemy import String, Float, DateTime, Date, ForeignKey, UniqueConstraint
+from sqlalchemy import String, Numeric, DateTime, Date, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -22,8 +23,8 @@ class StockSplit(Base):
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), nullable=False)
     symbol: Mapped[str] = mapped_column(String(20), nullable=False)
     split_date: Mapped[date] = mapped_column(Date, nullable=False)
-    from_factor: Mapped[float] = mapped_column(Float, nullable=False)
-    to_factor: Mapped[float] = mapped_column(Float, nullable=False)
+    from_factor: Mapped[Decimal] = mapped_column(Numeric(19, 8, asdecimal=True), nullable=False)
+    to_factor: Mapped[Decimal] = mapped_column(Numeric(19, 8, asdecimal=True), nullable=False)
     event_type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="split")
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
     detected_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

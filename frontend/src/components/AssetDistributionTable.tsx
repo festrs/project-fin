@@ -4,6 +4,7 @@ import type { Holding, AssetClass, Transaction, DividendsResponse } from "../typ
 import { moneyToNumber } from "../utils/money";
 import { computeClassSummaries, type ClassSummary } from "./ClassSummaryTable";
 import { DividendHistoryModal } from "./DividendHistoryModal";
+import Icon from "./Icon";
 
 interface AssetDistributionTableProps {
   holdings: Holding[];
@@ -184,7 +185,7 @@ export default function AssetDistributionTable({
               onClick={handleStartEditing}
               className="text-blue text-xs font-bold uppercase tracking-widest flex items-center gap-1 font-body"
             >
-              <span className="material-symbols-outlined text-sm">edit</span> Edit Targets
+              <Icon name="settings" size={14} /> Edit Targets
             </button>
           )}
           {onCreateClass && (
@@ -192,7 +193,7 @@ export default function AssetDistributionTable({
               onClick={() => setShowCreateForm((v) => !v)}
               className="text-blue text-xs font-bold uppercase tracking-widest flex items-center gap-1 font-body"
             >
-              <span className="material-symbols-outlined text-sm">add</span> Add Class
+              <Icon name="plus" size={14} /> Add Class
             </button>
           )}
           {onCreateClass && !hasEmergencyReserve && (
@@ -257,7 +258,7 @@ export default function AssetDistributionTable({
                       className="text-text-tertiary hover:text-blue transition-colors disabled:opacity-50"
                       title={scrapingDividends ? "Scraping..." : "Refresh dividends"}
                     >
-                      <span className={`material-symbols-outlined text-sm ${scrapingDividends ? "animate-spin" : ""}`}>refresh</span>
+                      <span className={scrapingDividends ? "animate-spin inline-block" : "inline-block"}><Icon name="filter" size={14} /></span>
                     </button>
                   )}
                 </div>
@@ -280,7 +281,7 @@ export default function AssetDistributionTable({
                   <td className="px-6 py-5">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded flex items-center justify-center" style={{ background: iconInfo.bg, color: iconInfo.color }}>
-                        <span className="material-symbols-outlined text-lg">{iconInfo.icon}</span>
+                        <Icon name="wallet" size={18} />
                       </div>
                       <span className="text-sm font-medium font-body">{s.className}</span>
                     </div>
@@ -345,7 +346,7 @@ export default function AssetDistributionTable({
                           if (window.confirm(`Delete asset class "${s.className}"?`)) onDeleteClass(s.classId);
                         }}
                       >
-                        <span className="material-symbols-outlined text-lg">delete</span>
+                        <Icon name="filter" size={16} />
                       </button>
                     </td>
                   )}
@@ -361,7 +362,7 @@ export default function AssetDistributionTable({
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded flex items-center justify-center" style={{ background: "rgba(251, 191, 36, 0.1)", color: "var(--class-emergency)" }}>
-                      <span className="material-symbols-outlined text-lg">savings</span>
+                      <Icon name="wallet" size={18} />
                     </div>
                     <span className="text-sm font-medium font-body" style={{ color: "var(--text-secondary)" }}>{reserveSummary.className}</span>
                   </div>

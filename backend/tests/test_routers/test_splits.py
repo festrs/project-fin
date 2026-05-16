@@ -35,8 +35,8 @@ class TestSplitsRouter:
         data = resp.json()
         assert len(data) == 1
         assert data[0]["symbol"] == "FAST"
-        assert data[0]["current_quantity"] == 100
-        assert data[0]["new_quantity"] == 200
+        assert data[0]["current_quantity"] == "100.00000000"
+        assert data[0]["new_quantity"] == "200.00000000"
 
     def test_apply_split(self, client, default_user, db):
         split = _setup_split(db, default_user)

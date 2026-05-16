@@ -1,5 +1,5 @@
 from decimal import Decimal
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -8,15 +8,24 @@ from app.models.asset_class import AssetClass
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.money import Money, Currency
+from app.services.market_data import MarketDataService
 from app.services.market_data_scheduler import MarketDataScheduler
 from app.services.auth import hash_password
 
 
 @pytest.fixture
-def scheduler():
-    finnhub = MagicMock()
-    brapi = MagicMock()
-    return MarketDataScheduler(finnhub_provider=finnhub, brapi_provider=brapi)
+def service():
+    svc = MarketDataService()
+    svc._yfinance = MagicMock()
+    svc._finnhub = MagicMock()
+    svc._brapi = MagicMock()
+    svc._quote_cache.clear()
+    return svc
+
+
+@pytest.fixture
+def scheduler(service):
+    return MarketDataScheduler(market_data_service=service)
 
 
 def _setup_user_with_holdings(db):
@@ -46,16 +55,50 @@ def _setup_user_with_holdings(db):
 
 
 class TestFetchAllQuotes:
-    def test_fetches_and_stores_quotes(self, scheduler, db):
+    def test_fetches_via_yfinance_and_persists_yield(self, scheduler, service, db):
         _setup_user_with_holdings(db)
 
-        scheduler._finnhub.get_quote.return_value = {
+        def yf_quote(sym):
+            if sym == "AAPL":
+                return {
+                    "symbol": "AAPL", "name": "Apple",
+                    "current_price": Money(Decimal("175.0"), Currency.USD),
+                    "currency": Currency.USD,
+                    "market_cap": Money(Decimal("2800000000000"), Currency.USD),
+                    "dividend_yield": Decimal("0.39"),
+                }
+            return {
+                "symbol": "PETR4.SA", "name": "Petrobras",
+                "current_price": Money(Decimal("40.0"), Currency.BRL),
+                "currency": Currency.BRL,
+                "market_cap": Money(Decimal("500000000000"), Currency.BRL),
+                "dividend_yield": Decimal("7.96"),
+            }
+        service._yfinance.get_quote.side_effect = yf_quote
+
+        scheduler.fetch_all_quotes(db)
+
+        aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
+        assert aapl.current_price == Decimal("175.0")
+        assert aapl.country == "US"
+        assert aapl.dividend_yield == Decimal("0.39")
+
+        petr = db.query(MarketQuote).filter_by(symbol="PETR4.SA").first()
+        assert petr.current_price == Decimal("40.0")
+        assert petr.country == "BR"
+        assert petr.dividend_yield == Decimal("7.96")
+
+    def test_falls_back_to_finnhub_when_yfinance_fails(self, scheduler, service, db):
+        _setup_user_with_holdings(db)
+
+        service._yfinance.get_quote.side_effect = Exception("yahoo down")
+        service._finnhub.get_quote.return_value = {
             "symbol": "AAPL", "name": "Apple",
             "current_price": Money(Decimal("175.0"), Currency.USD),
             "currency": Currency.USD,
             "market_cap": Money(Decimal("2800000000000"), Currency.USD),
         }
-        scheduler._brapi.get_quote.return_value = {
+        service._brapi.get_quote.return_value = {
             "symbol": "PETR4.SA", "name": "Petrobras",
             "current_price": Money(Decimal("40.0"), Currency.BRL),
             "currency": Currency.BRL,
@@ -65,51 +108,28 @@ class TestFetchAllQuotes:
         scheduler.fetch_all_quotes(db)
 
         aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
-        assert aapl is not None
         assert aapl.current_price == Decimal("175.0")
-        assert aapl.country == "US"
+        assert aapl.dividend_yield is None  # fallback didn't supply yield
 
-        petr = db.query(MarketQuote).filter_by(symbol="PETR4.SA").first()
-        assert petr is not None
-        assert petr.current_price == Decimal("40.0")
-        assert petr.country == "BR"
-
-    def test_continues_on_individual_failure(self, scheduler, db):
+    def test_cron_bypasses_ttl_cache(self, scheduler, service, db):
+        """Cron must always reach the live provider, never the in-process cache."""
         _setup_user_with_holdings(db)
-
-        scheduler._finnhub.get_quote.side_effect = Exception("Finnhub down")
-        scheduler._brapi.get_quote.return_value = {
-            "symbol": "PETR4.SA", "name": "Petrobras",
-            "current_price": Money(Decimal("40.0"), Currency.BRL),
-            "currency": Currency.BRL,
-            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
+        # Pre-seed cache with a stale value the cron must NOT use.
+        service._quote_cache["AAPL"] = {
+            "symbol": "AAPL", "name": "Stale",
+            "current_price": Money(Decimal("1.00"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("0"), Currency.USD),
+            "dividend_yield": None,
         }
-
-        scheduler.fetch_all_quotes(db)
-
-        # AAPL should not be stored
-        aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
-        assert aapl is None
-
-        # PETR4.SA should still be stored
-        petr = db.query(MarketQuote).filter_by(symbol="PETR4.SA").first()
-        assert petr is not None
-
-    def test_upserts_existing_quotes(self, scheduler, db):
-        _setup_user_with_holdings(db)
-
-        # Pre-existing quote
-        old = MarketQuote(symbol="AAPL", name="Apple", current_price=Decimal("170.0"), currency="USD", country="US")
-        db.add(old)
-        db.commit()
-
-        scheduler._finnhub.get_quote.return_value = {
-            "symbol": "AAPL", "name": "Apple Inc",
+        service._yfinance.get_quote.return_value = {
+            "symbol": "AAPL", "name": "Apple",
             "current_price": Money(Decimal("175.0"), Currency.USD),
             "currency": Currency.USD,
             "market_cap": Money(Decimal("2800000000000"), Currency.USD),
+            "dividend_yield": Decimal("0.39"),
         }
-        scheduler._brapi.get_quote.return_value = {
+        service._brapi.get_quote.return_value = {
             "symbol": "PETR4.SA", "name": "Petrobras",
             "current_price": Money(Decimal("40.0"), Currency.BRL),
             "currency": Currency.BRL,
@@ -119,5 +139,23 @@ class TestFetchAllQuotes:
         scheduler.fetch_all_quotes(db)
 
         aapl = db.query(MarketQuote).filter_by(symbol="AAPL").first()
-        assert aapl.current_price == Decimal("175.0")
-        assert aapl.name == "Apple Inc"
+        assert aapl.current_price == Decimal("175.0"), "cron used cache instead of live"
+        assert aapl.name == "Apple"
+
+    def test_continues_on_individual_failure(self, scheduler, service, db):
+        _setup_user_with_holdings(db)
+
+        # yfinance fails for both; finnhub also fails for AAPL
+        service._yfinance.get_quote.side_effect = Exception("yahoo down")
+        service._finnhub.get_quote.side_effect = Exception("finnhub down")
+        service._brapi.get_quote.return_value = {
+            "symbol": "PETR4.SA", "name": "Petrobras",
+            "current_price": Money(Decimal("40.0"), Currency.BRL),
+            "currency": Currency.BRL,
+            "market_cap": Money(Decimal("500000000000"), Currency.BRL),
+        }
+
+        scheduler.fetch_all_quotes(db)
+
+        assert db.query(MarketQuote).filter_by(symbol="AAPL").first() is None
+        assert db.query(MarketQuote).filter_by(symbol="PETR4.SA").first() is not None

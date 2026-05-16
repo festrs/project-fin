@@ -30,18 +30,18 @@ class InvestmentPlanRequest(BaseModel):
 class InvestmentRecommendationResponse(BaseModel):
     symbol: str
     class_name: str
-    effective_target: float
-    actual_weight: float
-    diff: float
+    effective_target: str
+    actual_weight: str
+    diff: str
     price: MoneyResponse
-    quantity: float
+    quantity: str
     invest_amount: MoneyResponse
 
 
 class InvestmentPlanResponse(BaseModel):
     recommendations: list[InvestmentRecommendationResponse]
     total_invested: MoneyResponse
-    exchange_rate: float | None
+    exchange_rate: str | None
     exchange_rate_pair: str | None
     remainder: MoneyResponse
     empty_reason: str | None = None  # "no_holdings", "all_quarantined", "amount_too_small", or None

@@ -116,7 +116,7 @@ def _setup_user_with_holdings(db):
     return user
 
 
-@patch("app.services.snapshot_scheduler.fetch_exchange_rate", return_value=5.0)
+@patch("app.services.snapshot_scheduler.fetch_exchange_rate", return_value=Decimal("5.0"))
 @patch("app.services.snapshot_scheduler.get_market_data_service")
 def test_creates_snapshot_for_user(mock_market_data_svc, mock_fx, db):
     user = _setup_user_with_holdings(db)
@@ -140,7 +140,7 @@ def test_creates_snapshot_for_user(mock_market_data_svc, mock_fx, db):
     assert snapshot.total_value_brl == Decimal("10000.00") * Decimal("1")
 
 
-@patch("app.services.snapshot_scheduler.fetch_exchange_rate", return_value=5.0)
+@patch("app.services.snapshot_scheduler.fetch_exchange_rate", return_value=Decimal("5.0"))
 @patch("app.services.snapshot_scheduler.get_market_data_service")
 def test_skips_if_already_exists(mock_market_data_svc, mock_fx, db):
     user = _setup_user_with_holdings(db)

@@ -1,15 +1,166 @@
 import logging
 import math
+import re
 from decimal import Decimal
 
 import yfinance as yf
 
+from app.money import Money, Currency
 from app.providers.common import DividendRecord
 
 logger = logging.getLogger(__name__)
 
+# Exchange codes we accept in search results. SAO = B3 (São Paulo); the
+# rest are the US tape codes Yahoo emits for NASDAQ/NYSE/AMEX listings.
+# Anything else (BUE, EBS, GER, …) is a foreign listing of a known issuer
+# and would confuse the iOS asset-class detection.
+_ALLOWED_EXCHANGES = {"SAO", "NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS", "OPR"}
+_US_EXCHANGES = {"NMS", "NYQ", "NGM", "NCM", "ASE", "PCX", "BTS", "OPR"}
+
+# B3 tickers are 4 letters + 1-2 digits. Variants like PETR4F / PETR4Q
+# (forwards/options) leak into yf.Search and must be dropped.
+_B3_TICKER_RE = re.compile(r"^[A-Z]{4}\d{1,2}$")
+_BDR_SUFFIXES = ("32", "33", "34", "35", "39")
+
+# iOS AssetClassType.rawValue → the set of apiType values _map_quote produces
+# for that class. Used to filter when the caller scopes search to one class.
+_CLASS_API_TYPES: dict[str, set[str]] = {
+    "acoesBR": {"stock"},
+    "fiis": {"fund"},
+    "usStocks": {"common stock", "bdr"},
+    "reits": {"reit"},
+}
+# Classes yfinance can't serve — caller should route elsewhere or skip.
+_NON_YFINANCE_CLASSES = {"crypto", "rendaFixa"}
+
 
 class YFinanceProvider:
+    def search(
+        self,
+        query: str,
+        max_results: int = 15,
+        asset_class: str | None = None,
+    ) -> list[dict]:
+        """Search Yahoo Finance for stocks/FIIs/REITs (no crypto).
+
+        ``asset_class`` is iOS ``AssetClassType.rawValue``. When set, results
+        are filtered to that class and — for BR classes — the bare query is
+        retried with a ``.SA`` suffix to surface B3 ticker matches Yahoo
+        otherwise misses (e.g. typing "BTLG11" alone). Returns ``[]`` when
+        the class isn't yfinance-served (crypto, rendaFixa).
+
+        Each result: ``{symbol, name, type, sector, industry}`` where
+        ``type`` ∈ ``{"stock", "fund", "bdr", "reit", "common stock"}``.
+        """
+        if asset_class in _NON_YFINANCE_CLASSES:
+            return []
+
+        queries = [query]
+        if asset_class in {"acoesBR", "fiis"} and not query.upper().endswith(".SA"):
+            queries.append(f"{query}.SA")
+
+        seen_symbols: set[str] = set()
+        results: list[dict] = []
+        allowed_types = _CLASS_API_TYPES.get(asset_class) if asset_class else None
+
+        for q in queries:
+            try:
+                search = yf.Search(q, max_results=max_results, enable_fuzzy_query=True)
+                quotes = search.quotes or []
+            except Exception:
+                logger.warning("yfinance search failed for %s", q, exc_info=True)
+                continue
+
+            for raw in quotes:
+                mapped = self._map_quote(raw)
+                if mapped is None:
+                    continue
+                if allowed_types is not None and mapped["type"] not in allowed_types:
+                    continue
+                if mapped["symbol"] in seen_symbols:
+                    continue
+                seen_symbols.add(mapped["symbol"])
+                results.append(mapped)
+                if len(results) >= max_results:
+                    return results
+        return results
+
+    @staticmethod
+    def _map_quote(q: dict) -> dict | None:
+        if q.get("quoteType") != "EQUITY":
+            return None
+
+        exchange = q.get("exchange") or ""
+        if exchange not in _ALLOWED_EXCHANGES:
+            return None
+
+        symbol = q.get("symbol") or ""
+        if not symbol:
+            return None
+
+        longname = q.get("longname") or ""
+        shortname = q.get("shortname") or ""
+        # B3 noise (PETR4F, PETR4Q, …) lacks a longname; require it to keep
+        # the SAO list clean while leaving US results unaffected.
+        if exchange == "SAO" and not longname:
+            return None
+
+        sector = (q.get("sector") or "").strip()
+        industry = (q.get("industry") or "").strip()
+        name = longname or shortname or symbol
+
+        if exchange == "SAO":
+            if not symbol.endswith(".SA"):
+                return None
+            ticker = symbol[:-3]
+            if not _B3_TICKER_RE.match(ticker):
+                return None
+            if ticker.endswith("11"):
+                api_type = "fund"
+            elif any(ticker.endswith(suf) for suf in _BDR_SUFFIXES):
+                api_type = "bdr"
+            else:
+                api_type = "stock"
+        else:  # US exchange (filter above guarantees this)
+            if sector.lower() == "real estate" or industry.lower().startswith("reit"):
+                api_type = "reit"
+            else:
+                api_type = "common stock"
+
+        return {
+            "symbol": symbol,
+            "name": name,
+            "type": api_type,
+            "sector": sector or None,
+            "industry": industry or None,
+        }
+
+    def get_quote(self, symbol: str) -> dict:
+        """Fetch current quote via `Ticker.info`.
+
+        Returns the standard provider envelope plus `dividend_yield` (percent,
+        as Yahoo reports it — e.g. 7.96 for PETR4.SA). `dividend_yield` is
+        None when Yahoo doesn't expose it (crypto, ETFs without distributions,
+        recently-listed names).
+        """
+        info = yf.Ticker(symbol).info or {}
+        price_raw = info.get("regularMarketPrice") or info.get("currentPrice")
+        if price_raw is None:
+            raise ValueError(f"yfinance returned no price for {symbol}")
+        currency = Currency.from_code(info.get("currency") or "USD")
+        name = info.get("longName") or info.get("shortName") or symbol
+        market_cap_raw = info.get("marketCap") or 0
+        dy_raw = info.get("dividendYield")
+        dividend_yield = Decimal(str(dy_raw)) if dy_raw is not None else None
+        return {
+            "symbol": symbol,
+            "name": name,
+            "current_price": Money(Decimal(str(price_raw)), currency),
+            "currency": currency,
+            "market_cap": Money(Decimal(str(market_cap_raw)), currency),
+            "dividend_yield": dividend_yield,
+        }
+
     def get_history(self, symbol: str, period: str = "1mo") -> list[dict]:
         """Fetch historical daily prices for a symbol via yfinance."""
         try:

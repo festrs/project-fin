@@ -15,6 +15,7 @@ class MarketQuote(Base):
     current_price: Mapped[Decimal] = mapped_column(Numeric(19, 8, asdecimal=True), nullable=False)
     currency: Mapped[str] = mapped_column(String(3), default="USD")
     market_cap: Mapped[Decimal] = mapped_column(Numeric(19, 8, asdecimal=True), default=0)
+    dividend_yield: Mapped[Decimal | None] = mapped_column(Numeric(10, 4, asdecimal=True), nullable=True)
     country: Mapped[str] = mapped_column(String(2), default="US")
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc)

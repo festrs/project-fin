@@ -38,50 +38,74 @@ class TestGetStockQuote:
         assert result["current_price"] == Money(Decimal("175.50"), Currency.USD)
         assert result["currency"] == Currency.USD
 
-    def test_falls_back_to_provider_when_not_in_db(self, service, db):
-        mock_provider = MagicMock()
-        mock_provider.get_quote.return_value = {
+    def test_falls_back_to_yfinance_when_not_in_db(self, service, db):
+        mock_yf = MagicMock()
+        mock_yf.get_quote.return_value = {
+            "symbol": "AAPL",
+            "name": "Apple Inc",
+            "current_price": Money(Decimal("175.50"), Currency.USD),
+            "currency": Currency.USD,
+            "market_cap": Money(Decimal("2800000000000"), Currency.USD),
+            "dividend_yield": Decimal("0.39"),
+        }
+        service._yfinance = mock_yf
+
+        result = service.get_stock_quote("AAPL", country="US", db=db)
+
+        assert result["current_price"] == Money(Decimal("175.50"), Currency.USD)
+        assert result["dividend_yield"] == Decimal("0.39")
+        mock_yf.get_quote.assert_called_once_with("AAPL")
+        stored = db.query(MarketQuote).filter_by(symbol="AAPL").first()
+        assert stored is not None
+        assert stored.current_price == Decimal("175.50")
+        assert stored.dividend_yield == Decimal("0.39")
+
+    def test_falls_back_to_finnhub_when_yfinance_fails(self, service, db):
+        service._yfinance = MagicMock()
+        service._yfinance.get_quote.side_effect = Exception("yahoo down")
+
+        mock_finnhub = MagicMock()
+        mock_finnhub.get_quote.return_value = {
             "symbol": "AAPL",
             "name": "Apple Inc",
             "current_price": Money(Decimal("175.50"), Currency.USD),
             "currency": Currency.USD,
             "market_cap": Money(Decimal("2800000000000"), Currency.USD),
         }
-        service._finnhub = mock_provider
+        service._finnhub = mock_finnhub
 
         result = service.get_stock_quote("AAPL", country="US", db=db)
 
-        assert result["current_price"] == Money(Decimal("175.50"), Currency.USD)
-        mock_provider.get_quote.assert_called_once_with("AAPL")
-        # Verify it was stored in DB
-        stored = db.query(MarketQuote).filter_by(symbol="AAPL").first()
-        assert stored is not None
-        assert stored.current_price == Decimal("175.50")
+        assert result["dividend_yield"] is None
+        mock_finnhub.get_quote.assert_called_once_with("AAPL")
 
-    def test_routes_br_to_brapi(self, service, db):
-        mock_provider = MagicMock()
-        mock_provider.get_quote.return_value = {
+    def test_falls_back_to_brapi_for_br_when_yfinance_fails(self, service, db):
+        service._yfinance = MagicMock()
+        service._yfinance.get_quote.side_effect = Exception("yahoo down")
+
+        mock_brapi = MagicMock()
+        mock_brapi.get_quote.return_value = {
             "symbol": "PETR4.SA",
             "name": "Petrobras",
             "current_price": Money(Decimal("38.50"), Currency.BRL),
             "currency": Currency.BRL,
             "market_cap": Money(Decimal("500000000000"), Currency.BRL),
         }
-        service._brapi = mock_provider
+        service._brapi = mock_brapi
 
         result = service.get_stock_quote("PETR4.SA", country="BR", db=db)
 
         assert result["current_price"] == Money(Decimal("38.50"), Currency.BRL)
-        mock_provider.get_quote.assert_called_once_with("PETR4.SA")
+        mock_brapi.get_quote.assert_called_once_with("PETR4.SA")
 
 
 class TestGetStockHistory:
-    def test_routes_us_to_finnhub(self, service):
+    def test_routes_us_to_yfinance(self, service):
         mock_provider = MagicMock()
         mock_provider.get_history.return_value = [
             {"date": "2024-01-01", "close": Decimal("170.0"), "volume": 1000000},
         ]
-        service._finnhub = mock_provider
+        service._yfinance = mock_provider
 
         result = service.get_stock_history("AAPL", period="1mo", country="US")
 

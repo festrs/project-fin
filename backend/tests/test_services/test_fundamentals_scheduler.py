@@ -17,20 +17,14 @@ def yfinance_provider():
 
 
 @pytest.fixture
-def brapi_provider():
-    return MagicMock()
-
-
-@pytest.fixture
 def dados_provider():
     return MagicMock()
 
 
 @pytest.fixture
-def scheduler(yfinance_provider, brapi_provider, dados_provider):
+def scheduler(yfinance_provider, dados_provider):
     return FundamentalsScoreScheduler(
         yfinance_provider=yfinance_provider,
-        brapi_provider=brapi_provider,
         dados_provider=dados_provider,
         delay=0.0,
     )
@@ -102,34 +96,34 @@ def _setup_holdings(db):
 
 class TestFundamentalsScheduler:
     def test_discovers_us_and_br_stocks_only(
-        self, scheduler, yfinance_provider, brapi_provider, dados_provider, db
+        self, scheduler, yfinance_provider, dados_provider, db
     ):
         _setup_holdings(db)
 
         yfinance_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
-        brapi_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
+        dados_provider.scrape_fundamentals.return_value = MOCK_FUNDAMENTALS
 
         scheduler.score_all(db)
 
         yfinance_called_symbols = [
             call.args[0] for call in yfinance_provider.get_fundamentals.call_args_list
         ]
-        brapi_called_symbols = [
-            call.args[0] for call in brapi_provider.get_fundamentals.call_args_list
+        dados_called_symbols = [
+            call.args[0] for call in dados_provider.scrape_fundamentals.call_args_list
         ]
 
         assert "AAPL" in yfinance_called_symbols
-        assert "PETR4.SA" in brapi_called_symbols
+        assert "PETR4.SA" in dados_called_symbols
         assert "BTC" not in yfinance_called_symbols
-        assert "BTC" not in brapi_called_symbols
+        assert "BTC" not in dados_called_symbols
 
     def test_upserts_score_to_db(
-        self, scheduler, yfinance_provider, brapi_provider, dados_provider, db
+        self, scheduler, yfinance_provider, dados_provider, db
     ):
         _setup_holdings(db)
 
         yfinance_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
-        brapi_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
+        dados_provider.scrape_fundamentals.return_value = MOCK_FUNDAMENTALS
 
         scheduler.score_all(db)
 
@@ -138,17 +132,12 @@ class TestFundamentalsScheduler:
         assert score.composite_score == 100
         assert score.ipo_rating == "green"
 
-    def test_falls_back_to_dados_for_br(
-        self, scheduler, yfinance_provider, brapi_provider, dados_provider, db
+    def test_br_uses_dados_directly(
+        self, scheduler, yfinance_provider, dados_provider, db
     ):
         _setup_holdings(db)
 
         yfinance_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
-        # brapi returns insufficient eps_history (fewer than 5 entries)
-        brapi_provider.get_fundamentals.return_value = {
-            **MOCK_FUNDAMENTALS,
-            "eps_history": [],
-        }
         dados_provider.scrape_fundamentals.return_value = MOCK_FUNDAMENTALS
 
         scheduler.score_all(db)
@@ -160,12 +149,12 @@ class TestFundamentalsScheduler:
         assert score.composite_score == 100
 
     def test_continues_on_individual_failure(
-        self, scheduler, yfinance_provider, brapi_provider, dados_provider, db
+        self, scheduler, yfinance_provider, dados_provider, db
     ):
         _setup_holdings(db)
 
         yfinance_provider.get_fundamentals.side_effect = Exception("Network error")
-        brapi_provider.get_fundamentals.return_value = MOCK_FUNDAMENTALS
+        dados_provider.scrape_fundamentals.return_value = MOCK_FUNDAMENTALS
 
         scheduler.score_all(db)
 

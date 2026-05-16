@@ -189,3 +189,105 @@ class TestDividendScheduler:
 
         records = db.query(DividendHistory).filter_by(symbol="AAPL").all()
         assert len(records) == 1
+
+    def test_scrape_symbols_runs_only_requested_rows(self, scheduler, brapi_provider, yfinance_provider, db):
+        # No holdings/transactions seeded — the on-demand path must work
+        # purely off the rows passed in.
+        brapi_provider.get_dividends.return_value = [
+            DividendRecord(
+                dividend_type="Dividend", value=Decimal("1.20"),
+                record_date=date(2025, 6, 1), ex_date=date(2025, 6, 1),
+                payment_date=date(2025, 6, 15),
+            ),
+        ]
+        yfinance_provider.get_dividends.return_value = []
+
+        result = scheduler.scrape_symbols(db, [("KNRI11.SA", "BR", "FIIs")])
+
+        assert result == {"scraped": 1, "new_records": 1, "failed": []}
+        records = db.query(DividendHistory).filter_by(symbol="KNRI11.SA").all()
+        assert len(records) == 1
+        assert records[0].currency == "BRL"
+
+    def test_scrape_symbols_skips_records_before_since(self, scheduler, brapi_provider, yfinance_provider, db):
+        # Two payments: one before the user owned the asset, one after.
+        # With `since` set to mid-year, only the later record is written.
+        brapi_provider.get_dividends.return_value = [
+            DividendRecord(
+                dividend_type="Dividend", value=Decimal("0.20"),
+                record_date=date(2025, 2, 1), ex_date=date(2025, 2, 1),
+                payment_date=date(2025, 2, 15),
+            ),
+            DividendRecord(
+                dividend_type="Dividend", value=Decimal("0.30"),
+                record_date=date(2025, 8, 1), ex_date=date(2025, 8, 1),
+                payment_date=date(2025, 8, 15),
+            ),
+        ]
+        yfinance_provider.get_dividends.return_value = []
+
+        result = scheduler.scrape_symbols(
+            db,
+            [("HGLG11.SA", "BR", "FIIs")],
+            since=date(2025, 6, 1),
+        )
+
+        assert result["new_records"] == 1
+        records = db.query(DividendHistory).filter_by(symbol="HGLG11.SA").all()
+        assert len(records) == 1
+        assert records[0].payment_date == date(2025, 8, 15)
+
+    def test_scrape_symbols_uses_ex_date_when_payment_date_missing(self, scheduler, brapi_provider, yfinance_provider, db):
+        # If a record has no payment_date, ex_date is the cutoff fallback.
+        brapi_provider.get_dividends.return_value = [
+            DividendRecord(
+                dividend_type="Dividend", value=Decimal("0.40"),
+                record_date=date(2025, 3, 1), ex_date=date(2025, 3, 1),
+                payment_date=None,
+            ),
+        ]
+        yfinance_provider.get_dividends.return_value = []
+
+        result = scheduler.scrape_symbols(
+            db,
+            [("HGLG11.SA", "BR", "FIIs")],
+            since=date(2025, 5, 1),
+        )
+
+        assert result["new_records"] == 0
+
+    def test_scrape_symbols_collects_failures_without_aborting(self, scheduler, brapi_provider, yfinance_provider, db):
+        # First symbol blows up everywhere in the provider chain; second
+        # succeeds via Brapi. The failure list captures the first one but
+        # the run still commits the second.
+        ok_record = [
+            DividendRecord(
+                dividend_type="Dividend", value=Decimal("0.50"),
+                record_date=date(2025, 6, 1), ex_date=date(2025, 6, 1),
+                payment_date=date(2025, 6, 10),
+            ),
+        ]
+
+        def brapi_div(symbol):
+            if symbol == "BAD11.SA":
+                raise RuntimeError("brapi boom")
+            return ok_record
+
+        def yf_div(symbol):
+            # yfinance is the fallback when Brapi fails — keep it failing too
+            # so the symbol bubbles up as a hard failure.
+            raise RuntimeError("yfinance boom")
+
+        brapi_provider.get_dividends.side_effect = brapi_div
+        yfinance_provider.get_dividends.side_effect = yf_div
+
+        result = scheduler.scrape_symbols(
+            db,
+            [("BAD11.SA", "BR", "FIIs"), ("OKAY11.SA", "BR", "FIIs")],
+        )
+
+        assert result["scraped"] == 2
+        assert result["new_records"] == 1
+        assert result["failed"] == ["BAD11.SA"]
+        assert db.query(DividendHistory).filter_by(symbol="OKAY11.SA").count() == 1
+        assert db.query(DividendHistory).filter_by(symbol="BAD11.SA").count() == 0

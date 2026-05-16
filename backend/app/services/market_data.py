@@ -42,9 +42,37 @@ class MarketDataService:
         self._history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
         self._crypto_quote_cache: TTLCache = TTLCache(maxsize=256, ttl=120)
         self._crypto_history_cache: TTLCache = TTLCache(maxsize=256, ttl=900)
+        # Short TTL: shields Yahoo from hammering during the iOS debouncer's
+        # rapid-fire calls but stays fresh enough to not feel stale.
+        self._search_cache: TTLCache = TTLCache(maxsize=256, ttl=60)
 
     def _get_provider(self, country: str):
         return self._brapi if country == "BR" else self._finnhub
+
+    def fetch_live_quote(self, symbol: str, country: str = "US") -> dict:
+        """Hit yfinance first, fall back to Finnhub/Brapi on failure.
+
+        Always reaches a live provider — no TTL or DB lookup. Used by the cron
+        path that needs fresh data and as the cold-fetch arm of
+        ``get_stock_quote``. yfinance is queried with the `.SA`-suffixed form
+        for BR tickers (Yahoo only knows them that way); fallback providers
+        don't expose dividend_yield, so the field will be None when the chain
+        falls through to Finnhub/Brapi.
+        """
+        from app.providers.common import Symbol as _Symbol
+
+        yf_symbol = _Symbol.with_sa(symbol) if country == "BR" else symbol
+        try:
+            quote = self._yfinance.get_quote(yf_symbol)
+            # Echo the input symbol back so storage/cache keys stay consistent
+            # — callers track by the canonical (no-suffix-stripping) form.
+            quote["symbol"] = symbol
+            return quote
+        except Exception:
+            logger.warning("yfinance quote failed for %s (yf=%s), falling back", symbol, yf_symbol, exc_info=True)
+        fallback = self._get_provider(country).get_quote(symbol)
+        fallback.setdefault("dividend_yield", None)
+        return fallback
 
     def get_stock_quote(self, symbol: str, country: str = "US", db: Session | None = None, db_only: bool = False) -> dict:
         if symbol in self._quote_cache:
@@ -64,6 +92,7 @@ class MarketDataService:
                     "current_price": Money.from_db(stored.current_price, stored.currency),
                     "currency": Currency.from_code(stored.currency),
                     "market_cap": Money.from_db(stored.market_cap, stored.currency),
+                    "dividend_yield": stored.dividend_yield,
                 }
                 self._quote_cache[symbol] = result
                 return result
@@ -72,28 +101,31 @@ class MarketDataService:
         if db_only:
             raise LookupError(f"No cached quote for {symbol}")
 
-        # Fallback to live provider
-        provider = self._get_provider(country)
-        result = provider.get_quote(symbol)
+        result = self.fetch_live_quote(symbol, country=country)
         self._quote_cache[symbol] = result
 
         # Store in DB for future reads
         if db is not None:
-            quote = db.query(MarketQuote).filter_by(symbol=symbol).first()
-            if quote is None:
-                quote = MarketQuote(symbol=symbol, country=country)
-                db.add(quote)
-            quote.name = result["name"]
-            price_amount, price_currency = result["current_price"].to_db()
-            quote.current_price = price_amount
-            quote.currency = price_currency
-            mcap_amount, _ = result["market_cap"].to_db()
-            quote.market_cap = mcap_amount
-            quote.country = country
-            quote.updated_at = datetime.now(timezone.utc)
-            db.commit()
+            self._upsert_quote(db, symbol, country, result)
 
         return result
+
+    @staticmethod
+    def _upsert_quote(db: Session, symbol: str, country: str, result: dict) -> None:
+        quote = db.query(MarketQuote).filter_by(symbol=symbol).first()
+        if quote is None:
+            quote = MarketQuote(symbol=symbol, country=country)
+            db.add(quote)
+        quote.name = result["name"]
+        price_amount, price_currency = result["current_price"].to_db()
+        quote.current_price = price_amount
+        quote.currency = price_currency
+        mcap_amount, _ = result["market_cap"].to_db()
+        quote.market_cap = mcap_amount
+        quote.dividend_yield = result.get("dividend_yield")
+        quote.country = country
+        quote.updated_at = datetime.now(timezone.utc)
+        db.commit()
 
     PERIOD_DAYS = {"1d": 1, "5d": 5, "1mo": 30, "3mo": 90, "6mo": 180, "1y": 365, "5y": 1825}
 
@@ -126,18 +158,20 @@ class MarketDataService:
         return read_history(db, symbol, from_date)
 
     def _fetch_from_providers(self, symbol: str, period: str, country: str) -> list[dict]:
-        provider = self._get_provider(country)
-        try:
-            result = provider.get_history(symbol, period)
-        except Exception:
-            logger.warning("Primary provider failed for %s period=%s", symbol, period)
-            result = []
-        if not result:
-            logger.info("Falling back to yfinance for %s period=%s", symbol, period)
-            from app.providers.common import Symbol
-            yf_symbol = Symbol.with_sa(symbol) if country == "BR" else symbol
-            result = self._yfinance.get_history(yf_symbol, period)
-        return result
+        from app.providers.common import Symbol
+
+        if country == "BR":
+            try:
+                result = self._brapi.get_history(symbol, period)
+            except Exception:
+                logger.warning("Brapi history failed for %s period=%s", symbol, period)
+                result = []
+            if not result:
+                logger.info("Falling back to yfinance for %s period=%s", symbol, period)
+                result = self._yfinance.get_history(Symbol.with_sa(symbol), period)
+            return result
+
+        return self._yfinance.get_history(symbol, period)
 
     def get_quote_safe(
         self, symbol_or_coin_id: str, is_crypto: bool = False, country: str = "US",
@@ -153,6 +187,59 @@ class MarketDataService:
             return quote.get("current_price")
         except Exception:
             return None
+
+    async def search_stocks(
+        self,
+        query: str,
+        asset_class: str | None = None,
+        max_results: int = 15,
+    ) -> list[dict]:
+        """Class-aware unified search.
+
+        Routes by ``asset_class`` (iOS ``AssetClassType.rawValue``):
+          - ``"crypto"`` → CoinGecko only.
+          - ``"rendaFixa"`` → ``[]`` (manual entry only).
+          - any other / ``None`` → yfinance + best-effort Brapi enrichment
+            on the top SAO results.
+
+        Cached for 60 s by ``(query.lower(), asset_class)`` so the iOS
+        debouncer's rapid-fire calls don't hammer Yahoo.
+        """
+        import asyncio
+
+        cache_key = f"{(query or '').strip().lower()}::{asset_class or ''}"
+        cached = self._search_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        if asset_class == "rendaFixa":
+            self._search_cache[cache_key] = []
+            return []
+
+        if asset_class == "crypto":
+            results = await asyncio.to_thread(self.search_crypto, query, max_results)
+            self._search_cache[cache_key] = results
+            return results
+
+        yfin = await asyncio.to_thread(
+            self._yfinance.search, query, max_results, asset_class
+        )
+
+        # Enrich the top BR results with Brapi price/logo. Cap at 3 to stay
+        # within Brapi free-plan budgets while covering the most likely picks.
+        sa_targets = [r["symbol"] for r in yfin if r["symbol"].endswith(".SA")][:3]
+        if sa_targets:
+            enrichments = await asyncio.gather(*[
+                asyncio.to_thread(self._brapi.enrich_one, sym) for sym in sa_targets
+            ])
+            enrichment_map = dict(zip(sa_targets, enrichments))
+            for r in yfin:
+                e = enrichment_map.get(r["symbol"])
+                if e:
+                    r.update(e)
+
+        self._search_cache[cache_key] = yfin
+        return yfin
 
     def search_crypto(self, query: str, limit: int = 10) -> list[dict]:
         """Search CoinGecko coins by name/symbol. Returns lightweight matches.

@@ -1,57 +1,90 @@
 /* ══════════════════════════════════════
-   Project Fin — Apple Dark Theme Tokens
+   Fin·folio — Light/Dark Theme Tokens
    ══════════════════════════════════════ */
 
 :root {
-  /* ── Base palette ── */
-  --black: #0a0a0a;
-  --surface: #1c1c1e;
-  --surface-hover: #2c2c2e;
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(255, 255, 255, 0.14);
+  /* ── Base palette (light) ── */
+  --bg: #fafaf8;
+  --bg-2: #ffffff;
+  --bg-3: #f3f3ef;
+  --line: #ececea;
+  --line-2: #e0e0dc;
+  --fg: #111110;
+  --fg-2: #4b4b48;
+  --fg-3: #8a8a85;
+  --fg-4: #b5b5b0;
 
-  /* ── Text ── */
-  --text-primary: #f5f5f7;
-  --text-secondary: rgba(255, 255, 255, 0.55);
-  --text-tertiary: rgba(255, 255, 255, 0.35);
-
-  /* ── Semantic ── */
-  --green: #34c759;
-  --red: #ff3b30;
-  --blue: #0a84ff;
-  --orange: #ff9f0a;
-  --purple: #bf5af2;
-
-  /* ── Surfaces ── */
-  --card-bg: #1c1c1e;
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-bg-hover: #2c2c2e;
-  --row-alt: rgba(255, 255, 255, 0.02);
-  --row-hover: rgba(255, 255, 255, 0.04);
-  --primary-soft: rgba(10, 132, 255, 0.08);
-  --primary-ring: rgba(10, 132, 255, 0.25);
-  --positive-soft: rgba(52, 199, 89, 0.08);
-  --negative-soft: rgba(255, 59, 48, 0.08);
+  /* ── Semantic signals ── */
+  --up: oklch(0.62 0.14 150);
+  --up-soft: oklch(0.95 0.04 150);
+  --down: oklch(0.58 0.17 27);
+  --down-soft: oklch(0.95 0.04 27);
+  --accent: oklch(0.45 0.06 260);
 
   /* ── Typography ── */
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Inter Tight', system-ui, sans-serif;
+  --font-body: 'Inter Tight', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   /* ── Spacing ── */
-  --radius: 12px;
-  --radius-sm: 8px;
+  --radius: 10px;
+  --radius-sm: 6px;
   --radius-pill: 100px;
 
-  /* ── Elevation ── */
-  --shadow-floating: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
-
-  /* ── Chart ── */
-  --chart-line-stroke: #34c759;
-  --chart-gradient-start: #34c759;
+  /* ── Legacy compat mappings ── */
+  --black: var(--bg);
+  --surface: var(--bg-2);
+  --surface-hover: var(--bg-3);
+  --border: var(--line);
+  --border-hover: var(--line-2);
+  --text-primary: var(--fg);
+  --text-secondary: var(--fg-2);
+  --text-tertiary: var(--fg-3);
+  --green: var(--up);
+  --red: var(--down);
+  --blue: var(--accent);
+  --orange: oklch(0.70 0.15 60);
+  --purple: oklch(0.55 0.15 300);
+  --card-bg: var(--bg-2);
+  --card-border: var(--line);
+  --card-bg-hover: var(--bg-3);
+  --row-alt: rgba(0, 0, 0, 0.02);
+  --row-hover: rgba(0, 0, 0, 0.04);
+  --primary-soft: oklch(0.95 0.03 260);
+  --primary-ring: oklch(0.70 0.08 260 / 0.25);
+  --positive-soft: var(--up-soft);
+  --negative-soft: var(--down-soft);
+  --shadow-floating: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --chart-line-stroke: var(--up);
+  --chart-gradient-start: var(--up);
 
   /* ── Asset class colors ── */
-  --class-us: #0a84ff;
-  --class-br: #3b82f6;
-  --class-crypto: #bf5af2;
-  --class-fixed-income: #ff9f0a;
-  --class-emergency: #fbbf24;
+  --class-us: oklch(0.55 0.10 240);
+  --class-br: oklch(0.55 0.12 250);
+  --class-crypto: oklch(0.55 0.15 300);
+  --class-fixed-income: oklch(0.70 0.15 60);
+  --class-emergency: oklch(0.75 0.12 80);
+}
+
+/* ── Dark mode ── */
+:root.dark {
+  --bg: #0e0e0d;
+  --bg-2: #161615;
+  --bg-3: #1d1d1b;
+  --line: #26261f;
+  --line-2: #32322c;
+  --fg: #f5f5f0;
+  --fg-2: #c2c2bc;
+  --fg-3: #7d7d77;
+  --fg-4: #55554f;
+
+  --up: oklch(0.76 0.16 150);
+  --up-soft: oklch(0.24 0.06 150);
+  --down: oklch(0.72 0.17 27);
+  --down-soft: oklch(0.24 0.06 27);
+  --accent: oklch(0.82 0.06 260);
+
+  --row-alt: rgba(255, 255, 255, 0.02);
+  --row-hover: rgba(255, 255, 255, 0.04);
+  --shadow-floating: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }

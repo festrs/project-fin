@@ -30,17 +30,41 @@ class BrapiProvider:
         self._api_key = api_key
         self._base_url = base_url
 
-    def search(self, query: str) -> list[dict]:
-        resp = brapi_client.get(
-            f"{self._base_url}/api/available",
-            params={"search": query, "token": self._api_key},
-        )
-        resp.raise_for_status()
-        stocks = resp.json().get("stocks", [])
-        return [
-            {"symbol": f"{s}.SA", "name": s, "type": "Common Stock"}
-            for s in stocks
-        ][:10]
+    def enrich_one(self, sa_symbol: str) -> dict:
+        """Best-effort single-ticker enrichment for a B3 search result.
+
+        Brapi's free plan caps `/api/quote` at 1 ticker per request, so the
+        search path calls this per top-result via `asyncio.to_thread` rather
+        than batching. Returns ``{price, currency, change, logo}`` (subset
+        of fields actually present) or ``{}`` on any failure.
+        """
+        ticker = Symbol.strip_sa(sa_symbol)
+        try:
+            resp = brapi_client.get(
+                f"{self._base_url}/api/quote/{ticker}",
+                params={"token": self._api_key},
+            )
+            resp.raise_for_status()
+            results = resp.json().get("results", []) or []
+        except Exception:
+            logger.warning("Brapi enrich_one failed for %s", ticker, exc_info=True)
+            return {}
+
+        if not results:
+            return {}
+        r = results[0]
+        out: dict = {}
+        price = r.get("regularMarketPrice")
+        currency = r.get("currency") or "BRL"
+        if price is not None:
+            out["price"] = {"amount": str(price), "currency": currency}
+            out["currency"] = currency
+        change = r.get("regularMarketChangePercent")
+        if change is not None:
+            out["change"] = change
+        if r.get("logourl"):
+            out["logo"] = r["logourl"]
+        return out
 
     def get_quote(self, symbol: str) -> dict:
         ticker = Symbol.strip_sa(symbol)
@@ -150,24 +174,6 @@ class BrapiProvider:
                 payment_date=payment_date,
             ))
         return records
-
-    def get_fundamentals(self, symbol: str) -> dict:
-        ticker = Symbol.strip_sa(symbol)
-        resp = brapi_client.get(
-            f"{self._base_url}/api/quote/{ticker}",
-            params={"token": self._api_key, "fundamental": "true"},
-        )
-        resp.raise_for_status()
-        resp.json()["results"][0]
-        # Minimal stub — real Brapi may not have multi-year data
-        return {
-            "ipo_years": None,
-            "eps_history": [],
-            "net_income_history": [],
-            "debt_history": [],
-            "current_net_debt_ebitda": None,
-            "raw_data": [],
-        }
 
     def get_splits(self, symbol: str) -> list[dict]:
         """Get stock splits from quote endpoint with dividends=true."""

@@ -26,7 +26,7 @@ def _tx_to_response(tx: Transaction) -> dict:
         "asset_class_id": tx.asset_class_id,
         "asset_symbol": tx.asset_symbol,
         "type": tx.type,
-        "quantity": tx.quantity,
+        "quantity": str(tx.quantity) if tx.quantity is not None else None,
         "unit_price": {"amount": str(tx.unit_price), "currency": tx.currency} if tx.unit_price is not None else None,
         "total_value": {"amount": str(tx.total_value), "currency": tx.currency},
         "tax_amount": {"amount": str(tx.tax_amount), "currency": tx.currency} if tx.tax_amount is not None else None,
@@ -89,7 +89,7 @@ def create_transaction(
         asset_class_id=body.asset_class_id,
         asset_symbol=body.asset_symbol,
         type=body.type,
-        quantity=body.quantity,
+        quantity=Decimal(body.quantity) if body.quantity is not None else None,
         unit_price=Decimal(body.unit_price.amount) if body.unit_price else None,
         total_value=Decimal(body.total_value.amount),
         currency=body.total_value.currency,
@@ -133,6 +133,8 @@ def update_transaction(
             setattr(tx, field, Decimal(value["amount"]))
             if field == "total_value":
                 tx.currency = value["currency"]
+        elif field == "quantity":
+            tx.quantity = Decimal(value) if value is not None else None
         elif field == "currency":
             pass  # deprecated, skip
         else:

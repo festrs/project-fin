@@ -22,10 +22,7 @@ def _run_scheduled_fetch():
 
     service = get_market_data_service()
     from app.services.market_data_scheduler import MarketDataScheduler
-    scheduler = MarketDataScheduler(
-        finnhub_provider=service._finnhub,
-        brapi_provider=service._brapi,
-    )
+    scheduler = MarketDataScheduler(market_data_service=service)
 
     db = SessionLocal()
     try:

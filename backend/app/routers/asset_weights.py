@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 
@@ -38,7 +40,7 @@ def add_asset(
     ac = db.query(AssetClass).filter(AssetClass.id == ac_id, AssetClass.user_id == user_id).first()
     if not ac:
         raise HTTPException(status_code=404, detail="Asset class not found")
-    aw = AssetWeight(asset_class_id=ac_id, symbol=body.symbol, target_weight=body.target_weight)
+    aw = AssetWeight(asset_class_id=ac_id, symbol=body.symbol, target_weight=Decimal(body.target_weight))
     db.add(aw)
     db.commit()
     db.refresh(aw)
@@ -61,7 +63,7 @@ def update_weight(
     ac = db.query(AssetClass).filter(AssetClass.id == aw.asset_class_id, AssetClass.user_id == user_id).first()
     if not ac:
         raise HTTPException(status_code=404, detail="Asset weight not found")
-    aw.target_weight = body.target_weight
+    aw.target_weight = Decimal(body.target_weight)
     db.commit()
     db.refresh(aw)
     return aw

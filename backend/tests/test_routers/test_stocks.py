@@ -76,75 +76,10 @@ def test_get_br_stock_history(mock_get_mds, client):
 
 
 # ──────────────────────────────────────────────
-# Search — crypto + stocks merged into one list
+# Search — coverage moved to tests/test_routers/test_search_route.py
+# (the route now delegates to MarketDataService.search_stocks; the old
+# multi-provider fan-out was replaced by yfinance + class-aware filter).
 # ──────────────────────────────────────────────
-
-
-@patch("app.routers.stocks.get_market_data_service")
-def test_search_includes_crypto_results_first(mock_get_mds, client):
-    mock_md = MagicMock()
-    mock_md.search_crypto.return_value = [
-        {"id": "bitcoin", "symbol": "BTC", "name": "Bitcoin",
-         "type": "crypto", "currency": "USD", "logo": "logo-url"},
-    ]
-    mock_md._finnhub.search.return_value = [
-        {"symbol": "GBTC", "name": "Grayscale Bitcoin Trust", "type": "Common Stock"},
-    ]
-    mock_md._brapi.search.return_value = []
-    mock_get_mds.return_value = mock_md
-
-    resp = client.get("/api/stocks/search?q=btc")
-    assert resp.status_code == 200
-    results = resp.json()
-
-    # Crypto must lead the list so popular tokens beat the unrelated ETFs
-    assert results[0]["symbol"] == "BTC"
-    assert results[0]["type"] == "crypto"
-    assert results[0]["name"] == "Bitcoin"
-    # Logo flows through so the iOS row can render the token thumbnail
-    assert results[0]["logo"] == "logo-url"
-    # Stock results still appear after crypto
-    assert any(r["symbol"] == "GBTC" for r in results)
-
-
-@patch("app.routers.stocks.get_market_data_service")
-def test_search_dedups_by_symbol(mock_get_mds, client):
-    # CoinGecko + Brapi both return BTC-like entries — first occurrence wins,
-    # so the crypto row keeps its `type: "crypto"` even if a stock provider
-    # also returns the same symbol.
-    mock_md = MagicMock()
-    mock_md.search_crypto.return_value = [
-        {"id": "BTC", "symbol": "BTC", "name": "Bitcoin", "type": "crypto"},
-    ]
-    mock_md._finnhub.search.return_value = [
-        {"symbol": "BTC", "name": "Some BTC ETF", "type": "Common Stock"},
-    ]
-    mock_md._brapi.search.return_value = []
-    mock_get_mds.return_value = mock_md
-
-    resp = client.get("/api/stocks/search?q=btc")
-    assert resp.status_code == 200
-    results = resp.json()
-    btc_rows = [r for r in results if r["symbol"] == "BTC"]
-    assert len(btc_rows) == 1, "Duplicate symbols must dedup to a single row"
-    assert btc_rows[0]["type"] == "crypto", "Crypto wins over duplicates from other providers"
-
-
-@patch("app.routers.stocks.get_market_data_service")
-def test_search_tolerates_crypto_failure(mock_get_mds, client):
-    # If CoinGecko fails (rate-limit, network), the search must still return stocks.
-    mock_md = MagicMock()
-    mock_md.search_crypto.side_effect = RuntimeError("coingecko down")
-    mock_md._finnhub.search.return_value = [
-        {"symbol": "AAPL", "name": "Apple Inc.", "type": "Common Stock"},
-    ]
-    mock_md._brapi.search.return_value = []
-    mock_get_mds.return_value = mock_md
-
-    resp = client.get("/api/stocks/search?q=apple")
-    assert resp.status_code == 200
-    results = resp.json()
-    assert any(r["symbol"] == "AAPL" for r in results)
 
 
 # ──────────────────────────────────────────────

@@ -1,7 +1,8 @@
 from datetime import datetime
+from decimal import Decimal
 from uuid import uuid4
 
-from sqlalchemy import String, Float, DateTime, ForeignKey, Boolean
+from sqlalchemy import String, Numeric, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -15,7 +16,7 @@ class AssetClass(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     country: Mapped[str] = mapped_column(String(2), nullable=False, default="US")
     type: Mapped[str] = mapped_column(String(20), nullable=False, server_default="stock")
-    target_weight: Mapped[float] = mapped_column(Float, default=0.0)
+    target_weight: Mapped[Decimal] = mapped_column(Numeric(7, 4, asdecimal=True), default=Decimal("0.0"))
     is_emergency_reserve: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -114,7 +114,7 @@ def apply_split(
         # Stock split: create a buy transaction for the extra shares
         # (same approach as bonificação — totals reflect transaction history)
         service = PortfolioService(db)
-        holdings = service.get_holdings(x_user_id)
+        holdings = service.get_holdings(user_id)
         current_qty = next(
             (h["quantity"] or 0 for h in holdings if h["symbol"] == split.symbol), 0
         )
@@ -135,7 +135,7 @@ def apply_split(
 
         if extra_shares > 0:
             db.add(Transaction(
-                user_id=x_user_id,
+                user_id=user_id,
                 asset_class_id=split.asset_class_id,
                 asset_symbol=split.symbol,
                 type="buy",
