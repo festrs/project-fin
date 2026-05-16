@@ -1,7 +1,9 @@
 from decimal import Decimal
 from unittest.mock import patch, MagicMock
 
-from app.providers.brapi import BrapiProvider
+import pytest
+
+from app.providers.brapi import BrapiProvider, BrapiFeatureUnavailable
 from app.providers.base import MarketDataProvider
 from app.money import Money, Currency
 
@@ -23,7 +25,7 @@ class TestBrapiGetQuote:
         }
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.brapi.httpx.get", return_value=mock_resp) as mock_get:
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp) as mock_get:
             result = provider.get_quote("PETR4.SA")
 
         assert result["symbol"] == "PETR4.SA"
@@ -41,7 +43,7 @@ class TestBrapiGetQuote:
         }
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.brapi.httpx.get", return_value=mock_resp) as mock_get:
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp) as mock_get:
             provider.get_quote("PETR4.SA")
 
         # Verify the URL uses the stripped symbol
@@ -67,7 +69,7 @@ class TestBrapiGetHistory:
         }
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.brapi.httpx.get", return_value=mock_resp):
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
             result = provider.get_history("PETR4.SA", period="1mo")
 
         assert len(result) == 2
@@ -82,7 +84,7 @@ class TestBrapiGetHistory:
         mock_resp.json.return_value = {"results": [{"historicalDataPrice": []}]}
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.brapi.httpx.get", return_value=mock_resp) as mock_get:
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp) as mock_get:
             provider.get_history("VALE3.SA", period="1mo")
 
         call_url = mock_get.call_args[0][0]
@@ -93,3 +95,42 @@ class TestBrapiGetHistory:
 def test_brapi_satisfies_protocol():
     provider = BrapiProvider(api_key="test")
     assert isinstance(provider, MarketDataProvider)
+
+
+class TestBrapiGetDividends:
+    """Pin specific code paths that mutation testing flagged.
+
+    - Plan-gated `FEATURE_NOT_AVAILABLE` must surface as the typed exception.
+    - Records with neither ex_date nor payment_date are skipped (they're
+      placeholder rows from Brapi without resolvable dates).
+    """
+
+    def test_feature_unavailable_raises_typed_exception(self):
+        provider = BrapiProvider(api_key="test", base_url="https://brapi.dev")
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "code": "FEATURE_NOT_AVAILABLE",
+            "error": True,
+            "message": "Dividends not in plan",
+        }
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
+            with pytest.raises(BrapiFeatureUnavailable):
+                provider.get_dividends("PETR4.SA")
+
+    def test_records_without_any_date_are_skipped(self):
+        provider = BrapiProvider(api_key="test", base_url="https://brapi.dev")
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {
+            "results": [{
+                "dividendsData": {"cashDividends": [
+                    {"rate": 1.0, "label": "JCP", "lastDatePrior": None, "paymentDate": None},
+                    {"rate": 2.0, "label": "Dividend", "lastDatePrior": "2025-01-15", "paymentDate": None},
+                ]}
+            }]
+        }
+        mock_resp.raise_for_status = MagicMock()
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
+            records = provider.get_dividends("PETR4.SA")
+        # Only the second record has a resolvable date.
+        assert len(records) == 1
+        assert records[0].dividend_type == "Dividend"

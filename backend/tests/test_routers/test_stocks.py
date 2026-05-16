@@ -38,7 +38,9 @@ def test_get_us_stock_history(mock_get_mds, client):
     assert len(data) == 1
     assert data[0]["price"]["amount"] == "170.0"
     assert data[0]["price"]["currency"] == "USD"
-    mock_md.get_stock_history.assert_called_once_with("AAPL", "1mo", country="US")
+    args, kwargs = mock_md.get_stock_history.call_args
+    assert args == ("AAPL", "1mo")
+    assert kwargs["country"] == "US"
 
 
 @patch("app.routers.stocks.get_market_data_service")
@@ -72,7 +74,9 @@ def test_get_br_stock_history(mock_get_mds, client):
     data = resp.json()
     assert data[0]["price"]["amount"] == "35.0"
     assert data[0]["price"]["currency"] == "BRL"
-    mock_md.get_stock_history.assert_called_once_with("PETR4.SA", "1mo", country="BR")
+    args, kwargs = mock_md.get_stock_history.call_args
+    assert args == ("PETR4.SA", "1mo")
+    assert kwargs["country"] == "BR"
 
 
 # ──────────────────────────────────────────────

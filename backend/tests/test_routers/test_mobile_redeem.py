@@ -6,19 +6,39 @@ The endpoint reads valid codes from `settings.mobile_redeem_codes`
 
 import pytest
 
-from app.config import settings
+import app.config
 
 
 HEADERS = {"X-API-Key": "test-mobile-key"}
 
 
+def _current_settings():
+    """Return the live `settings` instance.
+
+    `tests/test_config.py` reloads `app.config`, which replaces the module-
+    level `settings` singleton. A `from app.config import settings` at
+    test-module load time captures the pre-reload instance, but the router's
+    runtime `from app.config import settings as _settings` (called per
+    request) sees the post-reload one. Reading through `app.config.settings`
+    at fixture-execution time keeps both views consistent.
+    """
+    return app.config.settings
+
+
+@pytest.fixture(autouse=True)
+def isolate_redeem_codes(monkeypatch):
+    """Force a known-empty starting state so each test mutates from `""`."""
+    monkeypatch.setattr(_current_settings(), "mobile_redeem_codes", "")
+
+
 @pytest.fixture
-def configured_codes():
+def configured_codes(monkeypatch):
     """Configure two valid codes for the duration of a single test."""
-    original = settings.mobile_redeem_codes
-    settings.mobile_redeem_codes = "GROVE-UNLIMITED, GROVE-FRIENDS-FAMILY"
-    yield
-    settings.mobile_redeem_codes = original
+    monkeypatch.setattr(
+        _current_settings(),
+        "mobile_redeem_codes",
+        "GROVE-UNLIMITED, GROVE-FRIENDS-FAMILY",
+    )
 
 
 class TestRedeemCode:
@@ -63,12 +83,9 @@ class TestRedeemCode:
         assert resp.status_code == 422
 
     def test_no_codes_configured_rejects_everything(self, client):
-        original = settings.mobile_redeem_codes
-        settings.mobile_redeem_codes = ""
-        try:
-            resp = client.post("/api/mobile/redeem",
-                               params={"code": "GROVE-UNLIMITED"}, headers=HEADERS)
-            assert resp.status_code == 200
-            assert resp.json()["valid"] is False
-        finally:
-            settings.mobile_redeem_codes = original
+        # `isolate_redeem_codes` autouse already sets the env to "" — this
+        # test just asserts the resulting behavior.
+        resp = client.post("/api/mobile/redeem",
+                           params={"code": "GROVE-UNLIMITED"}, headers=HEADERS)
+        assert resp.status_code == 200
+        assert resp.json()["valid"] is False

@@ -150,7 +150,7 @@ class TestGetQuoteSafe:
 
 
 class TestGetCryptoQuote:
-    @patch("app.services.market_data.httpx.get")
+    @patch("app.services.market_data.coingecko_client.get")
     def test_returns_correct_structure(self, mock_get, service):
         mock_get.return_value = MagicMock(
             status_code=200,
@@ -170,7 +170,7 @@ class TestGetCryptoQuote:
 
 
 class TestGetCryptoHistory:
-    @patch("app.services.market_data.httpx.get")
+    @patch("app.services.market_data.coingecko_client.get")
     def test_returns_correct_structure(self, mock_get, service):
         mock_get.return_value = MagicMock(
             status_code=200,

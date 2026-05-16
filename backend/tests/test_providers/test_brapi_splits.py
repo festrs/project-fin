@@ -19,7 +19,7 @@ class TestBrapiSplits:
         }
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.get", return_value=mock_resp):
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
             result = provider.get_splits("PETR4.SA")
 
         assert len(result) == 1
@@ -34,7 +34,7 @@ class TestBrapiSplits:
         mock_resp.json.return_value = {"results": [{"dividendsData": {"stockDividends": []}}]}
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.get", return_value=mock_resp):
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
             result = provider.get_splits("VALE3.SA")
 
         assert result == []
@@ -45,7 +45,7 @@ class TestBrapiSplits:
         mock_resp.json.return_value = {"results": [{}]}
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("httpx.get", return_value=mock_resp):
+        with patch("app.providers.brapi.brapi_client.get", return_value=mock_resp):
             result = provider.get_splits("VALE3.SA")
 
         assert result == []

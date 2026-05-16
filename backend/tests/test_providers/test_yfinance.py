@@ -72,19 +72,24 @@ class TestGetDividends:
     def test_returns_dividend_records(self):
         provider = YFinanceProvider()
 
+        # Provider reads from `ticker.history(period="max", actions=True)`
+        # which returns a DataFrame with a "Dividends" column.
         index = pd.DatetimeIndex([pd.Timestamp("2025-02-07"), pd.Timestamp("2025-05-09")])
-        mock_dividends = pd.Series([0.25, 0.25], index=index)
+        mock_hist = pd.DataFrame({"Dividends": [0.25, 0.25]}, index=index)
 
         with patch("app.providers.yfinance.yf") as mock_yf:
             mock_ticker = MagicMock()
-            mock_ticker.dividends = mock_dividends
+            mock_ticker.history.return_value = mock_hist
+            # _get_upcoming_dividend reads ticker.info — return a real dict
+            # so it short-circuits cleanly instead of comparing MagicMock to 0.
+            mock_ticker.info = {}
             mock_yf.Ticker.return_value = mock_ticker
 
             records = provider.get_dividends("AAPL")
 
         assert len(records) == 2
         assert records[0].dividend_type == "Dividend"
-        assert records[0].value == 0.25
+        assert records[0].value == Decimal("0.250000")
         assert records[0].ex_date == date(2025, 2, 7)
         assert records[0].record_date == date(2025, 2, 7)
         assert records[0].payment_date is None
@@ -95,6 +100,76 @@ class TestGetDividends:
         with patch("app.providers.yfinance.yf") as mock_yf:
             mock_yf.Ticker.side_effect = Exception("Network error")
             records = provider.get_dividends("BAD")
+
+        assert records == []
+
+    def test_upcoming_dividend_from_info_is_appended(self):
+        """Future-dated `exDividendDate` in `ticker.info` is added as an
+        announcement record. Kills the `ex_date < today` boundary mutation.
+        """
+        from datetime import date as _date, timedelta
+        future = _date.today() + timedelta(days=10)
+        future_epoch = int(__import__("datetime").datetime(
+            future.year, future.month, future.day,
+            tzinfo=__import__("datetime").timezone.utc
+        ).timestamp())
+
+        provider = YFinanceProvider()
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = pd.DataFrame()  # no history
+            mock_ticker.info = {
+                "exDividendDate": future_epoch,
+                "lastDividendValue": 0.50,
+            }
+            mock_yf.Ticker.return_value = mock_ticker
+
+            records = provider.get_dividends("AAPL")
+
+        assert len(records) == 1
+        assert records[0].ex_date == future
+        assert records[0].value == Decimal("0.500000")
+
+    def test_past_upcoming_date_is_dropped(self):
+        """A non-future `exDividendDate` must NOT be re-appended (history
+        already covered it). Kills the `<` → `>` mutation on the date check.
+        """
+        from datetime import date as _date, timedelta
+        past = _date.today() - timedelta(days=30)
+        past_epoch = int(__import__("datetime").datetime(
+            past.year, past.month, past.day,
+            tzinfo=__import__("datetime").timezone.utc
+        ).timestamp())
+
+        provider = YFinanceProvider()
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = pd.DataFrame()
+            mock_ticker.info = {
+                "exDividendDate": past_epoch,
+                "lastDividendValue": 0.50,
+            }
+            mock_yf.Ticker.return_value = mock_ticker
+
+            records = provider.get_dividends("AAPL")
+
+        assert records == []
+
+    def test_zero_or_negative_amount_skips_upcoming(self):
+        """`lastDividendValue` <= 0 must not produce a record. Kills the
+        `amount <= 0` guard mutation.
+        """
+        provider = YFinanceProvider()
+        with patch("app.providers.yfinance.yf") as mock_yf:
+            mock_ticker = MagicMock()
+            mock_ticker.history.return_value = pd.DataFrame()
+            mock_ticker.info = {
+                "exDividendDate": 9_999_999_999,  # far future
+                "lastDividendValue": 0.0,
+            }
+            mock_yf.Ticker.return_value = mock_ticker
+
+            records = provider.get_dividends("AAPL")
 
         assert records == []
 

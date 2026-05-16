@@ -79,3 +79,69 @@ class TestBRYieldOverride:
         assert resp.status_code == 200
         quote = resp.json()["quotes"][0]
         assert quote["dividend_yield"] == "0.4"
+
+
+class TestBatchQuoteCountryRouting:
+    """The `/mobile/quotes` endpoint inspects each symbol with `Symbol.is_br`
+    and dispatches to `get_stock_quote(country="BR")` vs `country="US"`.
+    Without this routing, BR tickers would be sent to the US provider
+    (and get garbage). Pin the dispatch by spying on the `country` arg.
+    """
+
+    def _spy_market_data(self, monkeypatch):
+        from app.services import market_data as mod
+        seen: list[tuple[str, str]] = []
+
+        def fake_get_stock_quote(self, symbol, country="US", db=None, db_only=False):
+            seen.append((symbol, country))
+            return {
+                "symbol": symbol, "name": symbol,
+                "current_price": Money(Decimal("10"), Currency.BRL if country == "BR" else Currency.USD),
+                "currency": Currency.BRL if country == "BR" else Currency.USD,
+                "market_cap": Money(Decimal("0"), Currency.USD),
+                "dividend_yield": Decimal("1"),
+            }
+        monkeypatch.setattr(mod.MarketDataService, "get_stock_quote", fake_get_stock_quote)
+        return seen
+
+    def test_br_ticker_dispatched_with_country_br(self, client, db, monkeypatch):
+        seen = self._spy_market_data(monkeypatch)
+        resp = client.get("/api/mobile/quotes",
+                          params={"symbols": "PETR4.SA"}, headers=HEADERS)
+        assert resp.status_code == 200
+        assert ("PETR4.SA", "BR") in seen, f"expected BR routing, got {seen!r}"
+
+    def test_us_ticker_dispatched_with_country_us(self, client, db, monkeypatch):
+        seen = self._spy_market_data(monkeypatch)
+        resp = client.get("/api/mobile/quotes",
+                          params={"symbols": "AAPL"}, headers=HEADERS)
+        assert resp.status_code == 200
+        assert ("AAPL", "US") in seen, f"expected US routing, got {seen!r}"
+
+
+class TestDividendsExpandVariants:
+    """`/mobile/dividends` calls `Symbol.expand_variants(symbol_list)` so that
+    pre-migration rows stored without the `.SA` suffix still match. Bypassing
+    that expansion misses bare-form rows for BR tickers.
+    """
+
+    def test_bare_form_row_matches_canonical_query(self, client, db):
+        today = date.today()
+        # Pre-migration row: bare symbol, no `.SA`.
+        db.add(DividendHistory(
+            symbol="PETR4", dividend_type="JCP", value=Decimal("0.30"),
+            record_date=today - timedelta(days=10),
+            ex_date=today - timedelta(days=10),
+            payment_date=today - timedelta(days=5),
+            currency="BRL",
+        ))
+        db.commit()
+
+        resp = client.get("/api/mobile/dividends",
+                          params={"symbols": "PETR4.SA"}, headers=HEADERS)
+        assert resp.status_code == 200
+        rows = resp.json()
+        assert len(rows) == 1, (
+            "expand_variants must surface the bare-form row when client "
+            "queries with the canonical .SA form"
+        )

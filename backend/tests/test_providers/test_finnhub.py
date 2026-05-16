@@ -27,7 +27,7 @@ class TestFinnhubGetQuote:
         }
         mock_profile_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.finnhub.httpx.get") as mock_get:
+        with patch("app.providers.finnhub.finnhub_client.get") as mock_get:
             mock_get.side_effect = [mock_quote_resp, mock_profile_resp]
             result = provider.get_quote("AAPL")
 
@@ -44,7 +44,7 @@ class TestFinnhubGetQuote:
         mock_resp.json.return_value = {"c": 100.0}
         mock_resp.raise_for_status = MagicMock()
 
-        with patch("app.providers.finnhub.httpx.get", return_value=mock_resp) as mock_get:
+        with patch("app.providers.finnhub.finnhub_client.get", return_value=mock_resp) as mock_get:
             try:
                 provider.get_quote("AAPL")
             except Exception:
