@@ -27,11 +27,23 @@ _BDR_SUFFIXES = ("32", "33", "34", "35", "39")
 _CLASS_API_TYPES: dict[str, set[str]] = {
     "acoesBR": {"stock"},
     "fiis": {"fund"},
-    "usStocks": {"common stock", "bdr"},
+    "usStocks": {"common stock", "bdr", "etf"},
     "reits": {"reit"},
 }
 # Classes yfinance can't serve — caller should route elsewhere or skip.
 _NON_YFINANCE_CLASSES = {"crypto", "rendaFixa"}
+
+# Treasury/bond ETF names always carry one of these tokens; equity ETFs
+# (VOO, SPY, QQQ, VTI) never do. The search payload has no category field,
+# so this name heuristic is what routes a US-listed ETF to fixed income
+# (rendaFixa) vs US Stocks on the iOS side.
+_BOND_ETF_KEYWORDS = ("bond", "treasury", "fixed income", "t-bill")
+
+
+def _is_bond_etf(name: str) -> bool:
+    """True when an ETF's name marks it as a treasury/bond fund (SGOV, BND…)."""
+    lowered = name.lower()
+    return any(kw in lowered for kw in _BOND_ETF_KEYWORDS)
 
 
 class YFinanceProvider:
@@ -50,7 +62,8 @@ class YFinanceProvider:
         the class isn't yfinance-served (crypto, rendaFixa).
 
         Each result: ``{symbol, name, type, sector, industry}`` where
-        ``type`` ∈ ``{"stock", "fund", "bdr", "reit", "common stock"}``.
+        ``type`` ∈ ``{"stock", "fund", "bdr", "reit", "common stock",
+        "etf", "fixed income"}``.
         """
         if asset_class in _NON_YFINANCE_CLASSES:
             return []
@@ -87,7 +100,10 @@ class YFinanceProvider:
 
     @staticmethod
     def _map_quote(q: dict) -> dict | None:
-        if q.get("quoteType") != "EQUITY":
+        # EQUITY = single stocks/FIIs/BDRs; ETF = US-listed funds (SGOV, VOO).
+        # Everything else (futures, options, mutual funds, indices) is dropped.
+        quote_type = q.get("quoteType")
+        if quote_type not in ("EQUITY", "ETF"):
             return None
 
         exchange = q.get("exchange") or ""
@@ -110,6 +126,10 @@ class YFinanceProvider:
         name = longname or shortname or symbol
 
         if exchange == "SAO":
+            # B3-listed ETFs (BOVA11, IVVB11, …) collide with the FII ticker
+            # shape and have no reliable class signal here — keep dropping them.
+            if quote_type != "EQUITY":
+                return None
             if not symbol.endswith(".SA"):
                 return None
             ticker = symbol[:-3]
@@ -121,7 +141,11 @@ class YFinanceProvider:
                 api_type = "bdr"
             else:
                 api_type = "stock"
-        else:  # US exchange (filter above guarantees this)
+        elif quote_type == "ETF":
+            # US-listed ETF: a treasury/bond fund (SGOV, BND, AGG, TLT) is
+            # fixed income; every other ETF is treated as a US equity.
+            api_type = "fixed income" if _is_bond_etf(name) else "etf"
+        else:  # US equity
             if sector.lower() == "real estate" or industry.lower().startswith("reit"):
                 api_type = "reit"
             else:

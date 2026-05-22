@@ -156,6 +156,18 @@ class TestInputValidation:
             headers=HEADERS,
         )
         assert resp.status_code == 201
+        assert resp.json()["country"] == "BR"
+
+    def test_track_country_follows_symbol_not_class(self, client):
+        """A US-listed bond ETF (SGOV) classifies as rendaFixa but trades —
+        and must be priced — in the US, so its tracked country is US."""
+        resp = client.post(
+            "/api/mobile/track",
+            params={"symbol": "SGOV", "asset_class": "rendaFixa"},
+            headers=HEADERS,
+        )
+        assert resp.status_code == 201
+        assert resp.json()["country"] == "US"
 
     def test_invalid_symbol_on_track(self, client):
         resp = client.post(

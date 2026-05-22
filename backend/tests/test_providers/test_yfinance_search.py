@@ -113,13 +113,78 @@ def test_sao_bdr_suffix_maps_to_bdr():
     assert out and out[0]["type"] == "bdr"
 
 
-def test_filters_drop_non_equity():
+def test_filters_drop_non_tradable_quote_types():
+    """Futures/options/mutual funds/indices are dropped; EQUITY and ETF stay."""
     p = YFinanceProvider()
     futures = _quote(quoteType="FUTURE", symbol="CL=F", exchange="NYM")
-    etf = _quote(quoteType="ETF", symbol="AAPB", longname="GraniteShares 2x")
-    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([futures, etf, _quote()])):
+    mutual = _quote(quoteType="MUTUALFUND", symbol="VFIAX", exchange="NAS")
+    index = _quote(quoteType="INDEX", symbol="^GSPC", exchange="SNP")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([futures, mutual, index, _quote()])):
         out = p.search("AAPL")
-    assert len(out) == 1 and out[0]["symbol"] == "AAPL"
+    assert [r["symbol"] for r in out] == ["AAPL"]
+
+
+def test_us_bond_etf_maps_to_fixed_income():
+    """A treasury/bond ETF (SGOV) routes to the fixed-income class."""
+    p = YFinanceProvider()
+    sgov = _quote(
+        quoteType="ETF",
+        symbol="SGOV",
+        exchange="NYQ",
+        longname="iShares 0-3 Month Treasury Bond ETF",
+        shortname="ISHARES 0-3 MONTH TREASURY",
+        sector="",
+        industry="",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([sgov])):
+        out = p.search("SGOV")
+    assert len(out) == 1
+    assert out[0]["symbol"] == "SGOV"
+    assert out[0]["type"] == "fixed income"
+
+
+def test_us_equity_etf_maps_to_etf():
+    """A non-bond ETF (VOO) routes to US Stocks via the "etf" type."""
+    p = YFinanceProvider()
+    voo = _quote(
+        quoteType="ETF",
+        symbol="VOO",
+        exchange="PCX",
+        longname="Vanguard S&P 500 ETF",
+        shortname="Vanguard S&P 500 ETF",
+        sector="",
+        industry="",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([voo])):
+        out = p.search("VOO")
+    assert len(out) == 1 and out[0]["type"] == "etf"
+
+
+def test_sao_etf_still_dropped():
+    """B3-listed ETFs collide with the FII ticker shape — keep dropping them."""
+    p = YFinanceProvider()
+    bova = _quote(
+        quoteType="ETF",
+        symbol="BOVA11.SA",
+        exchange="SAO",
+        longname="iShares Ibovespa Fundo de Indice",
+        shortname="ISHARES BOVA",
+        sector="",
+        industry="",
+    )
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([bova])):
+        out = p.search("BOVA11")
+    assert out == []
+
+
+def test_etf_included_in_us_stocks_scoped_search():
+    """Class-scoped usStocks search surfaces equity ETFs alongside stocks."""
+    p = YFinanceProvider()
+    voo = _quote(quoteType="ETF", symbol="VOO", exchange="PCX",
+                 longname="Vanguard S&P 500 ETF", sector="", industry="")
+    with patch("app.providers.yfinance.yf.Search", side_effect=_mock_search([voo, _quote()])):
+        out = p.search("anything", asset_class="usStocks")
+    assert {r["symbol"] for r in out} == {"VOO", "AAPL"}
 
 
 def test_filters_drop_foreign_exchanges():

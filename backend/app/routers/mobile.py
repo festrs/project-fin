@@ -312,6 +312,10 @@ def get_dividend_summary(
 # Symbol Tracking (iOS tells backend which symbols to keep fresh)
 # ──────────────────────────────────────────────
 
+# Set of asset classes the mobile client may send. Used to validate the
+# `asset_class` query param. Note: the *country* a symbol is priced in is
+# derived from the symbol itself (`Symbol.country`), not this map — a
+# US-listed bond ETF classifies as `rendaFixa` but trades in the US.
 ASSET_CLASS_COUNTRY = {
     "acoesBR": "BR", "fiis": "BR", "rendaFixa": "BR",
     "usStocks": "US", "reits": "US", "crypto": "US",
@@ -331,8 +335,10 @@ def track_symbol(
         raise HTTPException(status_code=422, detail=f"Invalid symbol: {symbol}")
     if asset_class not in ASSET_CLASS_COUNTRY:
         raise HTTPException(status_code=422, detail=f"Invalid asset_class: {asset_class}")
-    country = ASSET_CLASS_COUNTRY[asset_class]
     canonical = Symbol.canonicalize(symbol)
+    # Country follows the symbol, not the class: a US-listed bond ETF (SGOV)
+    # classifies as rendaFixa but must be priced on the US market.
+    country = Symbol.country(canonical)
     existing = db.query(TrackedSymbol).filter_by(symbol=canonical).first()
     if existing:
         existing.asset_class = asset_class
@@ -387,7 +393,8 @@ def sync_tracked_symbols(
 
     # Upsert incoming (never remove — symbols are shared across users)
     for symbol, asset_class in incoming.items():
-        country = ASSET_CLASS_COUNTRY.get(asset_class, "BR")
+        # Country follows the symbol — see track_symbol for the rationale.
+        country = Symbol.country(symbol)
         ts = db.query(TrackedSymbol).filter_by(symbol=symbol).first()
         if ts:
             ts.asset_class = asset_class
