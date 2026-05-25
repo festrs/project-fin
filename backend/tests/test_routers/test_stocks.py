@@ -80,6 +80,104 @@ def test_get_br_stock_history(mock_get_mds, client):
 
 
 # ──────────────────────────────────────────────
+# Crypto routing on the generic /{symbol} + /{symbol}/history endpoints.
+# Previously these fell through to yfinance and returned a small-cap
+# stock named "BTC" (~$30). Now they delegate to CoinGecko first.
+# ──────────────────────────────────────────────
+
+
+@patch("app.routers.stocks.get_market_data_service")
+def test_get_stock_quote_routes_btc_to_crypto(mock_get_mds, client):
+    """The bug: /api/stocks/BTC used to fall through to yfinance which
+    returned a small-cap stock named BTC. Crypto routing now intercepts
+    before country detection."""
+    mock_md = MagicMock()
+    mock_md.get_crypto_quote_for_symbol.return_value = {
+        "coin_id": "bitcoin",
+        "symbol": "BTC",
+        "name": "Bitcoin",
+        "current_price": Money(Decimal("67500"), Currency.USD),
+        "currency": Currency.USD,
+        "market_cap": Money(Decimal("1300000000000"), Currency.USD),
+    }
+    mock_get_mds.return_value = mock_md
+
+    resp = client.get("/api/stocks/BTC")
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["symbol"] == "BTC"
+    assert data["name"] == "Bitcoin"
+    assert data["price"]["amount"] == "67500"
+    assert data["price"]["currency"] == "USD"
+    # Crucial: yfinance was never asked. If get_stock_quote had been
+    # called, the small-cap "BTC" stock would have been returned.
+    mock_md.get_stock_quote.assert_not_called()
+
+
+@patch("app.routers.stocks.get_market_data_service")
+def test_get_stock_quote_passes_through_for_non_crypto(mock_get_mds, client):
+    """AAPL is not in CRYPTO_COINGECKO_MAP, so the generic endpoint
+    falls through to country-based stock routing."""
+    mock_md = MagicMock()
+    mock_md.get_crypto_quote_for_symbol.return_value = None
+    mock_md.get_stock_quote.return_value = {
+        "symbol": "AAPL",
+        "name": "Apple Inc.",
+        "current_price": Money(Decimal("175"), Currency.USD),
+        "currency": Currency.USD,
+        "market_cap": Money(Decimal("2800000000000"), Currency.USD),
+    }
+    mock_get_mds.return_value = mock_md
+
+    resp = client.get("/api/stocks/AAPL")
+
+    assert resp.status_code == 200
+    assert resp.json()["symbol"] == "AAPL"
+    mock_md.get_stock_quote.assert_called_once()
+
+
+@patch("app.routers.stocks.get_market_data_service")
+def test_get_stock_history_routes_btc_to_crypto(mock_get_mds, client):
+    """Same routing as the quote endpoint — chart for BTC must use
+    CoinGecko market_chart, not yfinance daily bars."""
+    mock_md = MagicMock()
+    mock_md.get_crypto_history_for_symbol.return_value = [
+        {"date": "2026-01-01", "price": Decimal("65000")},
+        {"date": "2026-01-02", "price": Decimal("66500")},
+    ]
+    mock_get_mds.return_value = mock_md
+
+    resp = client.get("/api/stocks/BTC/history?period=1mo")
+
+    assert resp.status_code == 200
+    rows = resp.json()
+    assert len(rows) == 2
+    assert rows[0]["price"]["amount"] == "65000"
+    assert rows[0]["price"]["currency"] == "USD"
+    # Verify the period→days translation reached the service.
+    args, _ = mock_md.get_crypto_history_for_symbol.call_args
+    assert args == ("BTC", 30)
+    mock_md.get_stock_history.assert_not_called()
+
+
+@patch("app.routers.stocks.get_market_data_service")
+def test_get_stock_history_passes_through_for_non_crypto(mock_get_mds, client):
+    mock_md = MagicMock()
+    mock_md.get_crypto_history_for_symbol.return_value = None
+    mock_md.get_stock_history.return_value = [
+        {"date": "2025-01-01", "close": Decimal("170"), "volume": 1000000},
+    ]
+    mock_get_mds.return_value = mock_md
+
+    resp = client.get("/api/stocks/AAPL/history?period=1mo")
+
+    assert resp.status_code == 200
+    assert resp.json()[0]["price"]["amount"] == "170"
+    mock_md.get_stock_history.assert_called_once()
+
+
+# ──────────────────────────────────────────────
 # Search — coverage moved to tests/test_routers/test_search_route.py
 # (the route now delegates to MarketDataService.search_stocks; the old
 # multi-provider fan-out was replaced by yfinance + class-aware filter).

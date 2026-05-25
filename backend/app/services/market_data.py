@@ -18,12 +18,41 @@ from app.providers.yfinance import YFinanceProvider
 
 logger = logging.getLogger(__name__)
 
-CRYPTO_COINGECKO_MAP = {
+#: Symbol → CoinGecko coin_id. Single source of truth shared by the
+#: stocks router (`/api/stocks/{symbol}` + `/history`) and the mobile
+#: router (`/api/mobile/quotes` batch). Without this, single-quote and
+#: history calls fall through to yfinance, which returns a small-cap
+#: stock literally named "BTC" (~$30) instead of Bitcoin.
+CRYPTO_COINGECKO_MAP: dict[str, str] = {
     "BTC": "bitcoin", "BTC-USD": "bitcoin",
     "ETH": "ethereum", "ETH-USD": "ethereum",
+    "SOL": "solana", "SOL-USD": "solana",
+    "ADA": "cardano", "ADA-USD": "cardano",
+    "DOT": "polkadot", "DOT-USD": "polkadot",
+    "AVAX": "avalanche-2", "AVAX-USD": "avalanche-2",
+    "MATIC": "matic-network", "MATIC-USD": "matic-network",
+    "LINK": "chainlink", "LINK-USD": "chainlink",
+    "UNI": "uniswap", "UNI-USD": "uniswap",
     "USDT": "tether", "USDT-USD": "tether",
     "USDC": "usd-coin", "USDC-USD": "usd-coin",
     "DAI": "dai", "DAI-USD": "dai",
+}
+#: Display names for the canonical coin_ids — used to populate the
+#: `name` field on a crypto quote response (the CoinGecko simple-price
+#: endpoint doesn't return one).
+CRYPTO_DISPLAY_NAMES: dict[str, str] = {
+    "bitcoin": "Bitcoin",
+    "ethereum": "Ethereum",
+    "solana": "Solana",
+    "cardano": "Cardano",
+    "polkadot": "Polkadot",
+    "avalanche-2": "Avalanche",
+    "matic-network": "Polygon",
+    "chainlink": "Chainlink",
+    "uniswap": "Uniswap",
+    "tether": "Tether",
+    "usd-coin": "USD Coin",
+    "dai": "Dai",
 }
 CRYPTO_CLASS_NAMES = {"Crypto", "Cryptos", "Stablecoins"}
 
@@ -340,6 +369,36 @@ class MarketDataService:
         }
         self._crypto_quote_cache[coin_id] = result
         return result
+
+    def get_crypto_quote_for_symbol(self, symbol: str) -> dict | None:
+        """Resolve a ticker (e.g. ``BTC``) to a quote dict shaped like
+        ``get_stock_quote``. Returns ``None`` if the symbol isn't in
+        :data:`CRYPTO_COINGECKO_MAP`, so callers can fall through to the
+        stock provider without a try/except dance.
+        """
+        coin_id = CRYPTO_COINGECKO_MAP.get(symbol.upper())
+        if not coin_id:
+            return None
+        base = self.get_crypto_quote(coin_id)
+        # Stock-quote consumers (`_quote_to_response` in routers/stocks.py
+        # and `_fetch_one_quote` in routers/mobile.py) read `symbol` and
+        # `name` directly. CoinGecko returns neither, so augment here.
+        return {
+            **base,
+            "symbol": symbol.upper(),
+            "name": CRYPTO_DISPLAY_NAMES.get(coin_id, symbol.upper()),
+        }
+
+    def get_crypto_history_for_symbol(
+        self, symbol: str, days: int = 30
+    ) -> list[dict] | None:
+        """Same routing as :meth:`get_crypto_quote_for_symbol`, for the
+        chart endpoint. Returns ``None`` for non-crypto symbols.
+        """
+        coin_id = CRYPTO_COINGECKO_MAP.get(symbol.upper())
+        if not coin_id:
+            return None
+        return self.get_crypto_history(coin_id, days)
 
     def get_crypto_history(self, coin_id: str, days: int = 30) -> list[dict]:
         cache_key = f"{coin_id}:{days}"

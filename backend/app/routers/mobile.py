@@ -27,7 +27,10 @@ from app.models.fundamentals_score import FundamentalsScore
 from app.models.tracked_symbol import TrackedSymbol
 from app.providers.common import Symbol
 from app.services.exchange_rate import fetch_exchange_rate as _fetch_exchange_rate
-from app.services.market_data import get_market_data_service
+from app.services.market_data import (
+    CRYPTO_COINGECKO_MAP,
+    get_market_data_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,13 +103,6 @@ def get_exchange_rate(
 # Batch Quotes
 # ──────────────────────────────────────────────
 
-_CRYPTO_COIN_MAP = {
-    "BTC": "bitcoin", "ETH": "ethereum", "SOL": "solana",
-    "ADA": "cardano", "DOT": "polkadot", "AVAX": "avalanche-2",
-    "MATIC": "matic-network",
-}
-
-
 def _fetch_one_quote(market_data, symbol: str) -> dict | None:
     """Resolve a single symbol's quote via the right provider.
 
@@ -120,8 +116,8 @@ def _fetch_one_quote(market_data, symbol: str) -> dict | None:
     the threaded fan-out.
     """
     try:
-        if symbol.upper() in _CRYPTO_COIN_MAP:
-            coin_id = _CRYPTO_COIN_MAP[symbol.upper()]
+        if symbol.upper() in CRYPTO_COINGECKO_MAP:
+            coin_id = CRYPTO_COINGECKO_MAP[symbol.upper()]
             quote = market_data.get_crypto_quote(coin_id)
         elif Symbol.is_br(symbol):
             quote = market_data.get_stock_quote(symbol, country="BR")

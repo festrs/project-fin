@@ -188,6 +188,80 @@ class TestGetCryptoHistory:
         assert result[0]["price"] == Decimal("42000.0")
 
 
+class TestCryptoForSymbol:
+    """Symbol-keyed helpers used by the /api/stocks/{symbol} routes — they
+    do the BTC → bitcoin coin_id lookup, call the existing coin-id-keyed
+    methods, and augment the result with `symbol`/`name` so the existing
+    response serializers (`_quote_to_response`) don't need to special-case
+    crypto."""
+
+    @patch("app.services.market_data.coingecko_client.get")
+    def test_quote_routes_btc_to_bitcoin(self, mock_get, service):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "bitcoin": {
+                    "usd": 67500.0,
+                    "usd_market_cap": 1_300_000_000_000,
+                    "usd_24h_change": 1.2,
+                }
+            },
+        )
+
+        result = service.get_crypto_quote_for_symbol("BTC")
+
+        assert result is not None
+        assert result["symbol"] == "BTC"
+        assert result["name"] == "Bitcoin"
+        assert result["current_price"] == Money(Decimal("67500.0"), Currency.USD)
+        assert result["currency"] == Currency.USD
+
+    def test_quote_returns_none_for_unknown_symbol(self, service):
+        # AAPL isn't in CRYPTO_COINGECKO_MAP — caller falls through to
+        # the stock provider.
+        assert service.get_crypto_quote_for_symbol("AAPL") is None
+
+    @patch("app.services.market_data.coingecko_client.get")
+    def test_quote_uppercases_input(self, mock_get, service):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "ethereum": {
+                    "usd": 3200.0,
+                    "usd_market_cap": 380_000_000_000,
+                    "usd_24h_change": -0.5,
+                }
+            },
+        )
+
+        result = service.get_crypto_quote_for_symbol("eth")  # lowercase
+
+        assert result is not None
+        assert result["symbol"] == "ETH"
+        assert result["name"] == "Ethereum"
+
+    @patch("app.services.market_data.coingecko_client.get")
+    def test_history_routes_btc_to_bitcoin(self, mock_get, service):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "prices": [
+                    [1704067200000, 65000.0],
+                    [1704153600000, 66000.0],
+                ]
+            },
+        )
+
+        result = service.get_crypto_history_for_symbol("BTC", days=30)
+
+        assert result is not None
+        assert len(result) == 2
+        assert result[0]["price"] == Decimal("65000.0")
+
+    def test_history_returns_none_for_unknown_symbol(self, service):
+        assert service.get_crypto_history_for_symbol("AAPL") is None
+
+
 class TestComputeYieldFromHistory:
     """For BR tickers we ignore whatever yield a provider reports and compute
     it ourselves: sum(last 12mo dividend_history.value) / current_price * 100.
