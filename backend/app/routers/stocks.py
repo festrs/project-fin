@@ -133,14 +133,39 @@ def get_br_stock_history(request: Request, symbol: str, period: str = Query("1mo
     return [{"date": h["date"], "price": {"amount": str(h["close"]), "currency": "BRL"}} for h in history]
 
 
+# yfinance period strings → days for CoinGecko's `market_chart`. Keep
+# this map in sync with the iOS app's PriceChartView period buttons (1D,
+# 1W, 1M, 3M, 6M, 1Y, 5Y, Max).
+_PERIOD_TO_DAYS: dict[str, int] = {
+    "1d": 1, "5d": 5, "1mo": 30, "3mo": 90,
+    "6mo": 180, "1y": 365, "2y": 730, "5y": 1825, "max": 3650,
+}
+
+
+def _crypto_history_to_response(rows: list[dict]) -> list[dict]:
+    return [
+        {"date": h["date"], "price": {"amount": str(h["price"]), "currency": "USD"}}
+        for h in rows
+    ]
+
+
 # Generic routes (auto-detect country from symbol)
 
 @router.get("/{symbol}")
 @limiter.limit(MARKET_DATA_LIMIT)
 def get_stock_quote(request: Request, symbol: str, db: Session = Depends(get_db)):
-    """Auto-detect country from symbol and return quote."""
-    sym, country = _detect_country(symbol)
+    """Auto-detect provider from symbol and return quote.
+
+    Crypto first — its data source is fundamentally different (CoinGecko,
+    not yfinance), and country detection would route "BTC" to a small-cap
+    stock named the same thing. Falls through to country-based routing
+    for stocks/FIIs/REITs.
+    """
     market_data = get_market_data_service()
+    crypto = market_data.get_crypto_quote_for_symbol(symbol)
+    if crypto is not None:
+        return _quote_to_response(crypto)
+    sym, country = _detect_country(symbol)
     try:
         quote = market_data.get_stock_quote(sym, country=country, db=db)
     except Exception:
@@ -151,9 +176,18 @@ def get_stock_quote(request: Request, symbol: str, db: Session = Depends(get_db)
 @router.get("/{symbol}/history")
 @limiter.limit(MARKET_DATA_LIMIT)
 def get_stock_history(request: Request, symbol: str, period: str = Query("1mo"), db: Session = Depends(get_db)):
-    """Auto-detect country from symbol and return history."""
-    sym, country = _detect_country(symbol)
+    """Auto-detect provider from symbol and return history.
+
+    Same crypto-first routing as the quote endpoint — see that handler
+    for why.
+    """
     market_data = get_market_data_service()
+    crypto_hist = market_data.get_crypto_history_for_symbol(
+        symbol, _PERIOD_TO_DAYS.get(period, 30)
+    )
+    if crypto_hist is not None:
+        return _crypto_history_to_response(crypto_hist)
+    sym, country = _detect_country(symbol)
     try:
         history = market_data.get_stock_history(sym, period, country=country, db=db)
     except Exception:
